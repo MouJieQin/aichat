@@ -35,10 +35,17 @@
     <!-- 聊天内容区域 -->
     <div class="chat-container">
       <!-- 聊天消息列表 -->
+      <div class="markdown-container" @click="handleSentenceClick">
+        <p v-html="test_html"></p>
+      </div>
+
       <div class="chat-messages" v-for="(msg, text_id) in chatMessages" :key="text_id">
         <div class="message" :class="{ 'self': msg.isSelf }">
+          <!-- <p v-for="parse_sentence in msg.parse_result" :key="parse_sentence.id"
+            class="content hover-highlight inline-paragraph" v-html="markdownParser.render(parse_sentence.original)"
+            @click="handleSentenceClick(text_id, parse_sentence.id)"></p> -->
           <div v-for="parse_sentence in msg.parse_result" :key="parse_sentence.id">
-            <p class="content" v-html="markdownParser.render(parse_sentence.original)"
+            <p class="content hover-highlight inline-paragraph" v-html="markdownParser.render(parse_sentence.original)"
               @click="handleSentenceClick(text_id, parse_sentence.id)"></p>
           </div>
           <div class="time">{{ formatTime(msg.time) }}</div>
@@ -60,6 +67,7 @@ import { ref, computed, nextTick } from 'vue'
 import { useWebSocket } from '@/common/websocket-client';
 
 import MarkdownIt from 'markdown-it'
+import { processMarkdown } from '@/common/markdown-processor';
 import {
   Document,
   Menu as IconMenu,
@@ -121,17 +129,51 @@ const formatTime = (time: Date) => {
   )
 }
 
-const handleSentenceClick = (text_id: number, sentence_id: number) => {
-  console.log("click sentence:", text_id, sentence_id)
-  const message = {
-    type: 'sentence',
-    data: {
-      "text_id": text_id,
-      "sentence_id": sentence_id,
+
+// const delegateClick = (event: MouseEvent) => {
+//   const target = event.target as HTMLElement;
+
+//   // 检查点击的元素是否有content类
+//   if (target.classList.contains('content')) {
+//     // 执行你想要的操作
+//     const param1 = parseInt(target.dataset.param1 || '0', 10);
+//     const param2 = parseInt(target.dataset.param2 || '0', 10);
+//     handleSentenceClick(param1, param2);
+//   }
+// }
+
+const handleSentenceClick = (event: MouseEvent) => {
+  const target = event.target as HTMLElement;
+
+  if (target.classList.contains('content')) {
+    const textId = parseInt(target.dataset.param1 || '0', 10);
+    const sentenceId = parseInt(target.dataset.param2 || '0', 10);
+
+    // 查找对应的句子信息
+    const sentenceInfo = sentences.value.find(
+      s => s.textId === textId && s.sentenceId === sentenceId
+    );
+
+    if (sentenceInfo) {
+      console.log('点击的句子:', sentenceInfo);
+      // 这里可以添加高亮或其他处理逻辑
     }
   }
-  webSocket.send(message)
-}
+};
+
+
+
+// const handleSentenceClick = (text_id: number, sentence_id: number) => {
+//   console.log("click sentence:", text_id, sentence_id)
+//   const message = {
+//     type: 'sentence',
+//     data: {
+//       "text_id": text_id,
+//       "sentence_id": sentence_id,
+//     }
+//   }
+//   webSocket.send(message)
+// }
 
 // 处理输入框按键事件
 const handleKeyDown = (e: KeyboardEvent) => {
@@ -153,6 +195,8 @@ const status = computed(() => {
 });
 
 const messageContent = ref('');
+const test_html = ref('')
+const sentences = ref<SentenceInfo[]>([]);
 
 // 监听消息（可在组件内细化处理）
 webSocket.handleMessage = (message: {}) => {
@@ -164,6 +208,40 @@ webSocket.handleMessage = (message: {}) => {
       // 可触发 Vue 响应式更新，如更新聊天列表
       const text_id = message.data.text_id
       chatMessages.value[text_id].parse_result = message.data.result
+      // console.log(markdownParser.render(message.data.result[0].original))
+      //       const markdownContent = `
+      // 素晴らしい質問ですね！あなたの問いは、プラトンの『国家』の核心に触れるものであり、特に「気概」と「節制」の役割や、それらが理性と欲望の間でどのように機能するかについて深く考えさせられます。それぞれを整理しながら、関係性を明確にしていきましょう。
+
+      // ---
+
+      // ### **1. 気概はどちらに傾いているのか？**
+      // 気概（トューモス）は、理性と欲望の間で「中間的な存在」として機能しますが、プラトンは気概が**理性に従うべき**だと考えています。
+
+      // #### **理性に従う気概**
+      // - 理性が「国家や個人にとって何が善であるか」を判断し、気概がそれを実行に移す役割を果たします。
+      // - 欲望に傾いた気概は、盲目的な怒りや衝動として現れる可能性があり、理性に従わない場合には調和が崩れてしまいます。
+      //       `
+      const markdownContent = `
+# 哲学与心理学
+
+哲学思考常常涉及对人性的深入探究。心理学则通过科学方法研究人类行为和心理过程。
+这两个领域虽然方法不同，但都致力于理解人类的本质。
+
+## 理性与情感
+
+理性决策通常被认为是基于逻辑和事实的。
+然而，情感在人类决策过程中也扮演着重要角色。
+`;
+
+      // test_html.value = test_html.value.replace(/<li>/g, '<li class="content hover-highlight" data-param1="3" data-param2="0">')
+      // console.log(test_html.value
+      const result = processMarkdown(markdownContent);
+      test_html.value = result.processedHtml;
+      sentences.value = result.sentences;
+
+      console.log('处理后的句子:', sentences.value);
+      console.log('处理后的html:', test_html.value);
+
       break;
     case 'sentences':
       console.log('系统通知:', message.data);

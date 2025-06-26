@@ -1,4 +1,4 @@
-import { ref, onMounted, onUnmounted } from 'vue';
+import { ref } from 'vue';
 
 // WebSocket 状态枚举
 enum WebSocketStatus {

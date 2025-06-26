@@ -40,35 +40,33 @@ class MarkdownTTSProcessor:
             text = re.sub(pattern, replacement, text, flags=re.MULTILINE)
         return text.strip()
 
-    def split_into_sentences(self, text: str) -> List[str]:
-        """将文本分割成句子"""
-        # 确保文本以换行符开始和结束，便于正则匹配
-        processed_text = "\n" + text.strip() + "\n"
+    def split_into_sentences(self, text: str) -> List[Dict[str, str]]:
+        """将文本分割成句子，保留换行符信息"""
+        if not text:
+            return []
 
         # 使用VERBOSE和MULTILINE标志
         regex = re.compile(self.sentence_pattern, re.VERBOSE | re.MULTILINE)
 
-        # 手动实现split逻辑，避免返回None
         sentences = []
         last_pos = 0
 
-        for match in regex.finditer(processed_text):
-            start, end = match.span()
-            sentence = processed_text[last_pos:start].strip()
+        for match in regex.finditer(text):
+            end_pos = match.end()
+            sentence = text[last_pos:end_pos]
             if sentence:
                 sentences.append(sentence)
-            last_pos = end
+            last_pos = end_pos
 
         # 添加最后一个句子
-        last_sentence = processed_text[last_pos:].strip()
-        if last_sentence:
-            sentences.append(last_sentence)
+        if last_pos < len(text):
+            sentences.append(text[last_pos:])
 
         return sentences
 
     def process(self, markdown_text: str) -> List[Dict[str, str]]:
         """处理 Markdown 文本，返回句子列表"""
-        # 先分割句子，再清理每个句子
+        # 分割句子，保留换行符
         original_sentences = self.split_into_sentences(markdown_text)
 
         # 构建结果列表，每个元素包含原始句子和清理后的文本

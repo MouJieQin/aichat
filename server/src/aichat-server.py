@@ -72,7 +72,7 @@ async def handle_message(websocket: WebSocket, clientID: int, message_text: str)
     elif type == "click_sentence":
         text_id = message["data"]["text_id"]
         sentence_id = message["data"]["sentence_id"]
-        
+
         print(database[clientID][text_id]["sentences"][sentence_id]["text"])
 
         def play_sentence():
@@ -86,6 +86,28 @@ async def handle_message(websocket: WebSocket, clientID: int, message_text: str)
             )
 
         threading.Thread(target=play_sentence, daemon=True).start()
+    elif type == "play_sentences":
+        text_id = message["data"]["text_id"]
+        sentence_id_start = message["data"]["sentence_id"]
+        sentences = database[clientID][text_id]["sentences"]
+
+        def play_sentences():
+            asyncio.run(
+                speaker.play_sentences(
+                    str(clientID),
+                    text_id,
+                    sentence_id_start,
+                    sentences,
+                )
+            )
+
+        threading.Thread(target=play_sentences, daemon=True).start()
+    elif type == "pause":
+        speaker.pause()
+    elif type == "unpause":
+        speaker.unpause()
+    elif type == "stop":
+        speaker.stop()
 
 
 @app.websocket("/ws/aichat/{clientID}")

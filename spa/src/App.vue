@@ -44,10 +44,10 @@
           <div class="markdown-container" @click="handleSentenceClick">
             <p v-html="msg.processed_html"></p>
           </div>
-          <!-- <div v-for="parse_sentence in msg.parse_result" :key="parse_sentence.id">
-            <p class="content hover-highlight inline-paragraph" v-html="markdownParser.render(parse_sentence.original)"
-              @click="handleSentenceClick(text_id, parse_sentence.id)"></p>
-          </div> -->
+          <el-button type="primary" @click="unpause">播放</el-button>
+          <el-button type="primary" @click="pause">暂停</el-button>
+          <el-button type="primary" @click="stop">停止</el-button>
+
           <div class="time">{{ formatTime(msg.time) }}</div>
         </div>
       </div>
@@ -141,29 +141,77 @@ const formatTime = (time: Date) => {
     time.getSeconds().toString().padStart(2, '0')
   )
 }
+const pause = () => {
+  webSocket.send({
+    type: 'pause',
+    data: {},
+  })
+}
+const unpause = () => {
+  webSocket.send({
+    type: 'unpause',
+    data: {},
+  })
+}
+const stop = () => {
+  webSocket.send({
+    type: 'stop',
+    data: {},
+  })
+}
 
 const handleSentenceClick = (e: MouseEvent) => {
-  const target = e.target as HTMLElement;
-  const contentElement = target.closest('.content');
+  // const isShiftPressed = e.shiftKey;
+  // const isControlPressed = e.ctrlKey;
+  const isOptionPressed = e.altKey;
+  const isCommandPressed = e.metaKey; // macOS 上的 Command 键
+  if (isOptionPressed) {
+    const target = e.target as HTMLElement;
+    const contentElement = target.closest('.content');
 
-  if (contentElement) {
-    const textId = contentElement.dataset.param1;
-    const sentenceId = contentElement.dataset.param2;
+    if (contentElement) {
+      const textId = contentElement.dataset.param1;
+      const sentenceId = contentElement.dataset.param2;
 
-    const sentence = sentences.value.find(
-      s => s.textId.toString() === textId && s.sentenceId.toString() === sentenceId
-    );
-    if (sentence) {
-      console.log('点击的句子:', sentence);
-    }
-    const message = {
-      type: 'click_sentence',
-      data: {
-        text_id: Number(textId),
-        sentence_id: Number(sentenceId),
+      const sentence = sentences.value.find(
+        s => s.textId.toString() === textId && s.sentenceId.toString() === sentenceId
+      );
+      if (sentence) {
+        console.log('点击的句子:', sentence);
       }
-    };
-    webSocket.send(message)
+      const message = {
+        type: 'play_sentences',
+        data: {
+          text_id: Number(textId),
+          sentence_id: Number(sentenceId),
+        }
+      };
+      webSocket.send(message)
+    }
+  }
+  else if (isCommandPressed) {
+    const target = e.target as HTMLElement;
+    const contentElement = target.closest('.content');
+
+    if (contentElement) {
+      const textId = contentElement.dataset.param1;
+      const sentenceId = contentElement.dataset.param2;
+
+      const sentence = sentences.value.find(
+        s => s.textId.toString() === textId && s.sentenceId.toString() === sentenceId
+      );
+      if (sentence) {
+        console.log('点击的句子:', sentence);
+      }
+      const message = {
+        type: 'click_sentence',
+        data: {
+          text_id: Number(textId),
+          sentence_id: Number(sentenceId),
+        }
+      };
+      webSocket.send(message)
+    }
   }
 };
 

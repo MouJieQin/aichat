@@ -17,7 +17,7 @@ export interface ProcessResult {
 }
 
 // 主处理函数
-export function processMarkdown(markdownContent: string): ProcessResult {
+export function processMarkdown(markdownContent: string, text_id: number): ProcessResult {
     const md = new MarkdownIt();
     let html = md.render(markdownContent);
     const tempDiv = document.createElement('div');
@@ -26,7 +26,7 @@ export function processMarkdown(markdownContent: string): ProcessResult {
     const sentences: SentenceInfo[] = [];
 
     // 递归处理节点核心逻辑（与原Vue文件完全一致）
-    const walk = (node: Node, textId = 0, sentenceId = 0) => {
+    const walk = (node: Node, textId: number = text_id, sentenceId: number = 0) => {
         if (node.nodeType === Node.TEXT_NODE) {
             const text = node.textContent?.trim() || '';
             if (text) {

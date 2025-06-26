@@ -1,3 +1,6 @@
 **/__pycache__/**
 spa/node_modules/**
 spa/.vite/**
+server/src/data/
+server/src/logs/
+server/src/configure.json

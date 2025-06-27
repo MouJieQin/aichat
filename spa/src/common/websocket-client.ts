@@ -20,6 +20,7 @@ class WebSocketService {
     private status = ref<WebSocketStatus>(WebSocketStatus.CLOSED);
     private reconnectInterval: number | null = null; // 重连定时器
     private url: string; // WebSocket 服务器地址
+    private isClosedByUser: boolean = false;
 
     constructor(url: string) {
         this.url = url;
@@ -66,6 +67,7 @@ class WebSocketService {
 
     // 主动关闭连接
     close() {
+        this.isClosedByUser = true;
         if (this.socket) {
             this.socket.close();
             this.clearReconnect();
@@ -74,6 +76,7 @@ class WebSocketService {
 
     // 重连逻辑
     private reconnect() {
+        if (this.isClosedByUser) return;
         if (this.reconnectInterval) return;
         this.reconnectInterval = window.setInterval(() => {
             this.init();
@@ -114,9 +117,8 @@ class WebSocketService {
 
 // 导出单例或工厂函数，根据项目需求选择
 let webSocketInstance: WebSocketService | null = null;
-export function useWebSocket(url: string = 'ws://your-websocket-server-url') {
-    if (!webSocketInstance) {
-        webSocketInstance = new WebSocketService(url);
-    }
+export function useWebSocket(url: string) {
+    webSocketInstance = new WebSocketService(url);
     return webSocketInstance;
 }
+export { WebSocketService }

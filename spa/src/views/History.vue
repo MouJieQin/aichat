@@ -14,10 +14,11 @@
                 </div>
             </div>
 
+
             <!-- 输入区域 -->
             <div class="input-area">
                 <el-input v-model="inputVal" type="textarea" placeholder="输入对话内容（Shift + Enter 发送）"
-                    :autosize="{ minRows: 2, maxRows: 4 }" @keydown="handleKeyDown" />
+                    :autosize="{ minRows: 5, maxRows: 9 }" @keydown="handleKeyDown" />
                 <el-button type="primary" @click="sendMessage">发送</el-button>
             </div>
         </div>

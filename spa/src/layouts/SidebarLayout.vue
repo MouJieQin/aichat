@@ -31,12 +31,19 @@
                 <!-- 历史对话菜单 -->
                 <el-sub-menu index="history">
                     <template #title>
-                        <el-icon><icon-menu /></el-icon>
+                        <el-icon>
+                            <Clock />
+                        </el-icon>
                         <span>历史对话</span>
                     </template>
                     <el-menu-item v-for="item in historyItems" :key="item.path" :index="item.path"
                         @click="navigateTo(item.path)">
-                        {{ item.title }}
+                        <template #title>
+                            <el-icon>
+                                <ChatDotSquare />
+                            </el-icon>
+                            <span>{{ item.title }}</span>
+                        </template>
                     </el-menu-item>
                 </el-sub-menu>
             </el-menu>
@@ -52,7 +59,7 @@
 <script lang="ts" setup>
 import { ref, computed, watch, onMounted, } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { Location, Plus, Menu as IconMenu } from '@element-plus/icons-vue'
+import { Location, Plus, Menu, ChatDotSquare, Clock } from '@element-plus/icons-vue'
 import { useWebSocket, WebSocketService } from '@/common/websocket-client'
 import { processMarkdown, SentenceInfo } from '@/common/markdown-processor'
 

@@ -54,7 +54,8 @@ class OpenAIChatAPI:
         session_id: int,
         user_message: str,
         parsed_text: str,
-        callback_async: Callable,
+        user_message_callback_async: Callable,
+        assistant_response_callback_async: Callable,
     ) -> Optional[str]:
         # 生成消息ID
 
@@ -65,7 +66,7 @@ class OpenAIChatAPI:
             raw_text=user_message,
             parsed_text=parsed_text,
         )
-        await callback_async(message_id)
+        await user_message_callback_async(message_id)
         # 获取会话配置
         session = self.db.get_session(session_id)
         if not session:
@@ -83,17 +84,25 @@ class OpenAIChatAPI:
         prompt_messages.append({"role": "user", "content": user_message})
 
         print("@@@@@prompt_messages:", prompt_messages)
+
         # 调用OpenAI API
-        response = self.client.chat.completions.create(
+        print("----- streaming request -----")
+        stream = self.client.chat.completions.create(
             model=ai_config.get("model", "gpt-3.5-turbo"),
             messages=prompt_messages,
             temperature=ai_config.get("temperature", 0.7),
             max_tokens=ai_config.get("max_tokens", 800),
+            stream=True,
         )
-
-        # 提取回复
-        ai_response = response.choices[0].message.content  # type: ignore
-
+        ai_response = ""  # 初始化累积变量
+        for chunk in stream:
+            if chunk.choices and chunk.choices[0].delta.content:
+                content = chunk.choices[0].delta.content
+                ai_response += content  # 累加每个增量内容
+                await assistant_response_callback_async(ai_response, True)
+                print(content, end="", flush=True)  # 实时打印（可选）
+        print()
+        await assistant_response_callback_async(ai_response, False)
         return ai_response
 
     def add_assistant_message(

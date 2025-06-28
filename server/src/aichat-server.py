@@ -53,7 +53,6 @@ speaker = Speaker(configure)
 
 async def send_all_sessions(websocket: WebSocket):
     sessions = API.get_all_session_id_title()
-    print("sessions:{}".format(sessions))
     msg = {
         "type": "all_sessions",
         "data": sessions,
@@ -129,7 +128,7 @@ async def websocketEndpointSpa(websocket: WebSocket):
     try:
         await asyncio.gather(*tasks_list)
     except WebSocketDisconnect:
-        print(f"websocket spa disconnected.")
+        logger.info(f"websocket spa disconnected.")
 
 
 async def handle_message(websocket: WebSocket, clientID: int, message_text: str):
@@ -140,7 +139,7 @@ async def handle_message(websocket: WebSocket, clientID: int, message_text: str)
         user_message = message["data"]["user_message"]
         session_id = message["data"]["session_id"]
 
-        async def callback_async(message_id: int):
+        async def user_message_callback_async(message_id: int):
             msg = {
                 "type": "parse_request",
                 "data": {
@@ -154,8 +153,22 @@ async def handle_message(websocket: WebSocket, clientID: int, message_text: str)
 
             await websocket.send_text(json.dumps(msg))
 
+        async def assistant_response_callback_async(response: str, is_streaming: bool):
+            msg = {
+                "type": "stream_response",
+                "data": {
+                    "is_streaming": is_streaming,
+                    "response": response,
+                },
+            }
+            await websocket.send_text(json.dumps(msg))
+
         response = await API.chat(
-            session_id, user_message, json.dumps({"sentences": []}), callback_async
+            session_id,
+            user_message,
+            json.dumps({"sentences": []}),
+            user_message_callback_async,
+            assistant_response_callback_async,
         )
         message_id = API.add_assistant_message(
             session_id, response, json.dumps({"sentences": []})
@@ -231,7 +244,6 @@ async def handle_message(websocket: WebSocket, clientID: int, message_text: str)
 
 async def send_session_messages(websocket: WebSocket, session_id: int):
     messages = API.get_session_messages(session_id, limit=100)
-    print("messages:{}".format(messages))
     msg = {
         "type": "session_messages",
         "data": messages,

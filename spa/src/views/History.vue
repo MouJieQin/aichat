@@ -14,6 +14,13 @@
                     <div class="time">{{ msg.time }}</div>
                 </div>
             </div>
+            <div v-if="streaming">
+                <div class="message not(self)">
+                    <div class="markdown-container">
+                        <p v-html="md.render(stream_response)"></p>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <!-- 输入区域 - 使用固定定位保持在屏幕底部 -->
@@ -29,8 +36,10 @@
 <script lang="ts" setup>
 import { ref, onMounted, watch, computed, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import MarkdownIt from 'markdown-it'
 import { useWebSocket, WebSocketService } from '@/common/websocket-client'
 import { processMarkdown, SentenceInfo } from '@/common/markdown-processor'
+import debounce from 'lodash/debounce'
 
 interface Message {
     processed_html: string;
@@ -41,8 +50,11 @@ interface Message {
 
 const route = useRoute()
 const router = useRouter()
+const md = new MarkdownIt();
 const historyId = ref('')
 const loading = ref(false)
+const streaming = ref(false)
+const stream_response = ref('This is a test.')
 const chatMessages = ref<Message[]>([])
 const sentences = ref<SentenceInfo[]>([])
 const inputVal = ref('')
@@ -60,6 +72,21 @@ watch(() => route.params.id, (newId) => {
     }
     console.log('@newId:', newId)
 })
+
+const scrollToBottom = () => {
+    const scrollContainer = document.querySelector('.chat-messages-container') as HTMLElement
+    scrollContainer.scrollTop = scrollContainer.scrollHeight
+}
+
+const scrollToBottomDebounced = debounce(scrollToBottom, 200)
+// {
+//                         nextTick(() => {
+//                         setTimeout(() => {
+//                             const container = document.querySelector('.chat-messages-container')
+//                             if (container) container.scrollTop = container.scrollHeight
+//                         }, 1000) // 100ms 的延迟，时间可根据实际情况调整
+//                     })
+// }
 
 // 加载历史对话数据
 const loadHistoryData = async () => {
@@ -85,7 +112,7 @@ const loadHistoryData = async () => {
 
         currentWebSocket = useWebSocket(wsUrl)
         currentWebSocket.handleMessage = (message: any) => {
-            console.log('receive message:', message)
+            // console.log('receive message:', message)
 
             switch (message.type) {
                 case 'parse_request':
@@ -142,12 +169,20 @@ const loadHistoryData = async () => {
 
                                 }
                                 currentWebSocket?.send(msg)
+                                scrollToBottomDebounced()
                             }
                             break;
                         default:
                             console.log('未知消息类型 for parse_request:', message)
                     }
                     break;
+                case "stream_response":
+                    {
+                        streaming.value = message.data.is_streaming
+                        stream_response.value = message.data.response
+                        scrollToBottom()
+                    }
+                    break
                 case 'session_messages':
                     chatMessages.value = []
                     const messages = message.data
@@ -162,6 +197,7 @@ const loadHistoryData = async () => {
                             isSelf: msg[1] != "assistant",
                         })
                     })
+                    scrollToBottomDebounced()
                     break
                 default:
                     console.log('未知消息类型:', message)
@@ -193,11 +229,8 @@ const sendMessage = () => {
     currentWebSocket?.send(message)
     inputVal.value = ''
 
-    // 滚动到底部
-    nextTick(() => {
-        const scrollContainer = document.querySelector('.chat-container') as HTMLElement
-        scrollContainer.scrollTop = scrollContainer.scrollHeight
-    })
+    scrollToBottom()
+
 }
 
 // 格式化时间
@@ -342,67 +375,3 @@ const handleKeyDown = (e: KeyboardEvent) => {
     text-align: right;
 }
 </style>
-
-<!-- <style scoped>
-/* 聊天内容区域 */
-.chat-container {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    padding: 20px;
-    box-sizing: border-box;
-    overflow-y: auto;
-    /* 优化字体显示：设置浅色文字 */
-    color: #fff;
-}
-
-/* 聊天消息样式优化 */
-.message {
-    max-width: 60%;
-    padding: 8px 12px;
-    border-radius: 8px;
-    margin-bottom: 6px;
-    /* 确保不同背景色下文字清晰 */
-    color: #000;
-}
-
-.message.self {
-    text-align: left;
-    background-color: #d3eafd;
-    margin-left: auto;
-}
-
-.message:not(.self) {
-    text-align: left;
-    background-color: #f1f1f1;
-    margin-right: auto;
-}
-
-.content {
-    margin-bottom: 4px;
-}
-
-.time {
-    font-size: 12px;
-    color: #666;
-    text-align: right;
-}
-
-/* 输入区域样式 */
-.input-area {
-    display: flex;
-    gap: 10px;
-    margin-top: auto;
-    align-items: flex-end;
-}
-
-.input-area el-input {
-    flex: 1;
-}
-
-.loading-indicator {
-    display: flex;
-    align-items: center;
-    color: #999;
-}
-</style> -->

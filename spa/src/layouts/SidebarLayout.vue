@@ -57,7 +57,7 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, computed, watch, onMounted, } from 'vue'
+import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { Location, Plus, Menu, ChatDotSquare, Clock } from '@element-plus/icons-vue'
 import { useWebSocket, WebSocketService } from '@/common/websocket-client'
@@ -71,6 +71,10 @@ let currentWebSocket: WebSocketService
 
 onMounted(() => {
     websocket_connect()
+})
+
+onBeforeUnmount(() => {
+    currentWebSocket.close()
 })
 
 const create_new_session = () => {

@@ -106,5 +106,10 @@ class ChatDatabase:
         cursor.execute("SELECT id, title FROM sessions")
         return cursor.fetchall()
 
+    def get_parsed_text(self, message_id: int) -> List:
+        cursor = self.conn.cursor()
+        cursor.execute("SELECT parsed_text FROM messages WHERE id = ?", (message_id,))
+        return cursor.fetchone()
+
     def close(self):
         self.conn.close()

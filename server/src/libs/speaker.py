@@ -263,13 +263,15 @@ class Speaker(metaclass=SingletonMeta):
         self._set_volume_imple(self.audio_channel_assistant_synthesizer, volume)
         self._set_volume_imple(self.audio_channel_system_prompt, 1)
 
-    def _get_audio_file(self, session_id: str, text_id: str, sentence_id: str) -> str:
+    def _get_audio_file(
+        self, session_id: str, message_id: str, sentence_id: str
+    ) -> str:
         """Get the audio file path for a given sentence."""
-        return f"{self.speaker_config['audio_dir']}/{session_id}/{text_id}/{sentence_id}.wav"
+        return f"{self.speaker_config['audio_dir']}/{session_id}/{message_id}/{sentence_id}.wav"
 
-    def _create_audio_dir(self, session_id: str, text_id: str):
+    def _create_audio_dir(self, session_id: str, message_id: str):
         """Create the audio directory."""
-        audio_dir = f"{self.speaker_config['audio_dir']}/{session_id}/{text_id}"
+        audio_dir = f"{self.speaker_config['audio_dir']}/{session_id}/{message_id}"
         if not os.path.exists(audio_dir):
             os.makedirs(audio_dir)
 
@@ -287,12 +289,12 @@ class Speaker(metaclass=SingletonMeta):
         )
 
     def _create_audio_sound(
-        self, session_id: str, text_id: str, sentence_id: str, sentence: str
+        self, session_id: str, message_id: str, sentence_id: str, sentence: str
     ) -> mixer.Sound:
         """Create the audio sound."""
-        audio_file = self._get_audio_file(session_id, text_id, sentence_id)
+        audio_file = self._get_audio_file(session_id, message_id, sentence_id)
         if not os.path.isfile(audio_file):
-            self._create_audio_dir(session_id, text_id)
+            self._create_audio_dir(session_id, message_id)
             synthesizer = self._create_speech_synthesizer(
                 "ja-JP-MayuNeural", audio_file
             )
@@ -303,7 +305,7 @@ class Speaker(metaclass=SingletonMeta):
     def _create_audio_queue(
         self,
         session_id: str,
-        text_id: str,
+        message_id: str,
         sentence_id_start: str,
         sentence_id_end: str,
         sentences: list[Dict],
@@ -311,7 +313,7 @@ class Speaker(metaclass=SingletonMeta):
         """Create the audio queue."""
         for sentence_id in range(int(sentence_id_start), int(sentence_id_end) + 1):
             sound = self._create_audio_sound(
-                session_id, text_id, str(sentence_id), sentences[sentence_id]["text"]
+                session_id, message_id, str(sentence_id), sentences[sentence_id]["text"]
             )
             self.audio_queue.append(sound)
         print(f"@:len(self.audio_queue):{len(self.audio_queue)}")
@@ -328,7 +330,7 @@ class Speaker(metaclass=SingletonMeta):
     async def _play_response_core(
         self,
         session_id: str,
-        text_id: str,
+        message_id: str,
         sentence_id_start: str,
         sentence_id_end: str,
         sentences: list[Dict],
@@ -338,7 +340,13 @@ class Speaker(metaclass=SingletonMeta):
         self.audio_queue.clear()
         threading.Thread(
             target=self._create_audio_queue,
-            args=(session_id, text_id, sentence_id_start, sentence_id_end, sentences),
+            args=(
+                session_id,
+                message_id,
+                sentence_id_start,
+                sentence_id_end,
+                sentences,
+            ),
             daemon=True,
         ).start()
         while len(self.audio_queue) == 0:
@@ -356,23 +364,27 @@ class Speaker(metaclass=SingletonMeta):
             await asyncio.sleep(0.5)
 
     async def play_sentence(
-        self, session_id: str, text_id: str, sentence_id: str, sentences: list[Dict]
+        self, session_id: str, message_id: str, sentence_id: str, sentences: list[Dict]
     ):
         """Play a sentence in real-time."""
         await self._play_response_core(
-            session_id, text_id, sentence_id, sentence_id, sentences
+            session_id, message_id, sentence_id, sentence_id, sentences
         )
 
     async def play_sentences(
         self,
         session_id: str,
-        text_id: str,
+        message_id: str,
         sentence_id_start: str,
         sentences: list[Dict],
     ):
         """Play a sentence in real-time."""
         await self._play_response_core(
-            session_id, text_id, sentence_id_start, str(len(sentences) - 1), sentences
+            session_id,
+            message_id,
+            sentence_id_start,
+            str(len(sentences) - 1),
+            sentences,
         )
 
     def speak_text(self, text: str):

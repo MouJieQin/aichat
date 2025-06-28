@@ -48,9 +48,7 @@ AI_CONFIG_DEFAULT = AI_CONFIG["default"]
 DEFAULT_AI_CONFIG = AI_CONFIG[AI_CONFIG_DEFAULT["ai_config_name"]]
 DB = ChatDatabase()
 API = OpenAIChatAPI(DB, DEFAULT_AI_CONFIG["api_key"], DEFAULT_AI_CONFIG["base_url"])
-database = {}
 speaker = Speaker(configure)
-id_counter = 1
 
 
 async def send_all_sessions(websocket: WebSocket):
@@ -178,47 +176,45 @@ async def handle_message(websocket: WebSocket, clientID: int, message_text: str)
             API.update_message(
                 message_id, json.dumps({"sentences": sentences}, ensure_ascii=False)
             )
-            # database[clientID] = {}
-            # database[clientID][message_id] = {}
-            # database[clientID][message_id]["text"] = user_message
         elif parsed_type == "ai_response":
             message_id = message["data"]["data"]["message_id"]
             sentences = message["data"]["data"]["sentences"]
             API.update_message(
                 message_id, json.dumps({"sentences": sentences}, ensure_ascii=False)
             )
-    elif type == "sentences":
-        text_id = message["data"]["text_id"]
-        sentences = message["data"]["sentences"]
-        database[clientID][text_id]["sentences"] = sentences
-        print(sentences)
-    elif type == "click_sentence":
-        text_id = message["data"]["text_id"]
+    elif type == "play_the_sentence":
+        message_id = message["data"]["message_id"]
         sentence_id = message["data"]["sentence_id"]
-
-        print(database[clientID][text_id]["sentences"][sentence_id]["text"])
+        sentences = API.get_sentences(message_id)
+        if sentences is None:
+            logger.warning("message_id:{} not found any sentences".format(message_id))
+            return
+        logger.info("play_the_sentence:{}".format(sentences[sentence_id]["text"]))
 
         def play_sentence():
             asyncio.run(
                 speaker.play_sentence(
                     str(clientID),
-                    text_id,
+                    message_id,
                     sentence_id,
-                    database[clientID][text_id]["sentences"],
+                    sentences,
                 )
             )
 
         threading.Thread(target=play_sentence, daemon=True).start()
     elif type == "play_sentences":
-        text_id = message["data"]["text_id"]
+        message_id = message["data"]["message_id"]
         sentence_id_start = message["data"]["sentence_id"]
-        sentences = database[clientID][text_id]["sentences"]
+        sentences = API.get_sentences(message_id)
+        if sentences is None:
+            logger.warning("message_id:{} not found any sentences".format(message_id))
+            return
 
         def play_sentences():
             asyncio.run(
                 speaker.play_sentences(
                     str(clientID),
-                    text_id,
+                    message_id,
                     sentence_id_start,
                     sentences,
                 )

@@ -139,3 +139,9 @@ class OpenAIChatAPI:
         self, message_id: int, parsed_text: str, raw_text: Optional[str] = None
     ):
         self.db.update_message(message_id, parsed_text, raw_text)
+
+    def get_sentences(self, message_id: int) -> Optional[list[dict]]:
+        parsed_text = self.db.get_parsed_text(message_id)[0]
+        if parsed_text:
+            return json.loads(parsed_text)["sentences"]
+        return None

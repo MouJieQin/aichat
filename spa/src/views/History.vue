@@ -240,52 +240,26 @@ const handleSentenceClick = (e: MouseEvent) => {
     const isOptionPressed = e.altKey
     const isCommandPressed = e.metaKey // macOS 上的 Command 键
 
-    if (isOptionPressed) {
+    if (isOptionPressed || isCommandPressed) {
         const target = e.target as HTMLElement
         const contentElement = target.closest('.content')
 
         if (contentElement) {
-            const textId = contentElement.dataset.param1
+            const messageId = contentElement.dataset.param1
             const sentenceId = contentElement.dataset.param2
 
             const sentence = sentences.value.find(
-                s => s.textId.toString() === textId && s.sentenceId.toString() === sentenceId
+                s => s.messageId.toString() === messageId && s.sentenceId.toString() === sentenceId
             )
 
             if (sentence) {
                 console.log('点击的句子:', sentence)
             }
-
+            const type = isCommandPressed ? 'play_the_sentence' : 'play_sentences'
             const message = {
-                type: 'play_sentences',
+                type: type,
                 data: {
-                    text_id: Number(textId),
-                    sentence_id: Number(sentenceId),
-                }
-            }
-
-            currentWebSocket?.send(message)
-        }
-    } else if (isCommandPressed) {
-        const target = e.target as HTMLElement
-        const contentElement = target.closest('.content')
-
-        if (contentElement) {
-            const textId = contentElement.dataset.param1
-            const sentenceId = contentElement.dataset.param2
-
-            const sentence = sentences.value.find(
-                s => s.textId.toString() === textId && s.sentenceId.toString() === sentenceId
-            )
-
-            if (sentence) {
-                console.log('点击的句子:', sentence)
-            }
-
-            const message = {
-                type: 'click_sentence',
-                data: {
-                    text_id: Number(textId),
+                    message_id: Number(messageId),
                     sentence_id: Number(sentenceId),
                 }
             }

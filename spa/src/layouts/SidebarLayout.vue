@@ -9,6 +9,12 @@
             <el-menu :default-active="activeMenu" class="el-menu-vertical-demo" :collapse="isCollapse"
                 @open="handleOpen" @close="handleClose">
                 <!-- 其他一级菜单 -->
+                <el-menu-item index="new_chat" @click="create_new_session">
+                    <el-icon>
+                        <Plus />
+                    </el-icon>
+                    <span>新对话</span>
+                </el-menu-item>
                 <el-sub-menu index="navigator">
                     <template #title>
                         <el-icon>
@@ -44,12 +50,104 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, watch, onMounted, } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { Location, Menu as IconMenu } from '@element-plus/icons-vue'
+import { Location, Plus, Menu as IconMenu } from '@element-plus/icons-vue'
+import { useWebSocket, WebSocketService } from '@/common/websocket-client'
+import { processMarkdown, SentenceInfo } from '@/common/markdown-processor'
 
 const route = useRoute()
 const router = useRouter()
+let historyItems = ref<any[]>([])
+const sentences = ref<SentenceInfo[]>([])
+let currentWebSocket: WebSocketService
+
+onMounted(() => {
+    websocket_connect()
+})
+
+const create_new_session = () => {
+    const message = {
+        type: 'create_session',
+        data: {
+        },
+    }
+    currentWebSocket.send(message)
+}
+
+const request_all_sessions = () => {
+    const message = {
+        type: 'get_all_sessions',
+        data: {
+        },
+    }
+    currentWebSocket.send(message)
+}
+
+// 加载历史对话数据
+const websocket_connect = async () => {
+    try {
+        currentWebSocket = useWebSocket('ws://localhost:4999/ws/aichat/spa')
+        currentWebSocket.handleMessage = (message: any) => {
+            console.log('receive message:', message)
+            switch (message.type) {
+                case 'all_sessions':
+                    console.log('收到聊天消息:', message.data)
+                    historyItems.value = []
+                    for (const session of message.data) {
+                        historyItems.value.push({
+                            path: `/history/${session[0]}`,
+                            title: session[1],
+                        })
+                    }
+                    break
+                case 'parse_request':
+                    switch (message.data.type) {
+                        case 'create_session':
+                            const message_id = message.data.data.message_id
+                            const session_id = message.data.data.session_id
+                            const title = message.data.data.title
+                            const system_prompt = message.data.data.system_prompt
+                            const result = processMarkdown(system_prompt, message_id)
+                            const msg = {
+                                type: 'parsed_response',
+                                data: {
+                                    type: "create_session",
+                                    data: {
+                                        message_id: message_id,
+                                        session_id: session_id,
+                                        title: title,
+                                        sentences: result.sentences,
+                                    }
+                                },
+                            }
+                            currentWebSocket.send(msg)
+                        default:
+                            break
+                    }
+                    break
+                case 'new_session':
+                    const session_id = message.data.session_id
+                    const title = message.data.title
+                    const system_prompt = message.data.system_prompt
+                    historyItems.value.push({
+                        path: `/history/${session_id}`,
+                        title: title,
+                    })
+                default:
+                    console.log('未知消息类型:', message)
+            }
+        }
+
+        // 模拟数据加载延迟
+        await new Promise(resolve => setTimeout(resolve, 500))
+
+    } catch (error) {
+        console.error('加载历史对话失败:', error)
+        // 可以显示错误提示
+    } finally {
+    }
+}
 
 // 侧边栏折叠状态
 const isCollapse = ref(false)
@@ -63,14 +161,6 @@ const activeMenu = computed(() => {
 const navigatorItems = ref([
     { path: '/', title: '首页' },
     { path: '/page1', title: '内容页面1' },
-])
-
-const historyItems = ref([
-    { path: '/history/1', title: '历史对话1' },
-    { path: '/history/2', title: '历史对话2' },
-    { path: '/history/3', title: '历史对话3' },
-    { path: '/history/4', title: '历史对话4' },
-    { path: '/history/5', title: '历史对话5' },
 ])
 
 // 导航方法

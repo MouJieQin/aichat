@@ -35,6 +35,7 @@ const router = useRouter()
 const historyId = ref('')
 const loading = ref(false)
 const chatMessages = ref([])
+const sentences = ref<SentenceInfo[]>([])
 const inputVal = ref('')
 let currentWebSocket: WebSocketService | null = null
 
@@ -256,7 +257,6 @@ const handleKeyDown = (e: KeyboardEvent) => {
     }
 }
 
-const sentences = ref<SentenceInfo[]>([])
 </script>
 
 <style scoped>

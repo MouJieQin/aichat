@@ -1,6 +1,7 @@
 <template>
     <div class="page-content">
-        <div class="chat-container">
+        <!-- 聊天内容区域 - 使用 max-height 限制高度并添加滚动条 -->
+        <div class="chat-messages-container">
             <div class="chat-messages" v-for="(msg, text_id) in chatMessages" :key="text_id">
                 <div class="message" :class="{ 'self': msg.isSelf }">
                     <div class="markdown-container" @click="handleSentenceClick">
@@ -13,17 +14,17 @@
                     <div class="time">{{ msg.time }}</div>
                 </div>
             </div>
+        </div>
 
-
-            <!-- 输入区域 -->
-            <div class="input-area">
-                <el-input v-model="inputVal" type="textarea" placeholder="输入对话内容（Shift + Enter 发送）"
-                    :autosize="{ minRows: 5, maxRows: 9 }" @keydown="handleKeyDown" />
-                <el-button type="primary" @click="sendMessage">发送</el-button>
-            </div>
+        <!-- 输入区域 - 使用固定定位保持在屏幕底部 -->
+        <div class="fixed-input-area">
+            <el-input v-model="inputVal" type="textarea" placeholder="输入对话内容（Shift + Enter 发送）"
+                :autosize="{ minRows: 5, maxRows: 9 }" @keydown="handleKeyDown" />
+            <el-button type="primary" @click="sendMessage">发送</el-button>
         </div>
     </div>
 </template>
+
 
 <script lang="ts" setup>
 import { ref, onMounted, watch, computed, nextTick } from 'vue'
@@ -305,6 +306,70 @@ const handleKeyDown = (e: KeyboardEvent) => {
 </script>
 
 <style scoped>
+/* 聊天内容容器 */
+.chat-messages-container {
+    height: calc(100vh - 11em);
+    /* 留出输入区域的空间 */
+    overflow-y: auto;
+    padding: 20px;
+    box-sizing: border-box;
+}
+
+/* 固定在底部的输入区域 */
+.fixed-input-area {
+    position: fixed;
+    bottom: 0;
+    left: 30vw;
+    right: 10vw;
+    padding: 20px;
+    /* background-color: white; 根据需要调整背景色 */
+    /* border-top: 1px solid #eee; */
+    /* box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1); */
+    z-index: 100;
+    /* 确保在最上层 */
+    display: flex;
+    gap: 10px;
+    align-items: flex-end;
+}
+
+/* 聊天消息样式优化 */
+.message {
+    max-width: 60%;
+    padding: 8px 12px;
+    border-radius: 8px;
+    margin-bottom: 6px;
+    color: #000;
+}
+
+.message.self {
+    text-align: left;
+    background-color: #d3eafd;
+    margin-left: auto;
+    margin-bottom: 12px;
+    margin-top: 12px;
+}
+
+.message:not(.self) {
+    /* 关键：通过 margin 自动居中，需配合 max-width 限制宽度 */
+    margin: 0 auto;
+    text-align: left;
+    background-color: #f1f1f1;
+    /* 保留 max-width 让内容不会过宽，也可根据需求调整数值 */
+    max-width: 60%;
+}
+
+.content {
+    margin-bottom: 4px;
+}
+
+.time {
+    font-size: 12px;
+    color: #666;
+    text-align: right;
+}
+</style>
+
+<!-- <style scoped>
 /* 聊天内容区域 */
 .chat-container {
     flex: 1;
@@ -366,4 +431,4 @@ const handleKeyDown = (e: KeyboardEvent) => {
     align-items: center;
     color: #999;
 }
-</style>
+</style> -->

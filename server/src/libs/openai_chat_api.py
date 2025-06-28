@@ -2,7 +2,7 @@ import openai
 import json
 import uuid
 from datetime import datetime
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional, Callable
 from libs.chat_database import ChatDatabase
 
 
@@ -49,8 +49,12 @@ class OpenAIChatAPI:
 
         return prompt_messages + messages_to_send
 
-    def chat(
-        self, session_id: int, user_message: str, parsed_text: str
+    async def chat(
+        self,
+        session_id: int,
+        user_message: str,
+        parsed_text: str,
+        callback_async: Callable,
     ) -> Optional[str]:
         # 生成消息ID
 
@@ -61,7 +65,7 @@ class OpenAIChatAPI:
             raw_text=user_message,
             parsed_text=parsed_text,
         )
-
+        await callback_async(message_id)
         # 获取会话配置
         session = self.db.get_session(session_id)
         if not session:

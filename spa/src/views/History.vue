@@ -30,11 +30,18 @@ import { useRoute, useRouter } from 'vue-router'
 import { useWebSocket, WebSocketService } from '@/common/websocket-client'
 import { processMarkdown, SentenceInfo } from '@/common/markdown-processor'
 
+interface Message {
+    processed_html: string;
+    sentences: SentenceInfo[];
+    time: Date;
+    isSelf: boolean;
+}
+
 const route = useRoute()
 const router = useRouter()
 const historyId = ref('')
 const loading = ref(false)
-const chatMessages = ref([])
+const chatMessages = ref<Message[]>([])
 const sentences = ref<SentenceInfo[]>([])
 const inputVal = ref('')
 let currentWebSocket: WebSocketService | null = null
@@ -79,10 +86,70 @@ const loadHistoryData = async () => {
             console.log('receive message:', message)
 
             switch (message.type) {
+                case 'parse_request':
+                    console.log('收到用户消息:', message.data.data)
+                    switch (message.data.type) {
+                        case 'user_message':
+                            {
+                                const messageId = message.data.data.message_id
+                                const user_message = message.data.data.user_message
+                                console.log("user_message:", user_message, messageId)
+                                const result = processMarkdown(user_message, messageId)
+                                chatMessages.value.push({
+                                    processed_html: result.html,
+                                    sentences: result.sentences,
+                                    time: new Date(),
+                                    isSelf: true,
+                                })
+                                const msg = {
+                                    type: 'parsed_response',
+                                    data: {
+                                        type: 'user_message',
+                                        data: {
+                                            message_id: messageId,
+                                            user_message: user_message,
+                                            sentences: result.sentences,
+                                        },
+                                    },
+                                }
+                                currentWebSocket?.send(msg)
+                            }
+                            break
+                        case "ai_response":
+                            {
+                                const messageId = message.data.data.message_id
+                                const response = message.data.data.response
+                                const result = processMarkdown(response, messageId)
+                                console.log("ai_response:", response, messageId)
+                                chatMessages.value.push({
+                                    processed_html: result.html,
+                                    sentences: result.sentences,
+                                    time: new Date(),
+                                    isSelf: false,
+                                })
+                                const msg = {
+                                    type: 'parsed_response',
+                                    data: {
+                                        type: 'ai_response',
+                                        data: {
+                                            message_id: messageId,
+                                            response: response,
+                                            sentences: result.sentences,
+                                        },
+                                    },
+
+                                }
+                                currentWebSocket?.send(msg)
+                            }
+                            break;
+                        default:
+                            console.log('未知消息类型 for parse_request:', message)
+                    }
+                    break;
                 case 'ai_response':
                     console.log('收到聊天消息:', message.data)
-                    const textId = message.data.text_id
-                    const result = processMarkdown(message.data.response, textId)
+                    const textId = message.data.data.text_id
+                    const result = processMarkdown(message.data.data.response, textId)
                     chatMessages.value.push({
                         processed_html: result.html,
                         sentences: result.sentences,
@@ -96,7 +163,7 @@ const loadHistoryData = async () => {
                             text_id: textId,
                         },
                     }
-                    currentWebSocket.send(message_)
+                    currentWebSocket?.send(message_)
                     break
                 case 'sentences':
                     console.log('系统通知:', message.data)
@@ -121,34 +188,14 @@ const loadHistoryData = async () => {
 const sendMessage = () => {
     if (!inputVal.value.trim()) return
 
-    const textId = chatMessages.value.length
     const message = {
         type: 'user_input',
         data: {
-            text: inputVal.value,
-            text_id: textId,
+            user_message: inputVal.value,
+            session_id: historyId.value,
         },
     }
-
-    const result = processMarkdown(inputVal.value, textId)
-    chatMessages.value.push({
-        processed_html: result.html,
-        sentences: result.sentences,
-        time: new Date(),
-        isSelf: true,
-    })
-
-    currentWebSocket.send(message)
-
-    const message_ = {
-        type: 'sentences',
-        data: {
-            sentences: result.sentences,
-            text_id: textId,
-        },
-    }
-
-    currentWebSocket.send(message_)
+    currentWebSocket?.send(message)
     inputVal.value = ''
 
     // 滚动到底部
@@ -169,21 +216,21 @@ const formatTime = (time: Date) => {
 
 // 语音控制方法
 const pause = () => {
-    currentWebSocket.send({
+    currentWebSocket?.send({
         type: 'pause',
         data: {},
     })
 }
 
 const unpause = () => {
-    currentWebSocket.send({
+    currentWebSocket?.send({
         type: 'unpause',
         data: {},
     })
 }
 
 const stop = () => {
-    currentWebSocket.send({
+    currentWebSocket?.send({
         type: 'stop',
         data: {},
     })
@@ -218,7 +265,7 @@ const handleSentenceClick = (e: MouseEvent) => {
                 }
             }
 
-            currentWebSocket.send(message)
+            currentWebSocket?.send(message)
         }
     } else if (isCommandPressed) {
         const target = e.target as HTMLElement
@@ -244,7 +291,7 @@ const handleSentenceClick = (e: MouseEvent) => {
                 }
             }
 
-            currentWebSocket.send(message)
+            currentWebSocket?.send(message)
         }
     }
 }

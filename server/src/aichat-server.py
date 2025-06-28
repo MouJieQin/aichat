@@ -91,10 +91,10 @@ async def handle_spa_message(websocket: WebSocket, message_text: str):
     elif type == "parsed_response":
         parsed_type = message["data"]["type"]
         if parsed_type == "create_session":
-            title = AI_CONFIG_DEFAULT["chat_title"]
             parsed_data = message["data"]["data"]
             message_id = parsed_data["message_id"]
             session_id = parsed_data["session_id"]
+            title = AI_CONFIG_DEFAULT["chat_title"]
             system_prompt = AI_CONFIG_DEFAULT["system_prompt"]
             parsed_text = {"sentences": parsed_data["sentences"]}
             API.update_message(message_id, parsed_text=json.dumps(parsed_text))
@@ -135,24 +135,58 @@ async def websocketEndpointSpa(websocket: WebSocket):
 
 
 async def handle_message(websocket: WebSocket, clientID: int, message_text: str):
-    global id_counter
     message = json.loads(message_text)
     type = message["type"]
-
+    print("receive message:", message)
     if type == "user_input":
-        text = message["data"]["text"]
-        text_id = message["data"]["text_id"]
-        database[clientID] = {}
-        database[clientID][text_id] = {}
-        database[clientID][text_id]["text"] = text
-        message = {
-            "type": "ai_response",
-            "data": {"text_id": text_id + 1, "response": text},
+        user_message = message["data"]["user_message"]
+        session_id = message["data"]["session_id"]
+
+        async def callback_async(message_id: int):
+            msg = {
+                "type": "parse_request",
+                "data": {
+                    "type": "user_message",
+                    "data": {
+                        "message_id": message_id,
+                        "user_message": user_message,
+                    },
+                },
+            }
+
+            await websocket.send_text(json.dumps(msg))
+
+        response = await API.chat(
+            session_id, user_message, json.dumps({"sentences": []}), callback_async
+        )
+        message_id = API.add_assistant_message(
+            session_id, response, json.dumps({"sentences": []})
+        )
+        msg = {
+            "type": "parse_request",
+            "data": {
+                "type": "ai_response",
+                "data": {"message_id": message_id, "response": response},
+            },
         }
-        print(message)
-        database[clientID][text_id + 1] = {}
-        database[clientID][text_id + 1]["text"] = text
-        await websocket.send_text(json.dumps(message))
+        await websocket.send_text(json.dumps(msg))
+    elif type == "parsed_response":
+        parsed_type = message["data"]["type"]
+        if parsed_type == "user_message":
+            message_id = message["data"]["data"]["message_id"]
+            sentences = message["data"]["data"]["sentences"]
+            API.update_message(
+                message_id, json.dumps({"sentences": sentences}, ensure_ascii=False)
+            )
+            # database[clientID] = {}
+            # database[clientID][message_id] = {}
+            # database[clientID][message_id]["text"] = user_message
+        elif parsed_type == "ai_response":
+            message_id = message["data"]["data"]["message_id"]
+            sentences = message["data"]["data"]["sentences"]
+            API.update_message(
+                message_id, json.dumps({"sentences": sentences}, ensure_ascii=False)
+            )
     elif type == "sentences":
         text_id = message["data"]["text_id"]
         sentences = message["data"]["sentences"]

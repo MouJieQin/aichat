@@ -5,7 +5,7 @@ import { split } from 'sentence-splitter';
 // 句子信息接口
 export interface SentenceInfo {
     text: string;
-    textId: number;
+    messageId: number;
     sentenceId: number;
     isHeading?: boolean;
 }
@@ -17,7 +17,7 @@ export interface ProcessResult {
 }
 
 // 主处理函数
-export function processMarkdown(markdownContent: string, text_id: number): ProcessResult {
+export function processMarkdown(markdownContent: string, message_id: number): ProcessResult {
     const md = new MarkdownIt();
     let html = md.render(markdownContent);
     const tempDiv = document.createElement('div');
@@ -26,7 +26,7 @@ export function processMarkdown(markdownContent: string, text_id: number): Proce
     const sentences: SentenceInfo[] = [];
 
     // 递归处理节点核心逻辑（与原Vue文件完全一致）
-    const walk = (node: Node, textId: number = text_id, sentenceId: number = 0) => {
+    const walk = (node: Node, messageId: number = message_id, sentenceId: number = 0) => {
         if (node.nodeType === Node.TEXT_NODE) {
             const text = node.textContent?.trim() || '';
             if (text) {
@@ -44,13 +44,13 @@ export function processMarkdown(markdownContent: string, text_id: number): Proce
                 nodes.forEach((n, i) => {
                     const span = document.createElement('span');
                     span.className = 'content hover-highlight';
-                    span.dataset.param1 = textId.toString();
+                    span.dataset.param1 = messageId.toString();
                     span.dataset.param2 = (sentenceId + i).toString();
                     span.textContent = n.raw;
 
                     sentences.push({
                         text: n.raw,
-                        textId,
+                        messageId,
                         sentenceId: sentenceId + i
                     });
 
@@ -58,7 +58,7 @@ export function processMarkdown(markdownContent: string, text_id: number): Proce
                     parent?.insertBefore(span, children[nodeIndex + i + 1] || null);
                 });
 
-                return [textId, sentenceId + nodes.length];
+                return [messageId, sentenceId + nodes.length];
             }
         } else if (node.nodeType === Node.ELEMENT_NODE) {
             // 处理标题作为单个句子
@@ -68,24 +68,24 @@ export function processMarkdown(markdownContent: string, text_id: number): Proce
                     node.innerHTML = '';
                     const span = document.createElement('span');
                     span.className = 'content hover-highlight';
-                    span.dataset.param1 = textId.toString();
+                    span.dataset.param1 = messageId.toString();
                     span.dataset.param2 = sentenceId.toString();
                     span.textContent = titleText;
                     node.appendChild(span);
 
                     sentences.push({
                         text: titleText,
-                        textId,
+                        messageId,
                         sentenceId,
                         isHeading: true
                     });
 
-                    return [textId, sentenceId + 1];
+                    return [messageId, sentenceId + 1];
                 }
             }
 
             // 递归处理子节点
-            let currentTextId = textId;
+            let currentTextId = messageId;
             let currentSentenceId = sentenceId;
 
             Array.from(node.childNodes).forEach(child => {
@@ -97,7 +97,7 @@ export function processMarkdown(markdownContent: string, text_id: number): Proce
             return [currentTextId, currentSentenceId];
         }
 
-        return [textId, sentenceId];
+        return [messageId, sentenceId];
     };
 
     walk(tempDiv);

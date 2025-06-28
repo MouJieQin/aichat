@@ -82,6 +82,7 @@ class OpenAIChatAPI:
         # 添加当前用户消息
         prompt_messages.append({"role": "user", "content": user_message})
 
+        print("@@@@@prompt_messages:", prompt_messages)
         # 调用OpenAI API
         response = self.client.chat.completions.create(
             model=ai_config.get("model", "gpt-3.5-turbo"),
@@ -128,6 +129,11 @@ class OpenAIChatAPI:
 
     def get_all_session_id_title(self) -> List[Dict[str, Any]]:
         return self.db.get_all_session_id_title()
+
+    def get_session_messages(self, session_id: int, limit=100) -> Optional[list[dict]]:
+        messages = self.db.get_session_messages(session_id, limit)
+        messages = sorted(messages, key=lambda x: x[4])  # type:ignore 按时间排序
+        return messages
 
     def update_message(
         self, message_id: int, parsed_text: str, raw_text: Optional[str] = None

@@ -233,9 +233,20 @@ async def handle_message(websocket: WebSocket, clientID: int, message_text: str)
         speaker.stop()
 
 
+async def send_session_messages(websocket: WebSocket, session_id: int):
+    messages = API.get_session_messages(session_id, limit=100)
+    print("messages:{}".format(messages))
+    msg = {
+        "type": "session_messages",
+        "data": messages,
+    }
+    await websocket.send_text(json.dumps(msg))
+
+
 @app.websocket("/ws/aichat/{clientID}")
 async def websocketEndpointAIchatSession(websocket: WebSocket, clientID: int):
     await websocket.accept()
+    await send_session_messages(websocket, int(clientID))
 
     async def receive():
         while True:

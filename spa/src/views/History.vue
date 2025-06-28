@@ -10,7 +10,7 @@
                     <el-button type="primary" @click="pause">暂停</el-button>
                     <el-button type="primary" @click="stop">停止</el-button>
 
-                    <div class="time">{{ formatTime(msg.time) }}</div>
+                    <div class="time">{{ msg.time }}</div>
                 </div>
             </div>
 
@@ -33,7 +33,7 @@ import { processMarkdown, SentenceInfo } from '@/common/markdown-processor'
 interface Message {
     processed_html: string;
     sentences: SentenceInfo[];
-    time: Date;
+    time: string;
     isSelf: boolean;
 }
 
@@ -98,7 +98,7 @@ const loadHistoryData = async () => {
                                 chatMessages.value.push({
                                     processed_html: result.html,
                                     sentences: result.sentences,
-                                    time: new Date(),
+                                    time: format_time_now(),
                                     isSelf: true,
                                 })
                                 const msg = {
@@ -124,7 +124,7 @@ const loadHistoryData = async () => {
                                 chatMessages.value.push({
                                     processed_html: result.html,
                                     sentences: result.sentences,
-                                    time: new Date(),
+                                    time: format_time_now(),
                                     isSelf: false,
                                 })
                                 const msg = {
@@ -146,27 +146,20 @@ const loadHistoryData = async () => {
                             console.log('未知消息类型 for parse_request:', message)
                     }
                     break;
-                case 'ai_response':
-                    console.log('收到聊天消息:', message.data)
-                    const textId = message.data.data.text_id
-                    const result = processMarkdown(message.data.data.response, textId)
-                    chatMessages.value.push({
-                        processed_html: result.html,
-                        sentences: result.sentences,
-                        time: new Date(),
-                        isSelf: false,
-                    })
-                    const message_ = {
-                        type: 'sentences',
-                        data: {
+                case 'session_messages':
+                    chatMessages.value = []
+                    const messages = message.data
+                    messages.forEach((msg: any) => {
+                        const message_id = msg[0]
+                        const raw_message = msg[2]
+                        const result = processMarkdown(raw_message, message_id)
+                        chatMessages.value.push({
+                            processed_html: result.html,
                             sentences: result.sentences,
-                            text_id: textId,
-                        },
-                    }
-                    currentWebSocket?.send(message_)
-                    break
-                case 'sentences':
-                    console.log('系统通知:', message.data)
+                            time: msg[4],
+                            isSelf: msg[1] != "assistant",
+                        })
+                    })
                     break
                 default:
                     console.log('未知消息类型:', message)
@@ -206,8 +199,12 @@ const sendMessage = () => {
 }
 
 // 格式化时间
-const formatTime = (time: Date) => {
+const format_time_now = () => {
+    const time = new Date()
     return (
+        time.getFullYear() + '-' +
+        (time.getMonth() + 1).toString().padStart(2, '0') + '-' +
+        time.getDate().toString().padStart(2, '0') + ' ' +
         time.getHours().toString().padStart(2, '0') + ':' +
         time.getMinutes().toString().padStart(2, '0') + ':' +
         time.getSeconds().toString().padStart(2, '0')

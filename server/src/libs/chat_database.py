@@ -91,7 +91,7 @@ class ChatDatabase:
         cursor = self.conn.cursor()
         cursor.execute(
             "SELECT id, role, raw_text, parsed_text, timestamp FROM messages "
-            "WHERE session_id = ? ORDER BY timestamp DESC LIMIT ?",
+            "WHERE session_id = ? ORDER BY timestamp LIMIT ?",
             (session_id, limit),
         )
         return cursor.fetchall()

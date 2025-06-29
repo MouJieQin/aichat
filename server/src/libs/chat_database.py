@@ -51,6 +51,11 @@ class ChatDatabase:
         session_id = cursor.lastrowid
         self.conn.commit()
         return session_id
+    
+    def update_session_title(self, session_id: int, title: str):
+        cursor = self.conn.cursor()
+        cursor.execute("UPDATE sessions SET title = ? WHERE id = ?", (title, session_id))
+        self.conn.commit()
 
     def add_message(
         self, session_id: int, role: str, raw_text: str, parsed_text: str

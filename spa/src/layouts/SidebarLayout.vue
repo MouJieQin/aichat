@@ -35,21 +35,61 @@
                         </el-icon>
                         <span>历史对话</span>
                     </template>
-                    <el-menu-item v-for="item in historyItems" :key="item.path" :index="item.path" class="custom-menu-item"
-                        @click="navigateTo(item.path)" style="padding-left: 2px;">
+                    <el-menu-item v-for="item in historyItems" :key="item.path" :index="item.path"
+                        class="custom-menu-item" @click="navigateTo(item.path)" style="padding-left: 2px;">
                         <template #title>
                             <el-icon>
                                 <ChatDotSquare />
                             </el-icon>
                             <span class="truncate-text" :title="item.title">{{ item.title }}</span>
-                            <el-icon class="hover-icon" @click.stop="showItemMenu(item)">
+
+                            <el-popover placement="top-end" :width="200" trigger="click">
+                                <div>
+                                    <el-button :type="''" :icon="ChatDotSquare" text
+                                        style="padding-right: 50%;margin-left: 7%;"
+                                        @click.stop="chat_popover_show = false">
+                                        置顶
+                                    </el-button>
+                                    <el-button :type="''" :icon="ChatDotSquare" text style="padding-right: 60%;"
+                                        @click="rename_dialog_visible = true">
+                                        编辑
+                                    </el-button>
+                                    <el-button :type="'danger'" :icon="ChatDotSquare" text style="padding-right: 60%;">
+                                        删除
+                                    </el-button>
+                                </div>
+                                <template #reference>
+                                    <el-icon class="hover-icon"
+                                        @click.stop="rename_session.title = item.title; rename_session.session_id = get_session_id(item.path)">
+                                        <MoreFilled />
+                                    </el-icon>
+                                </template>
+                            </el-popover>
+
+                            <!-- <el-icon class="hover-icon" @click.stop="showItemMenu(item)">
                                 <MoreFilled />
-                            </el-icon>
+                            </el-icon> -->
+
+
                         </template>
                     </el-menu-item>
                 </el-sub-menu>
             </el-menu>
         </div>
+
+        <el-dialog v-model="rename_dialog_visible" title="编辑对话名称" width="500">
+            <el-form-item>
+                <el-input v-model="rename_session.title" autocomplete="off" />
+            </el-form-item>
+            <template #footer>
+                <div class="dialog-footer">
+                    <el-button @click="rename_dialog_visible = false">Cancel</el-button>
+                    <el-button type="primary" @click="update_session_title">
+                        Confirm
+                    </el-button>
+                </div>
+            </template>
+        </el-dialog>
 
         <!-- 主内容区域 -->
         <div class="main-content">
@@ -67,6 +107,10 @@ import { processMarkdown, SentenceInfo } from '@/common/markdown-processor'
 
 const route = useRoute()
 const router = useRouter()
+const chat_popover_show = ref(false)
+const rename_dialog_visible = ref(false)
+const rename_session_name = ref('')
+const rename_session = ref({ session_id: -1, title: '' })
 let historyItems = ref<any[]>([])
 const sentences = ref<SentenceInfo[]>([])
 let currentWebSocket: WebSocketService
@@ -88,13 +132,21 @@ const create_new_session = () => {
     currentWebSocket.send(message)
 }
 
-const request_all_sessions = () => {
+const get_session_id = (path: string) => {
+    return Number(path.split('/')[2])
+}
+
+const update_session_title = () => {
     const message = {
-        type: 'get_all_sessions',
+        type: 'update_session_title',
         data: {
+            session_id: rename_session.value.session_id,
+            title: rename_session.value.title,
         },
     }
+    console.log(message)
     currentWebSocket.send(message)
+    rename_dialog_visible.value = false
 }
 
 // 加载历史对话数据
@@ -112,6 +164,18 @@ const websocket_connect = async () => {
                             path: `/history/${session[0]}`,
                             title: session[1],
                         })
+                    }
+                    break
+                case 'update_session_title':
+                    {
+                        const session_id = message.data.session_id
+                        const title = message.data.title
+                        for (const item of historyItems.value) {
+                            if (item.path == `/history/${session_id}`) {
+                                item.title = title
+                                break
+                            }
+                        }
                     }
                     break
                 case 'parse_request':
@@ -214,33 +278,40 @@ const handleClose = (key: string, keyPath: string[]) => {
 }
 
 .custom-menu-item {
-  position: relative;  /* 为绝对定位提供参考 */
+    position: relative;
+    /* 为绝对定位提供参考 */
 }
 
 .custom-menu-item .el-menu-item__title {
-  display: flex;       
-  align-items: center;
+    display: flex;
+    align-items: center;
 }
 
 .truncate-text {
-  flex: 1;             /* 文本区域占据剩余空间 */
-  max-width: calc(100% - 40px);
-  white-space: nowrap;
-  overflow: hidden;
-  text-align: left;
-  text-overflow: ellipsis;
-  margin-right: 8px;   /* 与右侧图标保持间距 */
+    flex: 1;
+    /* 文本区域占据剩余空间 */
+    max-width: calc(100% - 40px);
+    white-space: nowrap;
+    overflow: hidden;
+    text-align: left;
+    text-overflow: ellipsis;
+    margin-right: 8px;
+    /* 与右侧图标保持间距 */
 }
 
 .hover-icon {
-  opacity: 0;          /* 默认隐藏 */
-  transition: opacity 0.2s;  /* 添加淡入淡出动画 */
-  position: absolute;  /* 绝对定位到右侧 */
-  right: 10px;         /* 调整右侧距离 */
+    opacity: 0;
+    /* 默认隐藏 */
+    transition: opacity 0.2s;
+    /* 添加淡入淡出动画 */
+    position: absolute;
+    /* 绝对定位到右侧 */
+    right: 10px;
+    /* 调整右侧距离 */
 }
 
 .custom-menu-item:hover .hover-icon {
-  opacity: 1;          /* 鼠标悬停时显示 */
+    opacity: 1;
+    /* 鼠标悬停时显示 */
 }
-
 </style>

@@ -49,3 +49,6 @@ html {
     padding-left: 2px !important;
 }
 
+.el-button {
+    text-align: left !important;
+}

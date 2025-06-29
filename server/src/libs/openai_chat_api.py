@@ -144,6 +144,9 @@ class OpenAIChatAPI:
         messages = sorted(messages, key=lambda x: x[4])  # type:ignore 按时间排序
         return messages
 
+    def update_session_title(self, session_id: int, title: str):
+        self.db.update_session_title(session_id, title)
+
     def update_message(
         self, message_id: int, parsed_text: str, raw_text: Optional[str] = None
     ):

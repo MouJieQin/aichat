@@ -86,6 +86,18 @@ async def handle_spa_message(websocket: WebSocket, message_text: str):
             },
         }
         await websocket.send_text(json.dumps(message))
+    elif type == "update_session_title":
+        session_id = message["data"]["session_id"]
+        title = message["data"]["title"]
+        API.update_session_title(session_id, title)
+        msg = {
+            "type": "update_session_title",
+            "data": {
+                "session_id": session_id,
+                "title": title,
+            },
+        }
+        await websocket.send_text(json.dumps(msg))
     elif type == "parsed_response":
         parsed_type = message["data"]["type"]
         if parsed_type == "create_session":

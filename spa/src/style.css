@@ -47,6 +47,13 @@ html {
 
 .el-sub-menu__title {
     padding-left: 2px !important;
+    border-radius: 10px;
+    margin-right: 20px;
+}
+
+.el-menu-item {
+    border-radius: 10px;
+    margin-right: 20px;
 }
 
 .el-button {

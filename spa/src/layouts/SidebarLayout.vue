@@ -36,7 +36,8 @@
                         <span>历史对话</span>
                     </template>
                     <el-menu-item v-for="item in historyItems" :key="item.path" :index="item.path"
-                        class="custom-menu-item" @click="navigateTo(item.path)" style="padding-left: 2px;">
+                        :id="`chat-item-${item.path}`" class="custom-menu-item" @click="navigateTo(item.path)"
+                        style="padding-left: 2px;">
                         <template #title>
                             <el-icon>
                                 <ChatDotSquare />
@@ -107,6 +108,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { Location, Plus, Menu, ChatDotSquare, Clock, MoreFilled, Delete, EditPen } from '@element-plus/icons-vue'
 import { useWebSocket, WebSocketService } from '@/common/websocket-client'
 import { processMarkdown, SentenceInfo } from '@/common/markdown-processor'
+import debounce from 'lodash/debounce'
 
 const route = useRoute()
 const router = useRouter()
@@ -179,6 +181,10 @@ const websocket_connect = async () => {
                             title: session[1],
                         })
                     }
+                    // perform it after 1s
+                    setTimeout(() => {
+                        highlight_actived_item_by_background_font_size(route.path, "")
+                    }, 300)
                     break
                 case 'update_session_title':
                     {
@@ -259,6 +265,25 @@ const activeMenu = computed(() => {
     return route.path
 })
 
+// 高亮当前活动项
+const highlight_actived_item_by_background_font_size = (newValue: string, oldValue: string) => {
+    const newItem = document.getElementById(`chat-item-${newValue}`)
+    const oldItem = document.getElementById(`chat-item-${oldValue}`)
+    if (oldItem) {
+        oldItem.style.backgroundColor = ''
+        oldItem.style.fontSize = ''
+        oldItem.style.fontWeight = ''
+    }
+    if (newItem) {
+        // newItem.style.backgroundColor = 'rgb(238,245,254)'
+        // newItem.style.fontSize = '1.1rem'
+        newItem.style.fontWeight = 'bold'
+    }
+}
+
+// 监听路由变化
+watch(activeMenu, highlight_actived_item_by_background_font_size)
+
 // 菜单项数据
 const navigatorItems = ref([
     { path: '/', title: '首页' },
@@ -294,6 +319,9 @@ const handleClose = (key: string, keyPath: string[]) => {
     box-sizing: border-box;
     overflow-y: auto;
     max-height: 100vh;
+    /* --el-menu-bg-color: #F5F5F5; */
+    --el-menu-active-color: #409EFF;
+    /* --el-menu-active-bg-color: #FFD700; */
 }
 
 .main-content {

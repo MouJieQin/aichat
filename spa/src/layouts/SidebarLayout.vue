@@ -9,7 +9,7 @@
             <el-menu :default-active="activeMenu" class="el-menu-vertical-demo" :collapse="isCollapse"
                 @open="handleOpen" @close="handleClose">
                 <!-- 其他一级菜单 -->
-                <el-menu-item index="new_chat" @click="create_new_session">
+                <el-menu-item index="new_chat" @click="create_new_session" style="padding-left: 2px;">
                     <el-icon>
                         <Plus />
                     </el-icon>
@@ -23,26 +23,26 @@
                         <span>导航</span>
                     </template>
                     <el-menu-item v-for="item in navigatorItems" :key="item.path" :index="item.path"
-                        @click="navigateTo(item.path)">
+                        @click="navigateTo(item.path)" style="padding-left: 8px;">
                         {{ item.title }}
                     </el-menu-item>
                 </el-sub-menu>
                 <!-- 历史对话菜单 -->
-                <el-sub-menu index="history">
+                <el-sub-menu index="history" style="padding-left: 2px;">
                     <template #title>
                         <el-icon>
                             <Clock />
                         </el-icon>
                         <span>历史对话</span>
                     </template>
-                    <el-menu-item v-for="item in historyItems" :key="item.path" :index="item.path"
-                        @click="navigateTo(item.path)">
+                    <el-menu-item v-for="item in historyItems" :key="item.path" :index="item.path" class="custom-menu-item"
+                        @click="navigateTo(item.path)" style="padding-left: 2px;">
                         <template #title>
                             <el-icon>
                                 <ChatDotSquare />
                             </el-icon>
-                            <span>{{ item.title }}</span>
-                            <el-icon>
+                            <span class="truncate-text" :title="item.title">{{ item.title }}</span>
+                            <el-icon class="hover-icon" @click.stop="showItemMenu(item)">
                                 <MoreFilled />
                             </el-icon>
                         </template>
@@ -199,7 +199,7 @@ const handleClose = (key: string, keyPath: string[]) => {
 }
 
 .sidebar {
-    width: 200px;
+    width: 300px;
     border-right: 1px solid #e6e6e6;
     padding: 10px;
     box-sizing: border-box;
@@ -209,7 +209,38 @@ const handleClose = (key: string, keyPath: string[]) => {
 
 .main-content {
     flex: 1;
-    overflow-y: auto;
+    overflow-y: hidden;
     padding: 20px;
 }
+
+.custom-menu-item {
+  position: relative;  /* 为绝对定位提供参考 */
+}
+
+.custom-menu-item .el-menu-item__title {
+  display: flex;       
+  align-items: center;
+}
+
+.truncate-text {
+  flex: 1;             /* 文本区域占据剩余空间 */
+  max-width: calc(100% - 40px);
+  white-space: nowrap;
+  overflow: hidden;
+  text-align: left;
+  text-overflow: ellipsis;
+  margin-right: 8px;   /* 与右侧图标保持间距 */
+}
+
+.hover-icon {
+  opacity: 0;          /* 默认隐藏 */
+  transition: opacity 0.2s;  /* 添加淡入淡出动画 */
+  position: absolute;  /* 绝对定位到右侧 */
+  right: 10px;         /* 调整右侧距离 */
+}
+
+.custom-menu-item:hover .hover-icon {
+  opacity: 1;          /* 鼠标悬停时显示 */
+}
+
 </style>

@@ -30,7 +30,7 @@
                 :autosize="{ minRows: 5, maxRows: 9 }" @keydown="handleKeyDown" />
             <el-button type="primary" @click="sendMessage">发送</el-button>
         </div>
-    </div>
+    </div> 
 </template>
 
 
@@ -78,7 +78,6 @@ onMounted(() => {
 // 添加样式类来高亮显示正在播放的句子
 const highlightPlayingSentence = () => {
     // 移除之前高亮的句子
-    console.log("@@@@@currentPlayingSentence:", currentPlayingSentence.value)
     const previousHighlighted = document.querySelector('.sentence-playing')
     if (previousHighlighted) {
         previousHighlighted.classList.remove('sentence-playing')
@@ -93,12 +92,9 @@ const highlightPlayingSentence = () => {
     const selector = `.content[data-param1="${currentPlayingSentence.value.message_id}"][data-param2="${currentPlayingSentence.value.sentence_id}"]`
     const element = document.querySelector(selector)
     if (element) {
-        console.log("element:", element)
         element.classList.add('sentence-playing')
         // 滚动到高亮的句子
         element.scrollIntoView({ behavior: 'smooth', block: 'center' })
-    } else {
-        console.error(`未找到句子 ${currentPlayingSentence.value.sentence_id} 在消息 ${currentPlayingSentence.value.message_id} 中的元素`)
     }
 }
 

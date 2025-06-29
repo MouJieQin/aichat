@@ -1,3 +1,13 @@
+html {
+    box-sizing: border-box;
+}
+
+*,
+*:before,
+*:after {
+    box-sizing: inherit; /* 继承html的box-sizing设置 */
+}
+
 #app {
     font-family: Avenir, Helvetica, Arial, sans-serif;
     -webkit-font-smoothing: antialiased;
@@ -12,7 +22,7 @@
 
 /* Custom selection color for .hover-highlight */
 .hover-highlight::selection {
-    background: #409EFF;
+    background: #409eff;
     color: #fff;
 }
 
@@ -34,3 +44,8 @@
     transition: background-color 0.3s ease;
     /* 添加平滑过渡效果 */
 }
+
+.el-sub-menu__title {
+    padding-left: 2px !important;
+}
+

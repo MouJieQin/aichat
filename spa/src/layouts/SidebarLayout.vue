@@ -50,13 +50,22 @@
                                         @click.stop="chat_popover_show = false">
                                         置顶
                                     </el-button>
-                                    <el-button :type="''" :icon="ChatDotSquare" text style="padding-right: 60%;"
+
+                                    <el-button :type="''" :icon="EditPen" text style="padding-right: 50%;"
                                         @click="rename_dialog_visible = true">
-                                        编辑
+                                        重命名
                                     </el-button>
-                                    <el-button :type="'danger'" :icon="ChatDotSquare" text style="padding-right: 60%;">
-                                        删除
-                                    </el-button>
+
+                                    <el-popconfirm placement="right" confirm-button-text="删除"
+                                        confirm-button-type="danger" cancel-button-text="取消" :icon="Delete"
+                                        icon-color="#FF4949" title="确定删除对话？"
+                                        @confirm="delete_session(get_session_id(item.path))" @cancel="">
+                                        <template #reference>
+                                            <el-button :type="'danger'" :icon="Delete" text style="padding-right: 60%;">
+                                                删除
+                                            </el-button>
+                                        </template>
+                                    </el-popconfirm>
                                 </div>
                                 <template #reference>
                                     <el-icon class="hover-icon"
@@ -65,12 +74,6 @@
                                     </el-icon>
                                 </template>
                             </el-popover>
-
-                            <!-- <el-icon class="hover-icon" @click.stop="showItemMenu(item)">
-                                <MoreFilled />
-                            </el-icon> -->
-
-
                         </template>
                     </el-menu-item>
                 </el-sub-menu>
@@ -101,7 +104,7 @@
 <script lang="ts" setup>
 import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { Location, Plus, Menu, ChatDotSquare, Clock, MoreFilled } from '@element-plus/icons-vue'
+import { Location, Plus, Menu, ChatDotSquare, Clock, MoreFilled, Delete, EditPen } from '@element-plus/icons-vue'
 import { useWebSocket, WebSocketService } from '@/common/websocket-client'
 import { processMarkdown, SentenceInfo } from '@/common/markdown-processor'
 
@@ -149,6 +152,17 @@ const update_session_title = () => {
     rename_dialog_visible.value = false
 }
 
+const delete_session = (session_id: number) => {
+    const message = {
+        type: 'delete_session',
+        data: {
+            session_id: session_id,
+        },
+    }
+    console.log(message)
+    currentWebSocket.send(message)
+}
+
 // 加载历史对话数据
 const websocket_connect = async () => {
     try {
@@ -173,6 +187,17 @@ const websocket_connect = async () => {
                         for (const item of historyItems.value) {
                             if (item.path == `/history/${session_id}`) {
                                 item.title = title
+                                break
+                            }
+                        }
+                    }
+                    break
+                case 'delete_session':
+                    {
+                        const session_id = message.data.session_id
+                        for (let i = 0; i < historyItems.value.length; i++) {
+                            if (historyItems.value[i].path == `/history/${session_id}`) {
+                                historyItems.value.splice(i, 1)
                                 break
                             }
                         }

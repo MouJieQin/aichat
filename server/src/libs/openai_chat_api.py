@@ -147,6 +147,9 @@ class OpenAIChatAPI:
     def update_session_title(self, session_id: int, title: str):
         self.db.update_session_title(session_id, title)
 
+    def delete_session(self, session_id: int):
+        self.db.delete_session_and_messages(session_id)
+
     def update_message(
         self, message_id: int, parsed_text: str, raw_text: Optional[str] = None
     ):

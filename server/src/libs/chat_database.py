@@ -52,6 +52,12 @@ class ChatDatabase:
         self.conn.commit()
         return session_id
     
+    def delete_session_and_messages(self, session_id: int):
+        cursor = self.conn.cursor()
+        cursor.execute("DELETE FROM sessions WHERE id = ?", (session_id,))
+        cursor.execute("DELETE FROM messages WHERE session_id = ?", (session_id,))
+        self.conn.commit()
+
     def update_session_title(self, session_id: int, title: str):
         cursor = self.conn.cursor()
         cursor.execute("UPDATE sessions SET title = ? WHERE id = ?", (title, session_id))

@@ -98,6 +98,16 @@ async def handle_spa_message(websocket: WebSocket, message_text: str):
             },
         }
         await websocket.send_text(json.dumps(msg))
+    elif type == "delete_session":
+        session_id = message["data"]["session_id"]
+        API.delete_session(session_id)
+        msg = {
+            "type": "delete_session",
+            "data": {
+                "session_id": session_id,
+            },
+        }
+        await websocket.send_text(json.dumps(msg))
     elif type == "parsed_response":
         parsed_type = message["data"]["type"]
         if parsed_type == "create_session":

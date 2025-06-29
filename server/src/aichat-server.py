@@ -11,6 +11,7 @@ from fastapi import (
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.responses import FileResponse
 from pydantic import BaseModel
+from typing import Callable, Awaitable
 import uvicorn
 import plistlib
 import netifaces
@@ -131,6 +132,23 @@ async def websocketEndpointSpa(websocket: WebSocket):
         logger.info(f"websocket spa disconnected.")
 
 
+def _create_play_sentence_callback(
+    websocket: WebSocket, message_id: int
+) -> Callable[[int], Awaitable[None]]:
+    async def play_sentence_callback(sentence_id: int):
+        msg = {
+            "type": "the_sentence_playing",
+            "data": {
+                "message_id": message_id,
+                "sentence_id": sentence_id,
+            },
+        }
+        print("the_sentence_playing:", msg)
+        await websocket.send_text(json.dumps(msg))
+
+    return play_sentence_callback
+
+
 async def handle_message(websocket: WebSocket, clientID: int, message_text: str):
     message = json.loads(message_text)
     type = message["type"]
@@ -150,7 +168,6 @@ async def handle_message(websocket: WebSocket, clientID: int, message_text: str)
                     },
                 },
             }
-
             await websocket.send_text(json.dumps(msg))
 
         async def assistant_response_callback_async(response: str, is_streaming: bool):
@@ -204,6 +221,8 @@ async def handle_message(websocket: WebSocket, clientID: int, message_text: str)
             return
         logger.info("play_the_sentence:{}".format(sentences[sentence_id]["text"]))
 
+        play_sentence_callback = _create_play_sentence_callback(websocket, message_id)
+
         def play_sentence():
             asyncio.run(
                 speaker.play_sentence(
@@ -211,6 +230,7 @@ async def handle_message(websocket: WebSocket, clientID: int, message_text: str)
                     message_id,
                     sentence_id,
                     sentences,
+                    play_sentence_callback,
                 )
             )
 
@@ -222,6 +242,7 @@ async def handle_message(websocket: WebSocket, clientID: int, message_text: str)
         if sentences is None:
             logger.warning("message_id:{} not found any sentences".format(message_id))
             return
+        play_sentence_callback = _create_play_sentence_callback(websocket, message_id)
 
         def play_sentences():
             asyncio.run(
@@ -230,6 +251,7 @@ async def handle_message(websocket: WebSocket, clientID: int, message_text: str)
                     message_id,
                     sentence_id_start,
                     sentences,
+                    play_sentence_callback,
                 )
             )
 

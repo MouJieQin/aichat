@@ -6,6 +6,7 @@
                 <div class="message" :class="{ 'self': msg.isSelf }">
                     <div class="markdown-container" @click="handleSentenceClick">
                         <p v-html="msg.processed_html"></p>
+                        <!-- <p>{{ msg.processed_html }}</p> -->
                     </div>
                     <el-button type="primary" @click="unpause">播放</el-button>
                     <el-button type="primary" @click="pause">暂停</el-button>
@@ -59,10 +60,7 @@ const chatMessages = ref<Message[]>([])
 const sentences = ref<SentenceInfo[]>([])
 const inputVal = ref('')
 let currentWebSocket: WebSocketService | null = null
-
-onMounted(() => {
-    loadHistoryData()
-})
+const currentPlayingSentence = ref({ message_id: -1, sentence_id: -1 })
 
 // 监听路由参数变化，加载新的历史对话
 watch(() => route.params.id, (newId) => {
@@ -73,20 +71,46 @@ watch(() => route.params.id, (newId) => {
     console.log('@newId:', newId)
 })
 
+onMounted(() => {
+    loadHistoryData()
+})
+
+// 添加样式类来高亮显示正在播放的句子
+const highlightPlayingSentence = () => {
+    // 移除之前高亮的句子
+    console.log("@@@@@currentPlayingSentence:", currentPlayingSentence.value)
+    const previousHighlighted = document.querySelector('.sentence-playing')
+    if (previousHighlighted) {
+        previousHighlighted.classList.remove('sentence-playing')
+    }
+
+    // 如果sentence_id为-1，表示播放完毕，不需要高亮任何句子
+    if (currentPlayingSentence.value.sentence_id === -1) {
+        return
+    }
+
+    // 高亮当前播放的句子
+    const selector = `.content[data-param1="${currentPlayingSentence.value.message_id}"][data-param2="${currentPlayingSentence.value.sentence_id}"]`
+    const element = document.querySelector(selector)
+    if (element) {
+        console.log("element:", element)
+        element.classList.add('sentence-playing')
+        // 滚动到高亮的句子
+        element.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    } else {
+        console.error(`未找到句子 ${currentPlayingSentence.value.sentence_id} 在消息 ${currentPlayingSentence.value.message_id} 中的元素`)
+    }
+}
+
+// 监听当前播放句子的变化，更新高亮
+watch(currentPlayingSentence, highlightPlayingSentence)
+
 const scrollToBottom = () => {
     const scrollContainer = document.querySelector('.chat-messages-container') as HTMLElement
     scrollContainer.scrollTop = scrollContainer.scrollHeight
 }
 
 const scrollToBottomDebounced = debounce(scrollToBottom, 200)
-// {
-//                         nextTick(() => {
-//                         setTimeout(() => {
-//                             const container = document.querySelector('.chat-messages-container')
-//                             if (container) container.scrollTop = container.scrollHeight
-//                         }, 1000) // 100ms 的延迟，时间可根据实际情况调整
-//                     })
-// }
 
 // 加载历史对话数据
 const loadHistoryData = async () => {
@@ -181,6 +205,14 @@ const loadHistoryData = async () => {
                         streaming.value = message.data.is_streaming
                         stream_response.value = message.data.response
                         scrollToBottom()
+                    }
+                    break
+                case 'the_sentence_playing':
+                    {
+                        const message_id = message.data.message_id
+                        const sentence_id = message.data.sentence_id
+                        console.log("the_sentence_playing:", message_id, sentence_id)
+                        currentPlayingSentence.value = { message_id, sentence_id }
                     }
                     break
                 case 'session_messages':

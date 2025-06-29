@@ -27,7 +27,6 @@
                         {{ item.title }}
                     </el-menu-item>
                 </el-sub-menu>
-
                 <!-- 历史对话菜单 -->
                 <el-sub-menu index="history">
                     <template #title>
@@ -43,6 +42,9 @@
                                 <ChatDotSquare />
                             </el-icon>
                             <span>{{ item.title }}</span>
+                            <el-icon>
+                                <MoreFilled />
+                            </el-icon>
                         </template>
                     </el-menu-item>
                 </el-sub-menu>
@@ -59,7 +61,7 @@
 <script lang="ts" setup>
 import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { Location, Plus, Menu, ChatDotSquare, Clock } from '@element-plus/icons-vue'
+import { Location, Plus, Menu, ChatDotSquare, Clock, MoreFilled } from '@element-plus/icons-vue'
 import { useWebSocket, WebSocketService } from '@/common/websocket-client'
 import { processMarkdown, SentenceInfo } from '@/common/markdown-processor'
 

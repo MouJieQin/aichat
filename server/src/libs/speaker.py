@@ -7,7 +7,7 @@ from pygame import mixer
 from collections import deque
 import threading
 import asyncio
-from typing import Dict, Optional
+from typing import Dict, Callable, Awaitable, Optional
 from libs.log_config import logger
 import azure.cognitiveservices.speech as speechsdk
 import time
@@ -175,11 +175,6 @@ class Speaker(metaclass=SingletonMeta):
         """Stop assistant playback channels."""
         self.audio_channel_assistant_synthesizer.stop()
 
-    async def keep_alive_playback(self):
-        while True:
-            self.keep_alive_channel.play(self.silent_sound, loops=5)  # 循环播放
-            await asyncio.sleep(30)
-
     def _init_speech_synthesizer(self, voice_name: str = "zh-CN-XiaochenNeural"):
         """Initialize the speech synthesizer."""
         speech_config = speechsdk.SpeechConfig(
@@ -334,6 +329,7 @@ class Speaker(metaclass=SingletonMeta):
         sentence_id_start: str,
         sentence_id_end: str,
         sentences: list[Dict],
+        play_sentence_callback: Callable[[int], Awaitable[None]],
     ):
         """Play the response core."""
         self.audio_channel_assistant_synthesizer.stop()
@@ -351,24 +347,45 @@ class Speaker(metaclass=SingletonMeta):
         ).start()
         while len(self.audio_queue) == 0:
             await asyncio.sleep(0.1)
+        sentence_id_playing = int(sentence_id_start)
         self.audio_channel_assistant_synthesizer.play(self.audio_queue.popleft())
+        await play_sentence_callback(sentence_id_playing)
+        had_queue = False
         while self.audio_channel_assistant_synthesizer.get_busy():
-            if (
-                not self.audio_channel_assistant_synthesizer.get_queue()
-                and len(self.audio_queue) > 0
-            ):
-                self.audio_channel_assistant_synthesizer.queue(
-                    self.audio_queue.popleft()
-                )
-            print(f"len(self.audio_queue):{len(self.audio_queue)}")
+            if self.audio_channel_assistant_synthesizer.get_queue():
+                had_queue = True
+            else:
+                if len(self.audio_queue) == 0:
+                    if had_queue:
+                        had_queue = False
+                        sentence_id_playing += 1
+                        await play_sentence_callback(sentence_id_playing)
+                else:
+                    self.audio_channel_assistant_synthesizer.queue(
+                        self.audio_queue.popleft()
+                    )
+                    if had_queue:
+                        sentence_id_playing += 1
+                        await play_sentence_callback(sentence_id_playing)
             await asyncio.sleep(0.5)
+        await play_sentence_callback(-1)  # 播放结束
 
     async def play_sentence(
-        self, session_id: str, message_id: str, sentence_id: str, sentences: list[Dict]
+        self,
+        session_id: str,
+        message_id: str,
+        sentence_id: str,
+        sentences: list[Dict],
+        play_sentence_callback: Callable[[int], Awaitable[None]],
     ):
         """Play a sentence in real-time."""
         await self._play_response_core(
-            session_id, message_id, sentence_id, sentence_id, sentences
+            session_id,
+            message_id,
+            sentence_id,
+            sentence_id,
+            sentences,
+            play_sentence_callback,
         )
 
     async def play_sentences(
@@ -377,6 +394,7 @@ class Speaker(metaclass=SingletonMeta):
         message_id: str,
         sentence_id_start: str,
         sentences: list[Dict],
+        play_sentence_callback: Callable[[int], Awaitable[None]],
     ):
         """Play a sentence in real-time."""
         await self._play_response_core(
@@ -385,6 +403,7 @@ class Speaker(metaclass=SingletonMeta):
             sentence_id_start,
             str(len(sentences) - 1),
             sentences,
+            play_sentence_callback,
         )
 
     def speak_text(self, text: str):

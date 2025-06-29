@@ -3,8 +3,17 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
 }
+
 .hover-highlight {
-    cursor: pointer;
+    /* 禁用鼠标悬停效果，否则无法激活其它选词工具，如豆包 */
+    /* cursor: pointer; */
+    user-select: auto;
+}
+
+/* Custom selection color for .hover-highlight */
+.hover-highlight::selection {
+    background: #409EFF;
+    color: #fff;
 }
 
 .hover-highlight:hover {
@@ -15,4 +24,13 @@
     display: inline-block;
     margin: 0;
     padding: 0;
+}
+
+.sentence-playing {
+    /* background-color: #409EFF; */
+    background-color: rgb(102.2, 177.4, 255);
+    /* background-color: #ffd700; */
+    /* 黄色背景，表示正在播放 */
+    transition: background-color 0.3s ease;
+    /* 添加平滑过渡效果 */
 }

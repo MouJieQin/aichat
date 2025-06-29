@@ -25,12 +25,21 @@
         </div>
 
         <!-- 输入区域 - 使用固定定位保持在屏幕底部 -->
+        <!-- <el-button type="primary" @click="sendMessage">发送</el-button> -->
         <div class="fixed-input-area">
             <el-input v-model="inputVal" type="textarea" placeholder="输入对话内容（Shift + Enter 发送）"
-                :autosize="{ minRows: 5, maxRows: 9 }" @keydown="handleKeyDown" />
-            <el-button type="primary" @click="sendMessage">发送</el-button>
+                style="padding-bottom: 3px;" :autosize="{ minRows: 2, maxRows: 5 }" @keydown="handleKeyDown">
+            </el-input>
         </div>
-    </div> 
+        <el-button-group>
+            <el-button type="primary" :icon="ArrowLeft">P</el-button>
+            <el-button type="primary">
+                N<el-icon class="el-icon--right">
+                    <ArrowRight />
+                </el-icon>
+            </el-button>
+        </el-button-group>
+    </div>
 </template>
 
 
@@ -38,6 +47,7 @@
 import { ref, onMounted, watch, computed, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import MarkdownIt from 'markdown-it'
+import { Clock, MoreFilled, Delete, EditPen, ArrowLeft, ArrowRight } from '@element-plus/icons-vue'
 import { useWebSocket, WebSocketService } from '@/common/websocket-client'
 import { processMarkdown, SentenceInfo } from '@/common/markdown-processor'
 import debounce from 'lodash/debounce'
@@ -352,24 +362,28 @@ const handleKeyDown = (e: KeyboardEvent) => {
 
 /* 固定在底部的输入区域 */
 .fixed-input-area {
-    position: fixed;
+    /* position: fixed; */
     bottom: 0;
-    left: 30vw;
-    right: 10vw;
-    padding: 20px;
-    /* background-color: white; 根据需要调整背景色 */
+    /* top: 0; */
+    /* left: 30vw; */
+    /* right: 10vw; */
+    padding-top: 10px;
+    /* padding-left: 20px; */
+    /* padding-right: 40px; */
+    /* padding-bottom: 30px; */
     /* border-top: 1px solid #eee; */
     /* box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1); */
     z-index: 100;
     /* 确保在最上层 */
     display: flex;
-    gap: 10px;
+    /* gap: 10px; */
     align-items: flex-end;
+    margin: 0 auto;
+    width: 960px;
 }
 
 /* 聊天消息样式优化 */
 .message {
-    max-width: 60%;
     padding: 8px 12px;
     border-radius: 8px;
     margin-bottom: 6px;
@@ -377,6 +391,7 @@ const handleKeyDown = (e: KeyboardEvent) => {
 }
 
 .message.self {
+    max-width: 60%;
     text-align: left;
     background-color: #d3eafd;
     margin-left: auto;
@@ -390,7 +405,9 @@ const handleKeyDown = (e: KeyboardEvent) => {
     text-align: left;
     background-color: #f1f1f1;
     /* 保留 max-width 让内容不会过宽，也可根据需求调整数值 */
-    max-width: 60%;
+    width: 960px;
+    /* max-width: 960px; */
+    /* max-width: 60%; */
 }
 
 .content {

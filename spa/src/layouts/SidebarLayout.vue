@@ -2,12 +2,18 @@
     <div class="app-container">
         <!-- 侧边栏区域 -->
         <div class="sidebar">
-            <el-radio-group v-model="isCollapse" style="margin-bottom: 20px">
-                <el-radio-button :value="false">expand</el-radio-button>
-                <el-radio-button :value="true">collapse</el-radio-button>
-            </el-radio-group>
             <el-menu :default-active="activeMenu" class="el-menu-vertical-demo" :collapse="isCollapse"
                 @open="handleOpen" @close="handleClose">
+                <el-menu-item index="collapse" @click="isCollapse = !isCollapse" style="padding-left: 2px;">
+                    <el-icon v-show="!isCollapse">
+                        <Fold />
+                    </el-icon>
+                    <el-icon v-show="isCollapse">
+                        <Expand />
+                    </el-icon>
+                    <span>AI Chat</span>
+                </el-menu-item>
+
                 <!-- 其他一级菜单 -->
                 <el-menu-item index="new_chat" @click="create_new_session" style="padding-left: 2px;">
                     <el-icon>
@@ -28,7 +34,8 @@
                     </el-menu-item>
                 </el-sub-menu>
                 <!-- 历史对话菜单 -->
-                <el-sub-menu index="history" style="padding-left: 2px;">
+                <el-sub-menu index="history" @click="highlight_actived_item_by_background_font_size(route.path, '')"
+                    style="padding-left: 2px;">
                     <template #title>
                         <el-icon>
                             <Clock />
@@ -105,7 +112,7 @@
 <script lang="ts" setup>
 import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { Location, Plus, Menu, ChatDotSquare, Clock, MoreFilled, Delete, EditPen } from '@element-plus/icons-vue'
+import { Location, Plus, Expand, Fold, Menu, ChatDotSquare, Clock, MoreFilled, Delete, EditPen } from '@element-plus/icons-vue'
 import { useWebSocket, WebSocketService } from '@/common/websocket-client'
 import { processMarkdown, SentenceInfo } from '@/common/markdown-processor'
 import debounce from 'lodash/debounce'
@@ -273,10 +280,12 @@ const highlight_actived_item_by_background_font_size = (newValue: string, oldVal
         oldItem.style.backgroundColor = ''
         oldItem.style.fontSize = ''
         oldItem.style.fontWeight = ''
+        oldItem.style.color = ''
     }
     if (newItem) {
         // newItem.style.backgroundColor = 'rgb(238,245,254)'
         // newItem.style.fontSize = '1.1rem'
+        newItem.style.color = 'rgb(24,144,255)'
         newItem.style.fontWeight = 'bold'
     }
 }
@@ -313,7 +322,7 @@ const handleClose = (key: string, keyPath: string[]) => {
 }
 
 .sidebar {
-    width: 300px;
+    max-width: 300px;
     border-right: 1px solid #e6e6e6;
     padding: 10px;
     box-sizing: border-box;
@@ -348,7 +357,7 @@ const handleClose = (key: string, keyPath: string[]) => {
     overflow: hidden;
     text-align: left;
     text-overflow: ellipsis;
-    margin-right: 8px;
+    margin-right: 10px;
     /* 与右侧图标保持间距 */
 }
 
@@ -359,7 +368,7 @@ const handleClose = (key: string, keyPath: string[]) => {
     /* 添加淡入淡出动画 */
     position: absolute;
     /* 绝对定位到右侧 */
-    right: 10px;
+    right: 2px;
     /* 调整右侧距离 */
 }
 

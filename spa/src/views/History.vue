@@ -485,7 +485,9 @@ const handleKeyDown = (e: KeyboardEvent) => {
 
 .input-container {
     margin: 0 auto;
-    width: 960px;
+    max-width: clamp(300px, 80vw, 800px);
+    font-size: 16px;
+    line-height: 1.6;
 }
 
 .button-group {
@@ -511,14 +513,46 @@ const handleKeyDown = (e: KeyboardEvent) => {
     margin-left: auto;
     margin-bottom: 12px;
     margin-top: 12px;
+    padding: 20px;
     /* margin-right: 10px; */
 }
 
 .message:not(.self) {
+    max-width: clamp(300px, 80vw, 800px);
+    font-size: 16px;
+    line-height: 1.6;
+    padding: 20px;
     margin: 0 auto;
     text-align: left;
-    background-color: #f1f1f1;
+    /* background-color: #f1f1f1; */
     width: 960px;
+
+    background-color: #f5f0e6;
+    color: #333333;
+    background-blend-mode: luminosity;
+    filter: brightness(90%);
+
+}
+
+/* 基础护眼背景 */
+.fatigue-reducing-bg {
+    background-color: #f5f0e6;
+    /* 米白色 */
+    color: #333333;
+    /* 深灰色文字 */
+    /* 动态亮度调节 */
+    background-blend-mode: luminosity;
+    filter: brightness(90%);
+}
+
+/* 夜间模式 */
+.night-mode {
+    background-color: #222222;
+    /* 深灰色 */
+    color: #e0e0e0;
+    /* 浅灰色文字 */
+    /* 降低对比度至7:1 */
+    mix-blend-mode: difference;
 }
 
 .content {

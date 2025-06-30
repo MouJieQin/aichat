@@ -141,7 +141,10 @@ const highlightPlayingSentence = () => {
 watch(currentPlayingSentence, highlightPlayingSentence)
 
 const scrollToBottom = () => {
-    const scrollContainer = document.querySelector('.chat-messages-container') as HTMLElement
+    const scrollContainer =
+        document.documentElement.scrollTop > 0
+            ? document.documentElement
+            : document.body;
     scrollContainer.scrollTop = scrollContainer.scrollHeight
 }
 

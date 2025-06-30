@@ -1,7 +1,7 @@
 <template>
     <div class="app-container">
-        <!-- 侧边栏区域 -->
-        <div class="sidebar">
+
+        <div class="sidebar" @click="siderbar_click">
             <el-menu :default-active="activeMenu" class="el-menu-vertical-demo" :collapse="isCollapse"
                 @open="handleOpen" @close="handleClose">
                 <el-menu-item index="collapse" @click="isCollapse = !isCollapse" style="padding-left: 2px;">
@@ -14,7 +14,6 @@
                     <span>AI Chat</span>
                 </el-menu-item>
 
-                <!-- 其他一级菜单 -->
                 <el-menu-item index="new_chat" @click="create_new_session" style="padding-left: 2px;">
                     <el-icon>
                         <Plus />
@@ -33,7 +32,7 @@
                         {{ item.title }}
                     </el-menu-item>
                 </el-sub-menu>
-                <!-- 历史对话菜单 -->
+
                 <el-sub-menu index="history" @click="highlight_actived_item_by_background_font_size(route.path, '')"
                     style="padding-left: 2px;">
                     <template #title>
@@ -102,7 +101,6 @@
             </template>
         </el-dialog>
 
-        <!-- 主内容区域 -->
         <div class="main-content">
             <router-view />
         </div>
@@ -126,6 +124,20 @@ const rename_session = ref({ session_id: -1, title: '' })
 let historyItems = ref<any[]>([])
 const sentences = ref<SentenceInfo[]>([])
 let currentWebSocket: WebSocketService
+const sidebar_width = ref('0px');
+
+const siderbar_click = () => {
+    const sidebar = document.querySelector('.sidebar');
+    if (sidebar) {
+        setTimeout(() => {
+            if (sidebar_width.value !== sidebar.clientWidth + 'px') {
+                sidebar_width.value = sidebar.clientWidth + 'px';
+                document.documentElement.style.setProperty('--main-content-left-margin', sidebar_width.value);
+            }
+        }, 100);
+
+    }
+}
 
 onMounted(() => {
     websocket_connect()
@@ -188,7 +200,7 @@ const websocket_connect = async () => {
                             title: session[1],
                         })
                     }
-                    // perform it after 1s
+                    siderbar_click()
                     setTimeout(() => {
                         highlight_actived_item_by_background_font_size(route.path, "")
                     }, 300)
@@ -315,33 +327,34 @@ const handleClose = (key: string, keyPath: string[]) => {
 </script>
 
 <style scoped>
+:root {
+    --main-content-left-margin: 300px;
+}
+
 .app-container {
     display: flex;
     height: 100vh;
-    overflow: hidden;
 }
 
 .sidebar {
+    position: fixed;
     max-width: 300px;
-    border-right: 1px solid #e6e6e6;
-    padding: 10px;
+    border-right: 1px solid #909399;
     box-sizing: border-box;
     overflow-y: auto;
-    max-height: 100vh;
-    /* --el-menu-bg-color: #F5F5F5; */
+    height: 100vh;
     --el-menu-active-color: #409EFF;
-    /* --el-menu-active-bg-color: #FFD700; */
 }
 
 .main-content {
     flex: 1;
-    overflow-y: hidden;
     padding: 20px;
+    margin-left: var(--main-content-left-margin);
+    transition: margin-left 0.3s;
 }
 
 .custom-menu-item {
     position: relative;
-    /* 为绝对定位提供参考 */
 }
 
 .custom-menu-item .el-menu-item__title {

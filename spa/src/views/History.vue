@@ -25,20 +25,19 @@
         </div>
 
         <!-- 输入区域 - 使用固定定位保持在屏幕底部 -->
-        <!-- <el-button type="primary" @click="sendMessage">发送</el-button> -->
-        <div class="fixed-input-area">
-            <el-input v-model="inputVal" type="textarea" placeholder="输入对话内容（Shift + Enter 发送）"
-                style="padding-bottom: 3px;" :autosize="{ minRows: 2, maxRows: 5 }" @keydown="handleKeyDown">
-            </el-input>
+        <div class="fixed-input-area" :style="{
+            boxShadow: `var(--el-box-shadow-light)`,
+        }">
+            <div class="input-container">
+                <el-input v-model="inputVal" type="textarea" placeholder="输入对话内容（Shift + Enter 发送）"
+                    :autosize="{ minRows: 2, maxRows: 9 }" @keydown="handleKeyDown">
+                </el-input>
+                <div class="button-group">
+                    <el-button :icon="Microphone" :type="''" text style="font-size: 24px;" />
+                    <el-button type="primary" :icon="Promotion" circle />
+                </div>
+            </div>
         </div>
-        <el-button-group>
-            <el-button type="primary" :icon="ArrowLeft">P</el-button>
-            <el-button type="primary">
-                N<el-icon class="el-icon--right">
-                    <ArrowRight />
-                </el-icon>
-            </el-button>
-        </el-button-group>
     </div>
 </template>
 
@@ -47,7 +46,7 @@
 import { ref, onMounted, watch, computed, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import MarkdownIt from 'markdown-it'
-import { Clock, MoreFilled, Delete, EditPen, ArrowLeft, ArrowRight } from '@element-plus/icons-vue'
+import { Refresh, MoreFilled, Delete, EditPen, ArrowLeft, ArrowRight, Microphone, Setting, Promotion } from '@element-plus/icons-vue'
 import { useWebSocket, WebSocketService } from '@/common/websocket-client'
 import { processMarkdown, SentenceInfo } from '@/common/markdown-processor'
 import debounce from 'lodash/debounce'
@@ -69,6 +68,7 @@ const stream_response = ref('This is a test.')
 const chatMessages = ref<Message[]>([])
 const sentences = ref<SentenceInfo[]>([])
 const inputVal = ref('')
+const text_area_height = ref(0)
 let currentWebSocket: WebSocketService | null = null
 const currentPlayingSentence = ref({ message_id: -1, sentence_id: -1 })
 
@@ -83,7 +83,36 @@ watch(() => route.params.id, (newId) => {
 
 onMounted(() => {
     loadHistoryData()
+    const textarea = document.querySelector('textarea') as HTMLTextAreaElement;
+    text_area_height.value = textarea.clientHeight
+    document.documentElement.style.setProperty('--fixed-input-area-padding-top', textarea.clientHeight + 'px');
 })
+
+const handleInput = () => {
+    const textarea = document.querySelector('textarea') as HTMLTextAreaElement;
+    if (textarea) {
+        if (text_area_height.value !== textarea.clientHeight) {
+            document.documentElement.style.setProperty('--fixed-input-area-padding-top', textarea.clientHeight + 'px');
+            const scrollContainer =
+                document.documentElement.scrollTop > 0
+                    ? document.documentElement
+                    : document.body;
+            const scroll_top = textarea.clientHeight - text_area_height.value
+            scrollContainer.scrollBy({
+                top: scroll_top,
+                behavior: "instant"
+            });
+            text_area_height.value = textarea.clientHeight
+        }
+    }
+};
+
+watch(inputVal, (newVal) => {
+    setTimeout(() => {
+        handleInput()
+    }, 100)
+})
+
 
 // 添加样式类来高亮显示正在播放的句子
 const highlightPlayingSentence = () => {
@@ -351,39 +380,44 @@ const handleKeyDown = (e: KeyboardEvent) => {
 </script>
 
 <style scoped>
-/* 聊天内容容器 */
-.chat-messages-container {
-    height: calc(100vh - 11em);
-    /* 留出输入区域的空间 */
-    overflow-y: auto;
-    padding: 20px;
-    box-sizing: border-box;
+:root {
+    --fixed-input-area-padding-top: 100px;
 }
 
-/* 固定在底部的输入区域 */
+.page-content {
+    padding-bottom: 1px;
+}
+
+.chat-messages-container {
+    margin-bottom: calc(var(--fixed-input-area-padding-top) + 100px);
+}
+
+
 .fixed-input-area {
-    /* position: fixed; */
-    bottom: 0;
-    /* top: 0; */
-    /* left: 30vw; */
-    /* right: 10vw; */
-    padding-top: 10px;
-    /* padding-left: 20px; */
-    /* padding-right: 40px; */
-    /* padding-bottom: 30px; */
-    /* border-top: 1px solid #eee; */
-    /* box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1); */
+    position: fixed;
+    bottom: 0px;
+    /* padding-top: 100px; */
+    padding-top: var(--fixed-input-area-padding-top);
     z-index: 100;
-    /* 确保在最上层 */
-    display: flex;
-    /* gap: 10px; */
-    align-items: flex-end;
+    left: calc(var(--main-content-left-margin) + 10px);
+    right: 0;
+    background-color: var(--el-bg-color);
+}
+
+.input-container {
     margin: 0 auto;
     width: 960px;
 }
 
+.button-group {
+    padding: 5px 5px 20px 5px;
+    display: flex;
+    justify-content: flex-end;
+}
+
 /* 聊天消息样式优化 */
 .message {
+    /* flex: 1; */
     padding: 8px 12px;
     border-radius: 8px;
     margin-bottom: 6px;
@@ -394,20 +428,18 @@ const handleKeyDown = (e: KeyboardEvent) => {
     max-width: 60%;
     text-align: left;
     background-color: #d3eafd;
+    /* margin: 0 auto; */
     margin-left: auto;
     margin-bottom: 12px;
     margin-top: 12px;
+    /* margin-right: 10px; */
 }
 
 .message:not(.self) {
-    /* 关键：通过 margin 自动居中，需配合 max-width 限制宽度 */
     margin: 0 auto;
     text-align: left;
     background-color: #f1f1f1;
-    /* 保留 max-width 让内容不会过宽，也可根据需求调整数值 */
     width: 960px;
-    /* max-width: 960px; */
-    /* max-width: 60%; */
 }
 
 .content {

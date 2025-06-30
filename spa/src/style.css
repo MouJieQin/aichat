@@ -1,5 +1,16 @@
+
 html {
     box-sizing: border-box;
+}
+
+* {
+  box-sizing: border-box;
+  max-width: 100%;
+}
+
+body {
+  overflow-x: hidden; /* 禁用水平滚动 */
+  overflow-y: auto;   /* 保留垂直滚动（可选） */
 }
 
 *,
@@ -59,3 +70,15 @@ html {
 .el-button {
     text-align: left !important;
 }
+
+/* 向上扩展的关键 CSS */
+.el-textarea__inner {
+  position: absolute !important;
+  bottom: 0 !important;
+  width: 100% !important;
+}
+
+/* .textarea-container {
+  position: relative !important;
+  height: 100px !important;
+} */

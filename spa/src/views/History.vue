@@ -33,12 +33,62 @@
                     :autosize="{ minRows: 2, maxRows: 9 }" @keydown="handleKeyDown">
                 </el-input>
                 <div class="button-group">
+                    <!-- copy session_ai_config to session_ai_config_for_drawer -->
+                    <el-button :icon="MoreFilled" :type="''" text @click="handle_more_click" style="font-size: 24px;" />
                     <el-button :icon="Microphone" :type="''" text style="font-size: 24px;" />
                     <el-button type="primary" :icon="Promotion" circle />
                 </div>
             </div>
         </div>
     </div>
+    <el-drawer v-model="drawer_visible" :direction="drawer_direction" size="70%">
+        <template #header>
+            <h4>AI Config</h4>
+        </template>
+        <template #default>
+            <div class="form-container">
+                <div class="form-wrapper">
+                    <el-form :model="session_ai_config_for_drawer" ref="formRef" label-width="120px"
+                        class="left-aligned-form">
+                        <el-form-item label="Base URL" prop="base_url">
+                            <el-input v-model="session_ai_config_for_drawer.base_url" style="max-width: 600px;"
+                                placeholder="请输入Base URL" />
+                        </el-form-item>
+                        <el-form-item label="API Key" prop="api_key">
+                            <el-input v-model="session_ai_config_for_drawer.api_key" style="max-width: 600px;"
+                                placeholder="请输入API Key" />
+                        </el-form-item>
+                        <el-form-item label="Model" prop="model">
+                            <el-input v-model="session_ai_config_for_drawer.model" style="max-width: 600px;"
+                                placeholder="请输入Model" />
+                        </el-form-item>
+                        <el-form-item label="Temperature" prop="temperature">
+                            <el-input-number v-model="session_ai_config_for_drawer.temperature" max="2" min="0"
+                                step="0.1" placeholder="请输入Temperature" />
+                        </el-form-item>
+                        <el-form-item label="Max Tokens" prop="max_tokens">
+                            <el-input-number v-model="session_ai_config_for_drawer.max_tokens" max="4096" min="1"
+                                step="100" placeholder="请输入Max Tokens" />
+                        </el-form-item>
+                        <el-form-item label="Context Max Tokens" prop="context_max_tokens">
+                            <el-input-number v-model="session_ai_config_for_drawer.context_max_tokens" max="4096"
+                                min="1" step="100" placeholder="请输入Context Max Tokens" />
+                        </el-form-item>
+                        <el-form-item label="Max Messages" prop="max_messages">
+                            <el-input-number v-model="session_ai_config_for_drawer.max_messages" max="100" min="1"
+                                step="1" placeholder="请输入Max Messages" />
+                        </el-form-item>
+                    </el-form>
+                </div>
+            </div>
+        </template>
+        <template #footer>
+            <div style="flex: auto">
+                <el-button @click="drawer_visible = false">cancel</el-button>
+                <el-button type="primary" @click="drawer_visible = false">confirm</el-button>
+            </div>
+        </template>
+    </el-drawer>
 </template>
 
 
@@ -46,7 +96,8 @@
 import { ref, onMounted, watch, computed, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import MarkdownIt from 'markdown-it'
-import { Refresh, MoreFilled, Delete, EditPen, ArrowLeft, ArrowRight, Microphone, Setting, Promotion } from '@element-plus/icons-vue'
+import { Refresh, MoreFilled, Delete, More, EditPen, ArrowLeft, ArrowRight, Microphone, Setting, Promotion } from '@element-plus/icons-vue'
+import type { DrawerProps } from 'element-plus'
 import { useWebSocket, WebSocketService } from '@/common/websocket-client'
 import { processMarkdown, SentenceInfo } from '@/common/markdown-processor'
 import debounce from 'lodash/debounce'
@@ -57,10 +108,23 @@ interface Message {
     time: string;
     isSelf: boolean;
 }
+interface AIconfig {
+    base_url: string;
+    api_key: string;
+    model: string;
+    temperature: number;
+    max_tokens: number;
+    context_max_tokens: number;
+    max_messages: number;
+}
+const session_ai_config = ref<AIconfig>()
+const session_ai_config_for_drawer = ref<AIconfig>()
 
 const route = useRoute()
 const router = useRouter()
 const md = new MarkdownIt();
+const drawer_visible = ref(false)
+const drawer_direction = ref<DrawerProps['direction']>('ttb')
 const historyId = ref('')
 const loading = ref(false)
 const streaming = ref(false)
@@ -87,6 +151,11 @@ onMounted(() => {
     text_area_height.value = textarea.clientHeight
     document.documentElement.style.setProperty('--fixed-input-area-padding-top', textarea.clientHeight + 'px');
 })
+
+const handle_more_click = () => {
+    drawer_visible.value = true
+    session_ai_config_for_drawer.value = JSON.parse(JSON.stringify(session_ai_config.value))
+}
 
 const handleInput = () => {
     const textarea = document.querySelector('textarea') as HTMLTextAreaElement;
@@ -268,6 +337,13 @@ const loadHistoryData = async () => {
                         })
                     })
                     scrollToBottomDebounced()
+                    break
+                case 'session_ai_config':
+                    {
+                        const ai_config = message.data
+                        session_ai_config.value = ai_config
+                        console.log("session_ai_config:", session_ai_config.value)
+                    }
                     break
                 default:
                     console.log('未知消息类型:', message)
@@ -453,5 +529,24 @@ const handleKeyDown = (e: KeyboardEvent) => {
     font-size: 12px;
     color: #666;
     text-align: right;
+}
+
+.form-container {
+    display: flex;
+    justify-content: center;
+    /* 水平居中 */
+    padding: 20px;
+}
+
+.form-wrapper {
+    width: 100%;
+    max-width: 40vw;
+    /* 限制表单最大宽度 */
+}
+
+/* 如果需要表单项左对齐排列，可以添加以下样式 */
+.el-form-item {
+    justify-content: flex-start;
+    /* 确保表单项左对齐 */
 }
 </style>

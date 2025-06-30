@@ -295,10 +295,20 @@ async def send_session_messages(websocket: WebSocket, session_id: int):
     await websocket.send_text(json.dumps(msg))
 
 
+async def send_session_ai_config(websocket: WebSocket, session_id: int):
+    ai_config = API.get_session_ai_config(session_id)
+    msg = {
+        "type": "session_ai_config",
+        "data": ai_config,
+    }
+    await websocket.send_text(json.dumps(msg))
+
+
 @app.websocket("/ws/aichat/{clientID}")
 async def websocketEndpointAIchatSession(websocket: WebSocket, clientID: int):
     await websocket.accept()
     await send_session_messages(websocket, int(clientID))
+    await send_session_ai_config(websocket, int(clientID))
 
     async def receive():
         while True:

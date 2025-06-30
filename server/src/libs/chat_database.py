@@ -51,7 +51,7 @@ class ChatDatabase:
         session_id = cursor.lastrowid
         self.conn.commit()
         return session_id
-    
+
     def delete_session_and_messages(self, session_id: int):
         cursor = self.conn.cursor()
         cursor.execute("DELETE FROM sessions WHERE id = ?", (session_id,))
@@ -60,7 +60,9 @@ class ChatDatabase:
 
     def update_session_title(self, session_id: int, title: str):
         cursor = self.conn.cursor()
-        cursor.execute("UPDATE sessions SET title = ? WHERE id = ?", (title, session_id))
+        cursor.execute(
+            "UPDATE sessions SET title = ? WHERE id = ?", (title, session_id)
+        )
         self.conn.commit()
 
     def add_message(
@@ -106,6 +108,11 @@ class ChatDatabase:
             (session_id, limit),
         )
         return cursor.fetchall()
+
+    def get_session_ai_config(self, session_id: int) -> List:
+        cursor = self.conn.cursor()
+        cursor.execute("SELECT ai_config FROM sessions WHERE id = ?", (session_id,))
+        return cursor.fetchone()
 
     def get_session(self, session_id: int) -> Optional[dict]:
         cursor = self.conn.cursor()

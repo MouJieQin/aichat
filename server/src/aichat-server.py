@@ -28,6 +28,7 @@ import threading
 from libs.speaker import Speaker
 from libs.openai_chat_api import OpenAIChatAPI
 from libs.chat_database import ChatDatabase
+from libs.recognizer import Recognizer
 from libs.log_config import logger
 
 os.chdir(os.path.dirname(__file__))
@@ -50,6 +51,7 @@ DEFAULT_AI_CONFIG = AI_CONFIG[AI_CONFIG_DEFAULT["ai_config_name"]]
 DB = ChatDatabase()
 API = OpenAIChatAPI(DB, DEFAULT_AI_CONFIG["api_key"], DEFAULT_AI_CONFIG["base_url"])
 speaker = Speaker(configure)
+recognizer = Recognizer(configure)
 
 
 async def send_all_sessions(websocket: WebSocket):
@@ -239,6 +241,18 @@ async def handle_message(websocket: WebSocket, clientID: int, message_text: str)
         ai_config = message["data"]["ai_config"]
         API.update_session_ai_config(session_id, ai_config)
         await send_session_ai_config(websocket, session_id)
+    elif type == "start_speech_recognize":
+        language = message["data"]["language"]
+        input_text = message["data"]["input_text"]
+        cursor_position = message["data"]["cursor_position"]
+        recognizer.start_recognizer(websocket, language, input_text, cursor_position)
+    elif type == "stop_speech_recognize":
+        recognizer.stop_recognizer()
+        msg = {
+            "type": "stop_speech_recognize",
+            "data": {},
+        }
+        await websocket.send_text(json.dumps(msg))
     elif type == "play_the_sentence":
         message_id = message["data"]["message_id"]
         sentence_id = message["data"]["sentence_id"]

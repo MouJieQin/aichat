@@ -29,14 +29,16 @@
             boxShadow: `var(--el-box-shadow-light)`,
         }">
             <div class="input-container">
-                <el-input v-model="inputVal" type="textarea" placeholder="输入对话内容（Shift + Enter 发送）"
-                    :autosize="{ minRows: 2, maxRows: 9 }" @keydown="handleKeyDown">
+                <el-input v-model="inputVal" ref="inputRef" type="textarea" placeholder="输入对话内容（Shift + Enter 发送）"
+                    @input="handle_input_change" @click="updateCursorPosition" :autosize="{ minRows: 2, maxRows: 9 }"
+                    @keydown="handleKeyDown">
                 </el-input>
                 <div class="button-group">
                     <!-- copy session_ai_config to session_ai_config_for_drawer -->
                     <el-button :icon="MoreFilled" :type="''" text @click="handle_more_click" style="font-size: 24px;" />
-                    <el-button :icon="Microphone" :type="''" text style="font-size: 24px;" />
-                    <el-button type="primary" :icon="Promotion" circle :disabled="!is_input_sendable()"
+                    <el-button :icon="Microphone" :type="is_speech_recognizing ? 'danger' : ''" text
+                        style="font-size: 24px;" @click="handle_speech_recognize" />
+                    <el-button type="primary" :icon="Promotion" circle :disabled="!is_input_sendable"
                         @click="sendMessage" />
                 </div>
             </div>
@@ -64,20 +66,20 @@
                                 placeholder="请输入Model" />
                         </el-form-item>
                         <el-form-item label="Temperature" prop="temperature">
-                            <el-input-number v-model="session_ai_config_for_drawer.temperature" max="2" min="0"
-                                step="0.1" placeholder="请输入Temperature" />
+                            <el-input-number v-model="session_ai_config_for_drawer.temperature" :max="2.0" :min="0.0"
+                                :step="0.1" placeholder="请输入Temperature" />
                         </el-form-item>
                         <el-form-item label="Max Tokens" prop="max_tokens">
-                            <el-input-number v-model="session_ai_config_for_drawer.max_tokens" max="4096" min="1"
-                                step="100" placeholder="请输入Max Tokens" />
+                            <el-input-number v-model="session_ai_config_for_drawer.max_tokens" :max="4096" :min="1"
+                                :step="100" placeholder="请输入Max Tokens" />
                         </el-form-item>
                         <el-form-item label="Context Max Tokens" prop="context_max_tokens">
-                            <el-input-number v-model="session_ai_config_for_drawer.context_max_tokens" max="4096"
-                                min="1" step="100" placeholder="请输入Context Max Tokens" />
+                            <el-input-number v-model="session_ai_config_for_drawer.context_max_tokens" :max="4096"
+                                :min="1" :step="100" placeholder="请输入Context Max Tokens" />
                         </el-form-item>
                         <el-form-item label="Max Messages" prop="max_messages">
-                            <el-input-number v-model="session_ai_config_for_drawer.max_messages" max="100" min="1"
-                                step="1" placeholder="请输入Max Messages" />
+                            <el-input-number v-model="session_ai_config_for_drawer.max_messages" :max="100" :min="1"
+                                :step="1" placeholder="请输入Max Messages" />
                         </el-form-item>
                         <el-form-item label="Language" prop="language">
                             <el-select v-model="session_ai_config_for_drawer.language" placeholder="请选择语言"
@@ -155,6 +157,10 @@ const stream_response = ref('This is a test.')
 const chatMessages = ref<Message[]>([])
 const sentences = ref<SentenceInfo[]>([])
 const inputVal = ref('')
+const is_input_sendable = ref(false)
+const is_speech_recognizing = ref(false)
+const inputRef = ref(null);
+const cursor_position = ref(0);
 const text_area_height = ref(0)
 let currentWebSocket: WebSocketService | null = null
 const currentPlayingSentence = ref({ message_id: -1, sentence_id: -1 })
@@ -176,6 +182,103 @@ onMounted(async () => {
     text_area_height.value = textarea.clientHeight
     document.documentElement.style.setProperty('--fixed-input-area-padding-top', textarea.clientHeight + 'px');
 })
+
+// 实时更新光标位置
+const updateCursorPosition = () => {
+    nextTick(() => {
+        if (inputRef.value) {
+            const textarea = inputRef.value.$refs.textarea;
+            if (textarea) {
+                cursor_position.value = textarea.selectionStart;
+            }
+        }
+    });
+};
+
+
+// 设置光标位置
+const set_cursor_position = (position: number) => {
+    nextTick(() => {
+        if (inputRef.value) {
+            const textarea = inputRef.value.$refs.textarea;
+
+            if (textarea) {
+                // 限制位置范围
+
+                const validPosition = Math.max(0, Math.min(position, inputVal.value.length));
+
+                // 设置光标位置
+                textarea.focus();
+                textarea.setSelectionRange(validPosition, validPosition);
+
+                // 更新显示
+                cursor_position.value = validPosition;
+                // targetPosition.value = validPosition;
+
+                // 触发输入事件使Element UI组件同步状态
+                const event = new Event('input', { bubbles: true });
+                textarea.dispatchEvent(event);
+            }
+        }
+    });
+};
+
+
+const handle_input_change = () => {
+    is_input_sendable.value = inputVal.value.trim() != ""
+    // if (inputRef.value) {
+    //     cursor_position.value = inputRef.value.selectionStart;
+    // }
+}
+
+const handle_speech_recognize = () => {
+    if (is_speech_recognizing.value) {
+        stop_speech_recognize()
+    } else {
+        start_speech_recognize()
+    }
+}
+
+const start_speech_recognize = () => {
+    if (currentWebSocket) {
+        if (session_ai_config.value) {
+            let language = session_ai_config.value.language
+            switch (language) {
+                case "日本語":
+                    language = "ja-JP"
+                    break;
+                case "中文":
+                    language = "zh-CN"
+                    break;
+                case "English":
+                    language = "en-US"
+                    break;
+                default:
+                    language = "zh-CN"
+                    break;
+            }
+            const msg = {
+                "type": "start_speech_recognize",
+                "data": {
+                    "input_text": inputVal.value,
+                    "cursor_position": cursor_position.value,
+                    "language": language,
+                },
+            }
+            console.log(msg)
+            currentWebSocket.send(msg)
+        }
+    }
+}
+
+const stop_speech_recognize = () => {
+    if (currentWebSocket) {
+        currentWebSocket.send({
+            "type": "stop_speech_recognize",
+            "data": {},
+        })
+    }
+}
 
 const handle_more_click = () => {
     drawer_visible.value = true
@@ -356,6 +459,22 @@ const loadHistoryData = async () => {
                         scrollToBottom()
                     }
                     break
+
+                case 'start_speech_recognize':
+                    {
+                        is_speech_recognizing.value = true
+                        const stt_text = message.data.stt_text
+                        const cursor_position = message.data.cursor_position
+                        console.log("stt_text:", stt_text)
+                        inputVal.value = stt_text
+                        set_cursor_position(cursor_position)
+                    }
+                    break
+                case 'stop_speech_recognize':
+                    {
+                        is_speech_recognizing.value = false
+                    }
+                    break
                 case 'the_sentence_playing':
                     {
                         const message_id = message.data.message_id
@@ -408,13 +527,9 @@ const loadHistoryData = async () => {
     }
 }
 
-const is_input_sendable = () => {
-    return inputVal.value.trim() != ""
-}
-
 // 发送消息方法
 const sendMessage = () => {
-    if (!is_input_sendable()) return
+    if (!is_input_sendable.value) return
 
     const message = {
         type: 'user_input',
@@ -502,6 +617,10 @@ const handleSentenceClick = (e: MouseEvent) => {
 
 // 处理输入框按键事件
 const handleKeyDown = (e: KeyboardEvent) => {
+    if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Tab'].includes(e.key)) {
+        // 使用setTimeout确保按键动作完成后再获取位置
+        setTimeout(updateCursorPosition, 0);
+    }
     if (e.key === 'Enter' && e.shiftKey) {
         e.preventDefault()
         sendMessage()

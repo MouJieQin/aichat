@@ -36,7 +36,8 @@
                     <!-- copy session_ai_config to session_ai_config_for_drawer -->
                     <el-button :icon="MoreFilled" :type="''" text @click="handle_more_click" style="font-size: 24px;" />
                     <el-button :icon="Microphone" :type="''" text style="font-size: 24px;" />
-                    <el-button type="primary" :icon="Promotion" circle />
+                    <el-button type="primary" :icon="Promotion" circle :disabled="!is_input_sendable()"
+                        @click="sendMessage" />
                 </div>
             </div>
         </div>
@@ -407,9 +408,13 @@ const loadHistoryData = async () => {
     }
 }
 
+const is_input_sendable = () => {
+    return inputVal.value.trim() != ""
+}
+
 // 发送消息方法
 const sendMessage = () => {
-    if (!inputVal.value.trim()) return
+    if (!is_input_sendable()) return
 
     const message = {
         type: 'user_input',

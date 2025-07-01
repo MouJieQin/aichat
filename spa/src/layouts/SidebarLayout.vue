@@ -130,8 +130,9 @@ const siderbar_click = () => {
     const sidebar = document.querySelector('.sidebar');
     if (sidebar) {
         setTimeout(() => {
-            if (sidebar_width.value !== sidebar.clientWidth + 'px') {
-                sidebar_width.value = sidebar.clientWidth + 'px';
+            const new_sidebar_width = sidebar.clientWidth + 20 + 'px';
+            if (sidebar_width.value !== new_sidebar_width) {
+                sidebar_width.value = new_sidebar_width;
                 document.documentElement.style.setProperty('--main-content-left-margin', sidebar_width.value);
             }
         }, 100);

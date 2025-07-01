@@ -262,6 +262,9 @@ const websocket_connect = async () => {
                         path: `/history/${session_id}`,
                         title: title,
                     })
+                    setTimeout(() => {
+                        router.push(`/history/${session_id}`)
+                    }, 300)
                 default:
                     console.log('未知消息类型:', message)
             }

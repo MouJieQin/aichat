@@ -114,6 +114,14 @@ class ChatDatabase:
         cursor.execute("SELECT ai_config FROM sessions WHERE id = ?", (session_id,))
         return cursor.fetchone()
 
+    def update_session_ai_config(self, session_id: int, ai_config: dict):
+        cursor = self.conn.cursor()
+        cursor.execute(
+            "UPDATE sessions SET ai_config = ? WHERE id = ?",
+            (json.dumps(ai_config), session_id),
+        )
+        self.conn.commit()
+
     def get_session(self, session_id: int) -> Optional[dict]:
         cursor = self.conn.cursor()
         cursor.execute("SELECT * FROM sessions WHERE id = ?", (session_id,))

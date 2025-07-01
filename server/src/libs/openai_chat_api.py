@@ -147,6 +147,9 @@ class OpenAIChatAPI:
     def get_session_ai_config(self, session_id: int) -> dict:
         ai_config_str = self.db.get_session_ai_config(session_id)[0]
         return json.loads(ai_config_str)
+    
+    def update_session_ai_config(self, session_id: int, ai_config: dict):
+        self.db.update_session_ai_config(session_id, ai_config)
 
     def update_session_title(self, session_id: int, title: str):
         self.db.update_session_title(session_id, title)

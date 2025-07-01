@@ -8,9 +8,9 @@
                         <p v-html="msg.processed_html"></p>
                         <!-- <p>{{ msg.processed_html }}</p> -->
                     </div>
-                    <el-button type="primary" @click="unpause">播放</el-button>
+                    <!-- <el-button type="primary" @click="unpause">播放</el-button>
                     <el-button type="primary" @click="pause">暂停</el-button>
-                    <el-button type="primary" @click="stop">停止</el-button>
+                    <el-button type="primary" @click="stop">停止</el-button> -->
 
                     <div class="time">{{ msg.time }}</div>
                 </div>
@@ -47,8 +47,8 @@
         </template>
         <template #default>
             <div class="form-container">
-                <div class="form-wrapper">
-                    <el-form :model="session_ai_config_for_drawer" ref="formRef" label-width="120px"
+                <div v-if="session_ai_config_for_drawer" class="form-wrapper">
+                    <el-form :model="session_ai_config_for_drawer" ref="formRef" label-width="200px"
                         class="left-aligned-form">
                         <el-form-item label="Base URL" prop="base_url">
                             <el-input v-model="session_ai_config_for_drawer.base_url" style="max-width: 600px;"
@@ -78,6 +78,23 @@
                             <el-input-number v-model="session_ai_config_for_drawer.max_messages" max="100" min="1"
                                 step="1" placeholder="请输入Max Messages" />
                         </el-form-item>
+                        <el-form-item label="Language" prop="language">
+                            <el-select v-model="session_ai_config_for_drawer.language" placeholder="请选择语言"
+                                @change="session_ai_config_for_drawer.tts_voice = tts_voices[session_ai_config_for_drawer.language][0].ShortName">
+                                <el-option v-for="item in languages" :key="item" :label="item" :value="item">
+                                </el-option>
+                            </el-select>
+                        </el-form-item>
+                        <el-form-item label="TTS Voice" prop="tts_voice">
+                            <el-select v-model="session_ai_config_for_drawer.tts_voice" filterable
+                                placeholder="请选择TTS Voice">
+                                <el-option v-for="item in tts_voices[session_ai_config_for_drawer.language]"
+                                    :key="item.ShortName"
+                                    :label="item.LocalName + '——' + item.Gender + '——' + item.LocaleName"
+                                    :value="item.ShortName">
+                                </el-option>
+                            </el-select>
+                        </el-form-item>
                     </el-form>
                 </div>
             </div>
@@ -85,7 +102,7 @@
         <template #footer>
             <div style="flex: auto">
                 <el-button @click="drawer_visible = false">cancel</el-button>
-                <el-button type="primary" @click="drawer_visible = false">confirm</el-button>
+                <el-button type="primary" @click="update_session_ai_config">confirm</el-button>
             </div>
         </template>
     </el-drawer>
@@ -99,6 +116,7 @@ import MarkdownIt from 'markdown-it'
 import { Refresh, MoreFilled, Delete, More, EditPen, ArrowLeft, ArrowRight, Microphone, Setting, Promotion } from '@element-plus/icons-vue'
 import type { DrawerProps } from 'element-plus'
 import { useWebSocket, WebSocketService } from '@/common/websocket-client'
+import { loadJsonFile } from '@/common/json-loader'
 import { processMarkdown, SentenceInfo } from '@/common/markdown-processor'
 import debounce from 'lodash/debounce'
 
@@ -116,6 +134,8 @@ interface AIconfig {
     max_tokens: number;
     context_max_tokens: number;
     max_messages: number;
+    language: string;
+    tts_voice: string;
 }
 const session_ai_config = ref<AIconfig>()
 const session_ai_config_for_drawer = ref<AIconfig>()
@@ -123,6 +143,8 @@ const session_ai_config_for_drawer = ref<AIconfig>()
 const route = useRoute()
 const router = useRouter()
 const md = new MarkdownIt();
+const tts_voices = ref<{ [key: string]: any[] }>({})
+const languages = ref<string[]>([])
 const drawer_visible = ref(false)
 const drawer_direction = ref<DrawerProps['direction']>('ttb')
 const historyId = ref('')
@@ -145,8 +167,10 @@ watch(() => route.params.id, (newId) => {
     console.log('@newId:', newId)
 })
 
-onMounted(() => {
+onMounted(async () => {
     loadHistoryData()
+    tts_voices.value = await loadJsonFile('/tts_voices.json')
+    languages.value = Object.keys(tts_voices.value)
     const textarea = document.querySelector('textarea') as HTMLTextAreaElement;
     text_area_height.value = textarea.clientHeight
     document.documentElement.style.setProperty('--fixed-input-area-padding-top', textarea.clientHeight + 'px');
@@ -155,6 +179,23 @@ onMounted(() => {
 const handle_more_click = () => {
     drawer_visible.value = true
     session_ai_config_for_drawer.value = JSON.parse(JSON.stringify(session_ai_config.value))
+}
+
+const get_session_id = () => {
+    return route.params.id
+}
+
+const update_session_ai_config = () => {
+    const session_id = get_session_id()
+    const msg = {
+        "type": "update_session_ai_config",
+        "data": {
+            "session_id": session_id,
+            "ai_config": session_ai_config_for_drawer.value,
+        },
+    }
+    currentWebSocket?.send(msg)
+    drawer_visible.value = false
 }
 
 const handleInput = () => {
@@ -341,6 +382,11 @@ const loadHistoryData = async () => {
                 case 'session_ai_config':
                     {
                         const ai_config = message.data
+                        //如果如果session_ai_config的某些key不存在与ai_config，给ai_config填入默认值
+                        if (ai_config.language == undefined)
+                            ai_config.language = "中文"
+                        if (ai_config.tts_voice == undefined)
+                            ai_config.tts_voice = "zh-CN-XiaochenNeural"
                         session_ai_config.value = ai_config
                         console.log("session_ai_config:", session_ai_config.value)
                     }
@@ -423,9 +469,9 @@ const handleSentenceClick = (e: MouseEvent) => {
         const target = e.target as HTMLElement
         const contentElement = target.closest('.content')
 
-        if (contentElement) {
-            const messageId = contentElement.dataset.param1
-            const sentenceId = contentElement.dataset.param2
+        if (contentElement && (contentElement as HTMLElement).dataset && session_ai_config.value) {
+            const messageId = (contentElement as HTMLElement).dataset.param1
+            const sentenceId = (contentElement as HTMLElement).dataset.param2
 
             const sentence = sentences.value.find(
                 s => s.messageId.toString() === messageId && s.sentenceId.toString() === sentenceId
@@ -440,6 +486,7 @@ const handleSentenceClick = (e: MouseEvent) => {
                 data: {
                     message_id: Number(messageId),
                     sentence_id: Number(sentenceId),
+                    voice_name: session_ai_config.value.tts_voice,
                 }
             }
 
@@ -513,7 +560,6 @@ const handleKeyDown = (e: KeyboardEvent) => {
     margin-left: auto;
     margin-bottom: 12px;
     margin-top: 12px;
-    padding: 20px;
     /* margin-right: 10px; */
 }
 

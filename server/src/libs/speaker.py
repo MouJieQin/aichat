@@ -284,15 +284,18 @@ class Speaker(metaclass=SingletonMeta):
         )
 
     def _create_audio_sound(
-        self, session_id: str, message_id: str, sentence_id: str, sentence: str
+        self,
+        session_id: str,
+        message_id: str,
+        sentence_id: str,
+        sentence: str,
+        voice_name: str,
     ) -> mixer.Sound:
         """Create the audio sound."""
         audio_file = self._get_audio_file(session_id, message_id, sentence_id)
         if not os.path.isfile(audio_file):
             self._create_audio_dir(session_id, message_id)
-            synthesizer = self._create_speech_synthesizer(
-                "ja-JP-MayuNeural", audio_file
-            )
+            synthesizer = self._create_speech_synthesizer(voice_name, audio_file)
             synthesizer.speak_text(sentence)
         sound = mixer.Sound(audio_file)
         return sound
@@ -304,11 +307,16 @@ class Speaker(metaclass=SingletonMeta):
         sentence_id_start: str,
         sentence_id_end: str,
         sentences: list[Dict],
+        voice_name: str,
     ):
         """Create the audio queue."""
         for sentence_id in range(int(sentence_id_start), int(sentence_id_end) + 1):
             sound = self._create_audio_sound(
-                session_id, message_id, str(sentence_id), sentences[sentence_id]["text"]
+                session_id,
+                message_id,
+                str(sentence_id),
+                sentences[sentence_id]["text"],
+                voice_name,
             )
             self.audio_queue.append(sound)
         print(f"@:len(self.audio_queue):{len(self.audio_queue)}")
@@ -330,6 +338,7 @@ class Speaker(metaclass=SingletonMeta):
         sentence_id_end: str,
         sentences: list[Dict],
         play_sentence_callback: Callable[[int], Awaitable[None]],
+        voice_name: str,
     ):
         """Play the response core."""
         self.audio_channel_assistant_synthesizer.stop()
@@ -342,6 +351,7 @@ class Speaker(metaclass=SingletonMeta):
                 sentence_id_start,
                 sentence_id_end,
                 sentences,
+                voice_name,
             ),
             daemon=True,
         ).start()
@@ -377,6 +387,7 @@ class Speaker(metaclass=SingletonMeta):
         sentence_id: str,
         sentences: list[Dict],
         play_sentence_callback: Callable[[int], Awaitable[None]],
+        voice_name: str,
     ):
         """Play a sentence in real-time."""
         await self._play_response_core(
@@ -386,6 +397,7 @@ class Speaker(metaclass=SingletonMeta):
             sentence_id,
             sentences,
             play_sentence_callback,
+            voice_name,
         )
 
     async def play_sentences(
@@ -395,6 +407,7 @@ class Speaker(metaclass=SingletonMeta):
         sentence_id_start: str,
         sentences: list[Dict],
         play_sentence_callback: Callable[[int], Awaitable[None]],
+        voice_name: str,
     ):
         """Play a sentence in real-time."""
         await self._play_response_core(
@@ -404,6 +417,7 @@ class Speaker(metaclass=SingletonMeta):
             str(len(sentences) - 1),
             sentences,
             play_sentence_callback,
+            voice_name,
         )
 
     def speak_text(self, text: str):

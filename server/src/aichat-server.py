@@ -234,9 +234,15 @@ async def handle_message(websocket: WebSocket, clientID: int, message_text: str)
             API.update_message(
                 message_id, json.dumps({"sentences": sentences}, ensure_ascii=False)
             )
+    elif type == "update_session_ai_config":
+        session_id = message["data"]["session_id"]
+        ai_config = message["data"]["ai_config"]
+        API.update_session_ai_config(session_id, ai_config)
+        await send_session_ai_config(websocket, session_id)
     elif type == "play_the_sentence":
         message_id = message["data"]["message_id"]
         sentence_id = message["data"]["sentence_id"]
+        voice_name = message["data"]["voice_name"]
         sentences = API.get_sentences(message_id)
         if sentences is None:
             logger.warning("message_id:{} not found any sentences".format(message_id))
@@ -253,6 +259,7 @@ async def handle_message(websocket: WebSocket, clientID: int, message_text: str)
                     sentence_id,
                     sentences,
                     play_sentence_callback,
+                    voice_name,
                 )
             )
 
@@ -261,6 +268,7 @@ async def handle_message(websocket: WebSocket, clientID: int, message_text: str)
         message_id = message["data"]["message_id"]
         sentence_id_start = message["data"]["sentence_id"]
         sentences = API.get_sentences(message_id)
+        voice_name = message["data"]["voice_name"]
         if sentences is None:
             logger.warning("message_id:{} not found any sentences".format(message_id))
             return
@@ -274,6 +282,7 @@ async def handle_message(websocket: WebSocket, clientID: int, message_text: str)
                     sentence_id_start,
                     sentences,
                     play_sentence_callback,
+                    voice_name,
                 )
             )
 

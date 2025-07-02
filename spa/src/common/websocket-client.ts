@@ -95,7 +95,7 @@ class WebSocketService {
         console.log('WebSocket 连接已建立');
     }
 
-    protected handleMessage(message: {}) {
+    handleMessage(message: {}) {
         console.log('收到 WebSocket 消息:', message);
         // 根据 message.type 分发不同业务逻辑，如：
         // if (message.type === 'chat') this.handleChatMessage(message.data);

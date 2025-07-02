@@ -241,6 +241,24 @@ async def handle_message(websocket: WebSocket, clientID: int, message_text: str)
         ai_config = message["data"]["ai_config"]
         API.update_session_ai_config(session_id, ai_config)
         await send_session_ai_config(websocket, session_id)
+    elif type == "update_message":
+        session_id = message["data"]["session_id"]
+        message_id = message["data"]["message_id"]
+        raw_text = message["data"]["raw_text"]
+        sentences = message["data"]["sentences"]
+        speaker.remove_audio_dir(session_id, message_id)
+        parsed_text = {"sentences": sentences}
+        API.update_message(
+            message_id, raw_text=raw_text, parsed_text=json.dumps(parsed_text)
+        )
+        msg = {
+            "type": "update_message",
+            "data": {
+                "message_id": message_id,
+                "raw_text": raw_text,
+            },
+        }
+        await websocket.send_text(json.dumps(msg))
     elif type == "start_speech_recognize":
         language = message["data"]["language"]
         input_text = message["data"]["input_text"]

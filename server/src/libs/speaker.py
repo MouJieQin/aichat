@@ -11,7 +11,7 @@ from typing import Dict, Callable, Awaitable, Optional
 from libs.log_config import logger
 import azure.cognitiveservices.speech as speechsdk
 import time
-
+import shutil
 
 class PygameAudioOutputStream(speechsdk.audio.PushAudioOutputStreamCallback):
     """
@@ -258,17 +258,27 @@ class Speaker(metaclass=SingletonMeta):
         self._set_volume_imple(self.audio_channel_assistant_synthesizer, volume)
         self._set_volume_imple(self.audio_channel_system_prompt, 1)
 
+    def _get_audio_dir(self, session_id: str, message_id: str) -> str:
+        """Get the audio directory path for a given message."""
+        return f"{self.speaker_config['audio_dir']}/{session_id}/{message_id}"
+
     def _get_audio_file(
         self, session_id: str, message_id: str, sentence_id: str
     ) -> str:
         """Get the audio file path for a given sentence."""
-        return f"{self.speaker_config['audio_dir']}/{session_id}/{message_id}/{sentence_id}.wav"
+        return f"{self._get_audio_dir(session_id, message_id)}/{sentence_id}.wav"
 
     def _create_audio_dir(self, session_id: str, message_id: str):
         """Create the audio directory."""
-        audio_dir = f"{self.speaker_config['audio_dir']}/{session_id}/{message_id}"
+        audio_dir = self._get_audio_dir(session_id, message_id)
         if not os.path.exists(audio_dir):
             os.makedirs(audio_dir)
+
+    def remove_audio_dir(self, session_id: str, message_id: str):
+        """Remove the audio directory."""
+        audio_dir = self._get_audio_dir(session_id, message_id)
+        if os.path.exists(audio_dir):
+            shutil.rmtree(audio_dir)
 
     def _create_speech_synthesizer(
         self, voice_name: str, audio_file: str

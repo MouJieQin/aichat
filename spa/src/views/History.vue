@@ -2,19 +2,9 @@
     <div class="page-content">
         <!-- 聊天内容区域 - 使用 max-height 限制高度并添加滚动条 -->
         <div class="chat-messages-container">
-            <div class="chat-messages" v-for="(msg, text_id) in chatMessages" :key="text_id">
-                <div class="message"
-                    :class="{ 'user': msg.role == 'user', 'assistant': msg.role == 'assistant', 'system': msg.role == 'system' }">
-                    <div class="markdown-container" @click="handleSentenceClick">
-                        <p v-html="msg.processed_html"></p>
-                        <!-- <p>{{ msg.processed_html }}</p> -->
-                    </div>
-                    <!-- <el-button type="primary" @click="unpause">播放</el-button>
-                    <el-button type="primary" @click="pause">暂停</el-button>
-                    <el-button type="primary" @click="stop">停止</el-button> -->
-
-                    <div class="time">{{ msg.time }}</div>
-                </div>
+            <div class="chat-messages" v-for="(msg, text_index) in chatMessages" :key="text_index">
+                <MessageBubble :key="text_index" :msg="msg" :show-buttons="true"
+                    :handleSentenceClick="handleSentenceClick" :update_message="update_message" />
             </div>
             <div v-if="streaming">
                 <div class="message assistant">
@@ -36,8 +26,8 @@
                     <el-button :icon="MoreFilled" :type="''" text @click="handle_more_click" style="font-size: 24px;" />
                     <el-button :icon="Microphone" :type="is_speech_recognizing ? 'success' : ''" text
                         style="font-size: 24px;" @click="handle_speech_recognize" />
-                    <el-button type="primary" :icon="Promotion" circle :disabled="!is_input_sendable"
-                        @click="sendMessage" />
+                    <el-button :type="is_input_sendable ? 'primary' : 'info'" :icon="Promotion" circle
+                        :disabled="!is_input_sendable" @click="sendMessage" />
                 </div>
             </div>
         </div>
@@ -114,14 +104,17 @@
 import { ref, onMounted, watch, computed, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import MarkdownIt from 'markdown-it'
-import { Refresh, MoreFilled, Delete, More, EditPen, ArrowLeft, ArrowRight, Microphone, Setting, Promotion } from '@element-plus/icons-vue'
+import { Refresh, MoreFilled, CopyDocument, VideoPlay, VideoPause, Delete, More, Edit, Microphone, Promotion } from '@element-plus/icons-vue'
 import type { DrawerProps } from 'element-plus'
 import { useWebSocket, WebSocketService } from '@/common/websocket-client'
 import { loadJsonFile } from '@/common/json-loader'
 import { processMarkdown, SentenceInfo } from '@/common/markdown-processor'
+import MessageBubble from '@/components/MessageBubble.vue'
 import debounce from 'lodash/debounce'
 
 interface Message {
+    message_id: number;
+    raw_text: string;
     processed_html: string;
     sentences: SentenceInfo[];
     time: string;
@@ -153,6 +146,7 @@ const loading = ref(false)
 const streaming = ref(false)
 const stream_response = ref('This is a test.')
 const chatMessages = ref<Message[]>([])
+
 const sentences = ref<SentenceInfo[]>([])
 const inputVal = ref('')
 const is_input_sendable = ref(false)
@@ -297,6 +291,21 @@ const update_session_ai_config = () => {
     drawer_visible.value = false
 }
 
+const update_message = (message_id: number, raw_text: string) => {
+    const session_id = get_session_id()
+    const result = processMarkdown(raw_text, message_id)
+    const msg = {
+        "type": "update_message",
+        "data": {
+            "session_id": session_id,
+            "message_id": message_id,
+            "raw_text": raw_text,
+            "sentences": result.sentences,
+        },
+    }
+    currentWebSocket?.send(msg)
+}
+
 const handleInput = () => {
     const textarea = document.querySelector('textarea') as HTMLTextAreaElement;
     if (textarea) {
@@ -373,10 +382,6 @@ const loadHistoryData = async () => {
         // 清空当前消息
         chatMessages.value = []
 
-        // 这里可以从API加载历史对话数据
-        // 示例：const response = await fetchHistoryData(historyId.value)
-        // chatMessages.value = response.data
-
         // 初始化WebSocket连接
         const wsUrl = `ws://localhost:4999/ws/aichat/${historyId.value}`
         console.log('Connecting to:', wsUrl)
@@ -396,6 +401,8 @@ const loadHistoryData = async () => {
                                 console.log("user_message:", user_message, messageId)
                                 const result = processMarkdown(user_message, messageId)
                                 chatMessages.value.push({
+                                    message_id: messageId,
+                                    raw_text: user_message,
                                     processed_html: result.html,
                                     sentences: result.sentences,
                                     time: format_time_now(),
@@ -422,6 +429,8 @@ const loadHistoryData = async () => {
                                 const result = processMarkdown(response, messageId)
                                 console.log("ai_response:", response, messageId)
                                 chatMessages.value.push({
+                                    message_id: messageId,
+                                    raw_text: response,
                                     processed_html: result.html,
                                     sentences: result.sentences,
                                     time: format_time_now(),
@@ -479,6 +488,20 @@ const loadHistoryData = async () => {
                         currentPlayingSentence.value = { message_id, sentence_id }
                     }
                     break
+                case 'update_message':
+                    {
+                        const message_id = message.data.message_id
+                        const raw_text = message.data.raw_text
+                        const msg = chatMessages.value.find(msg => msg.message_id === message_id)
+                        console.log("update_message:", message_id, raw_text)
+                        if (msg) {
+                            const result = processMarkdown(raw_text, message_id)
+                            msg.raw_text = raw_text
+                            msg.sentences = result.sentences
+                            msg.processed_html = result.html
+                        }
+                    }
+                    break
                 case 'session_messages':
                     chatMessages.value = []
                     const messages = message.data
@@ -487,6 +510,8 @@ const loadHistoryData = async () => {
                         const raw_message = msg[2]
                         const result = processMarkdown(raw_message, message_id)
                         chatMessages.value.push({
+                            message_id: message_id,
+                            raw_text: raw_message,
                             processed_html: result.html,
                             sentences: result.sentences,
                             time: msg[4],

@@ -94,7 +94,6 @@ const props = defineProps({
 const emits = defineEmits(['play', 'edit', 'copy', 'delete'])
 
 const handlePlay = () => emits('play', props.msg)
-const handleEdit = () => emits('edit', props.msg)
 const handleCopy = () => emits('copy', props.msg)
 const handleDelete = () => emits('delete', props.msg)
 </script>

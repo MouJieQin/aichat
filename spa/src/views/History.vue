@@ -18,7 +18,7 @@
         <!-- 输入区域 - 使用固定定位保持在屏幕底部 -->
         <div class="fixed-input-area">
             <div class="input-container">
-                <el-input class="input-box" v-model="inputVal" ref="inputRef" type="textarea"
+                <el-input id="input-box" class="input-box" v-model="inputVal" ref="inputRef" type="textarea"
                     placeholder="输入对话内容（Shift + Enter 发送）" @input="handle_input_change" @click="updateCursorPosition"
                     :autosize="{ minRows: 2, maxRows: 9 }" @keydown="handleKeyDown">
                 </el-input>
@@ -170,7 +170,7 @@ onMounted(async () => {
     loadHistoryData()
     tts_voices.value = await loadJsonFile('/tts_voices.json')
     languages.value = Object.keys(tts_voices.value)
-    const textarea = document.querySelector('textarea') as HTMLTextAreaElement;
+    const textarea = document.querySelector('#input-box') as HTMLTextAreaElement;
     text_area_height.value = textarea.clientHeight
     document.documentElement.style.setProperty('--fixed-input-area-padding-top', textarea.clientHeight + 'px');
 })
@@ -307,7 +307,7 @@ const update_message = (message_id: number, raw_text: string) => {
 }
 
 const handleInput = () => {
-    const textarea = document.querySelector('textarea') as HTMLTextAreaElement;
+    const textarea = document.querySelector('#input-box') as HTMLTextAreaElement;
     if (textarea) {
         if (text_area_height.value !== textarea.clientHeight) {
             document.documentElement.style.setProperty('--fixed-input-area-padding-top', textarea.clientHeight + 'px');
@@ -684,80 +684,6 @@ const handleKeyDown = (e: KeyboardEvent) => {
     padding: 5px 5px 20px 5px;
     display: flex;
     justify-content: flex-end;
-}
-
-/* 聊天消息样式优化 */
-.message {
-    padding: 8px 12px;
-    border-radius: 8px;
-    color: #333333;
-    background-blend-mode: luminosity;
-    /* filter: brightness(90%); */
-}
-
-.message.system {
-    max-width: clamp(300px, 80vw, 800px);
-    font-size: 16px;
-    line-height: 1.6;
-    padding: 20px;
-    margin: 0 auto;
-    text-align: left;
-
-    background-color: #E5EAF3;
-    /* background-color: #909399; */
-    color: #333333;
-}
-
-.message.user {
-    max-width: 60%;
-    text-align: left;
-    background-color: #d3eafd;
-    margin-left: auto;
-    margin-bottom: 12px;
-    margin-top: 12px;
-}
-
-.message.assistant {
-    max-width: clamp(300px, 80vw, 800px);
-    font-size: 16px;
-    line-height: 1.6;
-    padding: 20px;
-    margin: 0 auto;
-    text-align: left;
-
-    background-color: #f5f0e6;
-    color: #333333;
-}
-
-/* 基础护眼背景 */
-.fatigue-reducing-bg {
-    background-color: #f5f0e6;
-    /* 米白色 */
-    color: #333333;
-    /* 深灰色文字 */
-    /* 动态亮度调节 */
-    background-blend-mode: luminosity;
-    filter: brightness(90%);
-}
-
-/* 夜间模式 */
-.night-mode {
-    background-color: #222222;
-    /* 深灰色 */
-    color: #e0e0e0;
-    /* 浅灰色文字 */
-    /* 降低对比度至7:1 */
-    mix-blend-mode: difference;
-}
-
-.content {
-    margin-bottom: 4px;
-}
-
-.time {
-    font-size: 12px;
-    color: #666;
-    text-align: right;
 }
 
 .form-container {

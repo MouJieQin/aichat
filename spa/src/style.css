@@ -1,16 +1,15 @@
-
 html {
     box-sizing: border-box;
 }
 
 * {
-  box-sizing: border-box;
-  max-width: 100%;
+    box-sizing: border-box;
+    max-width: 100%;
 }
 
 body {
-  overflow-x: hidden; /* 禁用水平滚动 */
-  overflow-y: auto;   /* 保留垂直滚动（可选） */
+    overflow-x: hidden; /* 禁用水平滚动 */
+    overflow-y: auto; /* 保留垂直滚动（可选） */
 }
 
 *,
@@ -48,12 +47,8 @@ body {
 }
 
 .sentence-playing {
-    /* background-color: #409EFF; */
     background-color: rgb(102.2, 177.4, 255);
-    /* background-color: #ffd700; */
-    /* 黄色背景，表示正在播放 */
     transition: background-color 0.3s ease;
-    /* 添加平滑过渡效果 */
 }
 
 .el-sub-menu__title {
@@ -72,13 +67,17 @@ body {
 }
 
 /* 向上扩展的关键 CSS */
-.el-textarea__inner {
-  position: absolute !important;
-  bottom: 0 !important;
-  width: 100% !important;
+.input-container .el-textarea__inner {
+    position: absolute !important;
+    bottom: 0 !important;
+    width: 100% !important;
+    padding: 10px 10px 10px 15px !important;
+    background-blend-mode: luminosity;
+    /* filter: brightness(90%); */
+    font-size: 16px;
+    line-height: 1.6;
+    transition: padding 0.2s;
+    border-radius: 15px;
+    border: 1px solid #909399;
+    box-shadow: var(--el-box-shadow-light);
 }
-
-/* .textarea-container {
-  position: relative !important;
-  height: 100px !important;
-} */

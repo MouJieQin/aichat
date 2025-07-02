@@ -135,7 +135,7 @@ const siderbar_click = () => {
                 sidebar_width.value = new_sidebar_width;
                 document.documentElement.style.setProperty('--main-content-left-margin', sidebar_width.value);
             }
-        }, 100);
+        }, 500);
 
     }
 }
@@ -344,9 +344,10 @@ const handleClose = (key: string, keyPath: string[]) => {
     position: fixed;
     max-width: 300px;
     border-right: 1px solid #909399;
-    box-sizing: border-box;
     overflow-y: auto;
     height: 100vh;
+    /* padding-right: 0px; */
+    padding-bottom: 30px;
     --el-menu-active-color: #409EFF;
 }
 

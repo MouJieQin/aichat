@@ -3,7 +3,8 @@
         <!-- 聊天内容区域 - 使用 max-height 限制高度并添加滚动条 -->
         <div class="chat-messages-container">
             <div class="chat-messages" v-for="(msg, text_id) in chatMessages" :key="text_id">
-                <div class="message" :class="{ 'self': msg.isSelf }">
+                <div class="message"
+                    :class="{ 'user': msg.role == 'user', 'assistant': msg.role == 'assistant', 'system': msg.role == 'system' }">
                     <div class="markdown-container" @click="handleSentenceClick">
                         <p v-html="msg.processed_html"></p>
                         <!-- <p>{{ msg.processed_html }}</p> -->
@@ -16,7 +17,7 @@
                 </div>
             </div>
             <div v-if="streaming">
-                <div class="message not(self)">
+                <div class="message assistant">
                     <div class="markdown-container">
                         <p v-html="md.render(stream_response)"></p>
                     </div>
@@ -25,16 +26,13 @@
         </div>
 
         <!-- 输入区域 - 使用固定定位保持在屏幕底部 -->
-        <div class="fixed-input-area" :style="{
-            boxShadow: `var(--el-box-shadow-light)`,
-        }">
+        <div class="fixed-input-area">
             <div class="input-container">
-                <el-input v-model="inputVal" ref="inputRef" type="textarea" placeholder="输入对话内容（Shift + Enter 发送）"
-                    @input="handle_input_change" @click="updateCursorPosition" :autosize="{ minRows: 2, maxRows: 9 }"
-                    @keydown="handleKeyDown">
+                <el-input class="input-box" v-model="inputVal" ref="inputRef" type="textarea"
+                    placeholder="输入对话内容（Shift + Enter 发送）" @input="handle_input_change" @click="updateCursorPosition"
+                    :autosize="{ minRows: 2, maxRows: 9 }" @keydown="handleKeyDown">
                 </el-input>
                 <div class="button-group">
-                    <!-- copy session_ai_config to session_ai_config_for_drawer -->
                     <el-button :icon="MoreFilled" :type="''" text @click="handle_more_click" style="font-size: 24px;" />
                     <el-button :icon="Microphone" :type="is_speech_recognizing ? 'success' : ''" text
                         style="font-size: 24px;" @click="handle_speech_recognize" />
@@ -127,7 +125,7 @@ interface Message {
     processed_html: string;
     sentences: SentenceInfo[];
     time: string;
-    isSelf: boolean;
+    role: string;
 }
 interface AIconfig {
     base_url: string;
@@ -401,7 +399,7 @@ const loadHistoryData = async () => {
                                     processed_html: result.html,
                                     sentences: result.sentences,
                                     time: format_time_now(),
-                                    isSelf: true,
+                                    role: "user",
                                 })
                                 const msg = {
                                     type: 'parsed_response',
@@ -427,7 +425,7 @@ const loadHistoryData = async () => {
                                     processed_html: result.html,
                                     sentences: result.sentences,
                                     time: format_time_now(),
-                                    isSelf: false,
+                                    role: "assistant",
                                 })
                                 const msg = {
                                     type: 'parsed_response',
@@ -492,7 +490,7 @@ const loadHistoryData = async () => {
                             processed_html: result.html,
                             sentences: result.sentences,
                             time: msg[4],
-                            isSelf: msg[1] != "assistant",
+                            role: msg[1],
                         })
                     })
                     scrollToBottomDebounced()
@@ -642,14 +640,12 @@ const handleKeyDown = (e: KeyboardEvent) => {
     margin-bottom: calc(var(--fixed-input-area-padding-top) + 100px);
 }
 
-
 .fixed-input-area {
     position: fixed;
     bottom: 0px;
-    /* padding-top: 100px; */
     padding-top: var(--fixed-input-area-padding-top);
     z-index: 100;
-    left: calc(var(--main-content-left-margin) + 10px);
+    left: calc(var(--main-content-left-margin) + 1px);
     right: 0;
     background-color: var(--el-bg-color);
 }
@@ -657,8 +653,6 @@ const handleKeyDown = (e: KeyboardEvent) => {
 .input-container {
     margin: 0 auto;
     max-width: clamp(300px, 80vw, 800px);
-    font-size: 16px;
-    line-height: 1.6;
 }
 
 .button-group {
@@ -669,39 +663,45 @@ const handleKeyDown = (e: KeyboardEvent) => {
 
 /* 聊天消息样式优化 */
 .message {
-    /* flex: 1; */
     padding: 8px 12px;
     border-radius: 8px;
-    margin-bottom: 6px;
-    color: #000;
+    color: #333333;
+    background-blend-mode: luminosity;
+    /* filter: brightness(90%); */
 }
 
-.message.self {
-    max-width: 60%;
-    text-align: left;
-    background-color: #d3eafd;
-    /* margin: 0 auto; */
-    margin-left: auto;
-    margin-bottom: 12px;
-    margin-top: 12px;
-    /* margin-right: 10px; */
-}
-
-.message:not(.self) {
+.message.system {
     max-width: clamp(300px, 80vw, 800px);
     font-size: 16px;
     line-height: 1.6;
     padding: 20px;
     margin: 0 auto;
     text-align: left;
-    /* background-color: #f1f1f1; */
-    width: 960px;
+
+    background-color: #E5EAF3;
+    /* background-color: #909399; */
+    color: #333333;
+}
+
+.message.user {
+    max-width: 60%;
+    text-align: left;
+    background-color: #d3eafd;
+    margin-left: auto;
+    margin-bottom: 12px;
+    margin-top: 12px;
+}
+
+.message.assistant {
+    max-width: clamp(300px, 80vw, 800px);
+    font-size: 16px;
+    line-height: 1.6;
+    padding: 20px;
+    margin: 0 auto;
+    text-align: left;
 
     background-color: #f5f0e6;
     color: #333333;
-    background-blend-mode: luminosity;
-    filter: brightness(90%);
-
 }
 
 /* 基础护眼背景 */

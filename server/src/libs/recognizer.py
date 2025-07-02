@@ -17,50 +17,80 @@ class Recognizer:
             speech_recognition_language="zh-CN",
         )
         self.audio_config = speechsdk.audio.AudioConfig(use_default_microphone=True)
-
+        self.speech_recognizer: Optional[speechsdk.SpeechRecognizer] = None
         self.websocket: Optional[WebSocket] = None
+        self.prefix_text = ""
+        self.suffix_text = ""
+        self.cursor_position = 0
+
+    def _send_text(self, msg: Dict):
+        if self.websocket:
+            asyncio.run(self.websocket.send_text(json.dumps(msg)))
+
+    def _send_recognized_text(self, recognized_text: str):
+        size = len(recognized_text)
+        msg = {
+            "type": "speech_recognizing",
+            "data": {
+                "stt_text": self.prefix_text + recognized_text + self.suffix_text,
+                "cursor_position": self.cursor_position + size,
+            },
+        }
+        self._send_text(msg)
 
     def _azure_stt_input_auto_recognizing(self, evt):
         cur_recognized_text = evt.result.text
-        size = len(cur_recognized_text)
-        msg = {
-            "type": "start_speech_recognize",
-            "data": {
-                "stt_text": self.prefix_text + cur_recognized_text + self.suffix_text,
-                "cursor_position": self.prefix_cursor_position + size,
-            },
-        }
-
-        if self.websocket:
-            asyncio.run(self.websocket.send_text(json.dumps(msg)))
+        self._send_recognized_text(cur_recognized_text)
         logger.info("RECOGNIZING: {}".format(cur_recognized_text))
 
     def _azure_stt_input_auto_recognized(self, evt):
         cur_recognized_text = evt.result.text
-        size = len(cur_recognized_text)
+        self._send_recognized_text(cur_recognized_text)
+        self.prefix_text += cur_recognized_text
+        self.cursor_position += len(cur_recognized_text)
         logger.info("RECOGNIZED: {}".format(cur_recognized_text))
 
     def _azure_auto_stt_recognizer_session_started(self, evt):
+        msg = {
+            "type": "speech_recognizing",
+            "data": {
+                "stt_text": self.prefix_text + self.suffix_text,
+                "cursor_position": self.cursor_position,
+            },
+        }
+        self._send_text(msg)
         logger.info(f"SESSION STARTED : {evt}")
 
+    def _send_stopped_msg(self):
+        msg = {
+            "type": "stop_speech_recognize",
+            "data": {},
+        }
+        self._send_text(msg)
+
     def _azure_auto_stt_recognizer_session_stopped(self, evt):
+        self._send_stopped_msg()
         logger.info(f"SESSION STOPPED : {evt}")
 
     def _azure_auto_stt_recognizer_canceled(self, evt):
-        logger.info(f"SESSION CANCELED : {evt}")
+        self._send_stopped_msg()
         detailed_reason = evt.result.cancellation_details.reason
         if detailed_reason == speechsdk.CancellationReason.EndOfStream:
-            logger.warning(f"SESSION CANCELED : {detailed_reason}")
+            logger.warning(f"SESSION CANCELED with EndOfStream: {detailed_reason}")
         elif detailed_reason == speechsdk.CancellationReason.Error:
-            logger.error(f"SESSION CANCELED : {detailed_reason}")
+            logger.error(f"SESSION CANCELED With Error : {detailed_reason}")
         else:
             logger.warning(f"SESSION CANCELED : {detailed_reason}")
 
-    def stop_recognizer(self):
-        self.speech_recognizer.stop_continuous_recognition()
+    def stop_recognizer_asyn(self):
+        if self.speech_recognizer:
+            self.speech_recognizer.stop_continuous_recognition_async()
+            self.speech_recognizer = None
 
     def stop_recognizer_sync(self):
-        self.speech_recognizer.stop_continuous_recognition()
+        if self.speech_recognizer:
+            self.speech_recognizer.stop_continuous_recognition()
+            self.speech_recognizer = None
 
     def start_recognizer(
         self,
@@ -69,10 +99,12 @@ class Recognizer:
         original_text: str,
         original_cursor_position: int,
     ):
+        self.stop_recognizer_sync()
+
         self.speech_config.speech_recognition_language = speech_recognition_language
         self.prefix_text = original_text[0:original_cursor_position]
         self.suffix_text = original_text[original_cursor_position:]
-        self.prefix_cursor_position = original_cursor_position
+        self.cursor_position = original_cursor_position
         self.websocket = websocket
 
         speech_recognizer = speechsdk.SpeechRecognizer(

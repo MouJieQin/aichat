@@ -36,7 +36,7 @@
                 <div class="button-group">
                     <!-- copy session_ai_config to session_ai_config_for_drawer -->
                     <el-button :icon="MoreFilled" :type="''" text @click="handle_more_click" style="font-size: 24px;" />
-                    <el-button :icon="Microphone" :type="is_speech_recognizing ? 'danger' : ''" text
+                    <el-button :icon="Microphone" :type="is_speech_recognizing ? 'success' : ''" text
                         style="font-size: 24px;" @click="handle_speech_recognize" />
                     <el-button type="primary" :icon="Promotion" circle :disabled="!is_input_sendable"
                         @click="sendMessage" />
@@ -226,9 +226,6 @@ const set_cursor_position = (position: number) => {
 
 const handle_input_change = () => {
     is_input_sendable.value = inputVal.value.trim() != ""
-    // if (inputRef.value) {
-    //     cursor_position.value = inputRef.value.selectionStart;
-    // }
 }
 
 const handle_speech_recognize = () => {
@@ -460,13 +457,14 @@ const loadHistoryData = async () => {
                     }
                     break
 
-                case 'start_speech_recognize':
+                case 'speech_recognizing':
                     {
                         is_speech_recognizing.value = true
                         const stt_text = message.data.stt_text
                         const cursor_position = message.data.cursor_position
                         console.log("stt_text:", stt_text)
                         inputVal.value = stt_text
+                        handle_input_change()
                         set_cursor_position(cursor_position)
                     }
                     break
@@ -617,8 +615,10 @@ const handleSentenceClick = (e: MouseEvent) => {
 
 // 处理输入框按键事件
 const handleKeyDown = (e: KeyboardEvent) => {
+    if (is_speech_recognizing.value) {
+        stop_speech_recognize()
+    }
     if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Tab'].includes(e.key)) {
-        // 使用setTimeout确保按键动作完成后再获取位置
         setTimeout(updateCursorPosition, 0);
     }
     if (e.key === 'Enter' && e.shiftKey) {

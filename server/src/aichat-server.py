@@ -247,12 +247,7 @@ async def handle_message(websocket: WebSocket, clientID: int, message_text: str)
         cursor_position = message["data"]["cursor_position"]
         recognizer.start_recognizer(websocket, language, input_text, cursor_position)
     elif type == "stop_speech_recognize":
-        recognizer.stop_recognizer()
-        msg = {
-            "type": "stop_speech_recognize",
-            "data": {},
-        }
-        await websocket.send_text(json.dumps(msg))
+        recognizer.stop_recognizer_sync()
     elif type == "play_the_sentence":
         message_id = message["data"]["message_id"]
         sentence_id = message["data"]["sentence_id"]

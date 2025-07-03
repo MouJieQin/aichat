@@ -58,8 +58,15 @@ spa_websockes: Dict[int, WebSocket] = {}
 
 
 async def broadcast_spa_websockes(msg: str):
-    for websocket in spa_websockes.values():
-        await websocket.send_text(msg)
+    in_valide_keys = []
+    for key, websocket in spa_websockes.items():
+        try:
+            await websocket.send_text(msg)
+        except Exception as e:
+            logger.error(f"broadcast_spa_websockes error: {e}")
+            in_valide_keys.append(key)
+    for key in in_valide_keys:
+        del spa_websockes[key]
 
 
 async def update_session_title(session_id: int, title: str):

@@ -12,11 +12,14 @@
             <div v-if="streaming" class="message_assistant">
                 <p v-html="md.render(stream_response)"></p>
             </div>
-            <div v-if="session_suggestions.length > 0" class="message_assistant">
-                <p>以下是建议的话题：</p>
-                <ul>
-                    <li v-for="(suggestion, index) in session_suggestions" :key="index">{{ suggestion }}</li>
-                </ul>
+            <div style="margin-top: 12px;"></div>
+            <div class="message_suggestions" v-for="(suggestion, index) in session_suggestions" :key="index">
+                <el-button type="info" plain @click="send_message(suggestion)">
+                    {{ suggestion }}
+                    <el-icon style="margin-left: 10px;">
+                        <Right />
+                    </el-icon>
+                </el-button>
             </div>
         </div>
 
@@ -109,7 +112,7 @@
 import { ref, onMounted, watch, watchEffect, computed, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import MarkdownIt from 'markdown-it'
-import { Refresh, MoreFilled, CopyDocument, VideoPlay, VideoPause, Delete, More, Edit, Microphone, Promotion } from '@element-plus/icons-vue'
+import { Right, MoreFilled, CopyDocument, VideoPlay, VideoPause, Delete, More, Edit, Microphone, Promotion } from '@element-plus/icons-vue'
 import type { DrawerProps } from 'element-plus'
 import { useWebSocket, WebSocketService } from '@/common/websocket-client'
 import { loadJsonFile } from '@/common/json-loader'
@@ -452,6 +455,7 @@ const loadHistoryData = async () => {
 
         // 清空当前消息
         chatMessages.value = []
+        session_suggestions.value = []
 
         // 初始化WebSocket连接
         const wsUrl = `ws://localhost:4999/ws/aichat/${historyId.value}`
@@ -647,6 +651,7 @@ const send_user_input = () => {
 
 // 发送消息方法
 const send_message = (user_input: string) => {
+    session_suggestions.value = []
     const message = {
         type: 'user_input',
         data: {
@@ -777,6 +782,18 @@ const handleKeyDown = (e: KeyboardEvent) => {
     margin: 0 auto;
     text-align: left;
     background-color: #f5f0e6;
+}
+
+.message_suggestions {
+    padding: 8px 0px;
+    border-radius: 8px;
+    color: #333333;
+    background-blend-mode: luminosity;
+    max-width: clamp(300px, 80vw, 800px);
+    font-size: 16px;
+    line-height: 1.6;
+    margin: 0 auto;
+    text-align: left;
 }
 
 .fixed-input-area {

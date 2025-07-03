@@ -307,18 +307,27 @@ const update_session_ai_config = () => {
 }
 
 const update_message = (message_id: number, raw_text: string) => {
-    const session_id = get_session_id()
-    const result = processMarkdown(raw_text, message_id)
-    const msg = {
-        "type": "update_message",
-        "data": {
-            "session_id": session_id,
-            "message_id": message_id,
-            "raw_text": raw_text,
-            "sentences": result.sentences,
-        },
+    if (message_id === max_user_message_id.value) {
+        delete_message(max_assistant_message_id.value)
+        delete_message(max_user_message_id.value)
+        // make sure the message is deleted before sending the new message
+        setTimeout(() => {
+            send_message(raw_text)
+        }, 100)
+    } else {
+        const session_id = get_session_id()
+        const result = processMarkdown(raw_text, message_id)
+        const msg = {
+            "type": "update_message",
+            "data": {
+                "session_id": session_id,
+                "message_id": message_id,
+                "raw_text": raw_text,
+                "sentences": result.sentences,
+            },
+        }
+        currentWebSocket?.send(msg)
     }
-    currentWebSocket?.send(msg)
 }
 
 const regenerate = () => {
@@ -333,7 +342,7 @@ const regenerate = () => {
         // make sure the message is deleted before sending the new message
         setTimeout(() => {
             send_message(last_user_input)
-        }, 500)
+        }, 100)
     }
 }
 

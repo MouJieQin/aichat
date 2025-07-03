@@ -12,6 +12,12 @@
             <div v-if="streaming" class="message_assistant">
                 <p v-html="md.render(stream_response)"></p>
             </div>
+            <div v-if="session_suggestions.length > 0" class="message_assistant">
+                <p>以下是建议的话题：</p>
+                <ul>
+                    <li v-for="(suggestion, index) in session_suggestions" :key="index">{{ suggestion }}</li>
+                </ul>
+            </div>
         </div>
 
         <!-- 输入区域 - 使用固定定位保持在屏幕底部 -->
@@ -144,7 +150,8 @@ const drawer_direction = ref<DrawerProps['direction']>('ttb')
 const historyId = ref('')
 const loading = ref(false)
 const streaming = ref(false)
-const stream_response = ref('This is a test.')
+const stream_response = ref('')
+const session_suggestions = ref<string[]>([])
 const chatMessages = ref<Message[]>([])
 const max_user_message_id = ref(-1)
 const max_assistant_message_id = ref(-1)
@@ -529,7 +536,11 @@ const loadHistoryData = async () => {
                         scrollToBottom()
                     }
                     break
-
+                case 'session_suggestions':
+                    {
+                        session_suggestions.value = message.data.suggestions
+                    }
+                    break
                 case 'speech_recognizing':
                     {
                         is_speech_recognizing.value = true

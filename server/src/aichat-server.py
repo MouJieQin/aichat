@@ -11,7 +11,7 @@ from fastapi import (
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.responses import FileResponse
 from pydantic import BaseModel
-from typing import Callable, Awaitable
+from typing import Callable, Awaitable, Dict
 import uvicorn
 import plistlib
 import netifaces
@@ -54,6 +54,24 @@ API = OpenAIChatAPI(
 )
 speaker = Speaker(configure)
 recognizer = Recognizer(configure)
+spa_websockes: Dict[int, WebSocket] = {}
+
+
+async def broadcast_spa_websockes(msg: str):
+    for websocket in spa_websockes.values():
+        await websocket.send_text(msg)
+
+
+async def update_session_title(session_id: int, title: str):
+    API.update_session_title(session_id, title)
+    msg = {
+        "type": "update_session_title",
+        "data": {
+            "session_id": session_id,
+            "title": title,
+        },
+    }
+    await broadcast_spa_websockes(json.dumps(msg))
 
 
 async def send_all_sessions(websocket: WebSocket):
@@ -93,15 +111,16 @@ async def handle_spa_message(websocket: WebSocket, message_text: str):
     elif type == "update_session_title":
         session_id = message["data"]["session_id"]
         title = message["data"]["title"]
-        API.update_session_title(session_id, title)
-        msg = {
-            "type": "update_session_title",
-            "data": {
-                "session_id": session_id,
-                "title": title,
-            },
-        }
-        await websocket.send_text(json.dumps(msg))
+        await update_session_title(session_id, title)
+        # API.update_session_title(session_id, title)
+        # msg = {
+        #     "type": "update_session_title",
+        #     "data": {
+        #         "session_id": session_id,
+        #         "title": title,
+        #     },
+        # }
+        # await websocket.send_text(json.dumps(msg))
     elif type == "delete_session":
         session_id = message["data"]["session_id"]
         API.delete_session(session_id)
@@ -138,6 +157,9 @@ async def handle_spa_message(websocket: WebSocket, message_text: str):
 @app.websocket("/ws/aichat/spa")
 async def websocketEndpointSpa(websocket: WebSocket):
     await websocket.accept()
+    #  timestamp that's exact to the millisecond
+    time_id = int(time.time() * 1000)
+    spa_websockes[time_id] = websocket
     await send_all_sessions(websocket)
 
     async def receive():
@@ -155,6 +177,7 @@ async def websocketEndpointSpa(websocket: WebSocket):
     try:
         await asyncio.gather(*tasks_list)
     except WebSocketDisconnect:
+        spa_websockes.pop(time_id)
         logger.info(f"websocket spa disconnected.")
 
 
@@ -256,7 +279,7 @@ async def handle_message(websocket: WebSocket, clientID: int, message_text: str)
         # SQLite objects created in a thread can only be used in that same thread.
         system_prompt_content = API.get_session_system_message(session_id)
 
-        def system_handle():
+        async def system_handle():
             system_ai_response = API.system_chat(
                 system_prompt_content, user_message, response
             )
@@ -266,8 +289,17 @@ async def handle_message(websocket: WebSocket, clientID: int, message_text: str)
             title = system_info["title"]
             suggestions = system_info["suggestions"]
             logger.info("title:%s, suggestions:%s", title, suggestions)
+            await update_session_title(session_id, title)
+            msg = {
+                "type": "session_suggestions",
+                "data": {
+                    "session_id": session_id,
+                    "suggestions": suggestions,
+                },
+            }
+            await websocket.send_text(json.dumps(msg))
 
-        threading.Thread(target=system_handle, daemon=True).start()
+        await system_handle()
 
     elif type == "parsed_response":
         parsed_type = message["data"]["type"]

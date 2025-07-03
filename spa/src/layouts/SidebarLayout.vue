@@ -48,15 +48,14 @@
                                 <ChatDotSquare />
                             </el-icon>
                             <span class="truncate-text" :title="item.title">{{ item.title }}</span>
-                            <el-icon v-if="item.config['top']" style="float: right;">
+                            <el-icon v-if="item.config['top']" style="padding-right: 10px;">
                                 <LuPin />
                             </el-icon>
                             <el-popover placement="top-end" :width="200" trigger="click">
                                 <div>
-                                    <el-button :type="''" :icon="ChatDotSquare" text
-                                        style="padding-right: 50%;margin-left: 7%;"
-                                        @click.stop="chat_popover_show = false">
-                                        置顶
+                                    <el-button :type="''" :icon="item.config['top'] ? LuPinOff : LuPin" text
+                                        style="padding-right: 50%;margin-left: 7%;" @click.stop="handle_top(item)">
+                                        {{ item.config['top'] ? '取消置顶' : '置顶' }}
                                     </el-button>
 
                                     <el-button :type="''" :icon="EditPen" text style="padding-right: 50%;"
@@ -169,6 +168,17 @@ const sort_history_items = () => {
     });
 };
 
+const handle_top = (item: any) => {
+    const message = {
+        type: 'update_session_top',
+        data: {
+            session_id: get_session_id(item.path),
+            top: !item.config['top'],
+        },
+    }
+    currentWebSocket.send(message)
+}
+
 const create_new_session = () => {
     const message = {
         type: 'create_session',
@@ -240,6 +250,19 @@ const websocket_connect = async () => {
                                 break
                             }
                         }
+                    }
+                    break
+                case 'update_session_top':
+                    {
+                        const session_id = message.data.session_id
+                        const top = message.data.top
+                        for (const item of historyItems.value) {
+                            if (item.path == `/history/${session_id}`) {
+                                item.config.top = top
+                                break
+                            }
+                        }
+                        sort_history_items()
                     }
                     break
                 case 'delete_session':

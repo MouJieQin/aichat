@@ -243,6 +243,11 @@ class OpenAIChatAPI:
     def update_session_title(self, session_id: int, title: str):
         self.db.update_session_title(session_id, title)
 
+    def update_session_top(self, session_id: int, top: bool):
+        ai_config = self.get_session_ai_config(session_id)
+        ai_config["top"] = top
+        self.update_session_ai_config(session_id, ai_config)
+
     def delete_session(self, session_id: int):
         self.db.delete_session_and_messages(session_id)
 

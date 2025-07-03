@@ -14,7 +14,7 @@
             </div>
             <div style="margin-top: 12px;"></div>
             <div class="message_suggestions" v-for="(suggestion, index) in session_suggestions" :key="index">
-                <el-button type="info" plain @click="send_message(suggestion)">
+                <el-button type="info" plain @click="send_message(suggestion)" style="border-radius: 10px;">
                     {{ suggestion }}
                     <el-icon style="margin-left: 10px;">
                         <Right />

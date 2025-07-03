@@ -367,6 +367,7 @@ async def websocketEndpointAIchatSession(websocket: WebSocket, clientID: int):
 if __name__ == "__main__":
     uvicorn.run(
         app="aichat-server:app",
+        # host="0.0.0.0",
         host="localhost",
         port=4999,
         reload=False,

@@ -20,8 +20,9 @@
                 :style="{ opacity: showButtons && !show_edit_area ? '1' : '0', pointerEvents: showButtons && !show_edit_area ? 'auto' : 'none' }">
                 <el-button :type="''" :icon="VideoPlay" text @click="handlePlay" v-if="showPlayButton" />
                 <el-button :type="''" :icon="Edit" text @click="handleEditClick" />
-                <el-button :type="''" :icon="CopyDocument" text @click="handleCopy" v-if="showCopyButton" />
-                <el-button :type="''" :icon="Delete" text @click="handleDelete" v-if="showDeleteButton" />
+                <el-button :type="''" :icon="show_copy_check ? Check : CopyDocument" text @click="handleCopyClick"
+                    v-if="showCopyButton" />
+                <el-button :type="''" :icon="Delete" text @click="handleDelete"/>
             </el-button-group>
         </div>
     </div>
@@ -36,10 +37,20 @@ import {
     Close,
     Check,
 } from '@element-plus/icons-vue'
-import { ref, defineProps, defineEmits } from 'vue'
+import { ref } from 'vue'
 const show_edit_area = ref(false)
+const show_copy_check = ref(false)
 const showButtons = ref(false)
 const edit_input = ref('')
+
+
+const handleCopyClick = () => {
+    show_copy_check.value = true
+    navigator.clipboard.writeText(props.msg.raw_text)
+    setTimeout(() => {
+        show_copy_check.value = false
+    }, 1000)
+}
 
 const handleEditClick = () => {
     show_edit_area.value = true

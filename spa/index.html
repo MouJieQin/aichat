@@ -1,11 +1,26 @@
 <!doctype html>
-<html lang="en" class="dark">
+<html lang="en" id="theme-root">
 
 <head>
   <meta charset="UTF-8" />
   <link rel="icon" type="image/svg+xml" href="/vite.svg" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Vite + Vue + TS</title>
+  <script>
+    // 在DOM加载前检测系统主题
+    if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+
+    // 监听系统主题变化
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
+      const newTheme = e.matches ? 'dark' : 'light';
+      document.documentElement.classList.toggle('dark', newTheme === 'dark');
+      localStorage.theme = newTheme; // 可选：保存用户偏好
+    });
+  </script>
 </head>
 
 <body>

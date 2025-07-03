@@ -1,21 +1,20 @@
 <template>
-  <div id="app">
-    <router-view id="app" />
-  </div>
+    <!-- <ThemeToggle /> -->
+    <main id="app" class="flex-grow container mx-auto px-4 py-8" >
+      <router-view id="app" />
+    </main>
 </template>
 
 <script lang="ts" setup>
-</script>
+// 导入并初始化主题
+import { onMounted } from 'vue';
+import { useTheme } from '@/common/use-theme';
+import ThemeToggle from '@/components/ThemeToggle.vue';
 
-<style>
-#app {
-  font-family: Avenir, Helvetica, Arial, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  text-align: center;
-  /* color: #2c3e50; */
-  margin-top: 0px;
-  height: 100vh;
-  /* overflow: auto; */
-}
-</style>
+const { initTheme, watchSystemTheme } = useTheme();
+
+onMounted(() => {
+  initTheme();
+  watchSystemTheme();
+});
+</script>

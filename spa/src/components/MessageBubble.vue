@@ -2,11 +2,11 @@
     <div @mouseenter="showButtons = true" @mouseleave="showButtons = false">
         <div class="message"
             :class="{ 'user': msg.role === 'user', 'assistant': msg.role === 'assistant', 'system': msg.role === 'system' }">
-            <div class="markdown-container" @click="sentenceClick">
-                <p v-show="!show_edit_area" v-html="msg.processed_html"></p>
+            <div v-show="!show_edit_area" class="markdown-container" @click="sentenceClick">
+                <p v-html="msg.processed_html"></p>
             </div>
-            <div class="edit-input-container">
-                <el-input v-if="show_edit_area" autosize v-model="edit_input" type="textarea" />
+            <div v-if="show_edit_area" class="edit-input-container">
+                <el-input autosize v-model="edit_input" type="textarea" />
             </div>
             <div class="time">{{ msg.time }}</div>
         </div>

@@ -46,7 +46,7 @@ class ChatDatabase:
         cursor = self.conn.cursor()
         cursor.execute(
             "INSERT INTO sessions (title, create_time, ai_config) VALUES (?, ?, ?)",
-            (title, create_time, json.dumps(ai_config)),
+            (title, create_time, json.dumps(ai_config, ensure_ascii=False)),
         )
         session_id = cursor.lastrowid
         self.conn.commit()
@@ -134,7 +134,7 @@ class ChatDatabase:
         cursor = self.conn.cursor()
         cursor.execute(
             "UPDATE sessions SET ai_config = ? WHERE id = ?",
-            (json.dumps(ai_config), session_id),
+            (json.dumps(ai_config, ensure_ascii=False), session_id),
         )
         self.conn.commit()
 
@@ -143,9 +143,9 @@ class ChatDatabase:
         cursor.execute("SELECT * FROM sessions WHERE id = ?", (session_id,))
         return cursor.fetchone()
 
-    def get_all_session_id_title(self) -> List[Dict[str, Any]]:
+    def get_all_session_id_title_config(self) -> List[Any]:
         cursor = self.conn.cursor()
-        cursor.execute("SELECT id, title FROM sessions")
+        cursor.execute("SELECT id, title, ai_config FROM sessions")
         return cursor.fetchall()
 
     def get_parsed_text(self, message_id: int) -> List:

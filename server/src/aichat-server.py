@@ -57,6 +57,23 @@ recognizer = Recognizer(configure)
 spa_websockes: Dict[int, WebSocket] = {}
 
 
+def update_session_ai_config():
+    sessions = API.get_all_session_id_title_config()
+    for session in sessions:
+        session_id = session[0]
+        config = json.loads(session[2])
+        if "top" not in config:
+            config["top"] = False
+        if "suggestions" not in config:
+            config["suggestions"] = []
+        if "last_active_time" not in config:
+            config["last_active_time"] = time.time()
+        API.update_session_ai_config(session_id, config)
+
+
+update_session_ai_config()
+
+
 async def broadcast_spa_websockes(msg: str):
     in_valide_keys = []
     for key, websocket in spa_websockes.items():
@@ -81,27 +98,33 @@ async def update_session_title(session_id: int, title: str):
     await broadcast_spa_websockes(json.dumps(msg))
 
 
-async def send_all_sessions(websocket: WebSocket):
-    sessions = API.get_all_session_id_title()
+async def send_all_sessions():
+    sessions = API.get_all_session_id_title_config()
     msg = {
         "type": "all_sessions",
-        "data": sessions,
+        "data": {
+            "sessions": sessions,
+        },
     }
-    await websocket.send_text(json.dumps(msg))
+    await broadcast_spa_websockes(json.dumps(msg))
 
 
 async def handle_spa_message(websocket: WebSocket, message_text: str):
     message = json.loads(message_text)
     type = message["type"]
     if type == "get_all_sessions":
-        await send_all_sessions(websocket)
+        await send_all_sessions()
     elif type == "create_session":
         system_prompt = AI_CONFIG_DEFAULT["system_prompt"]
         parsed_system_prompt = json.dumps({"sentences": []})
         system_prompt = AI_CONFIG_DEFAULT["system_prompt"]
         title = AI_CONFIG_DEFAULT["chat_title"]
+        config = json.loads(json.dumps(AI_CONFIG_DEFAULT))
+        config["top"] = False
+        config["last_active_time"] = time.time()
+        config["suggestions"] = []
         session_id, message_id = API.create_new_session(
-            title, DEFAULT_AI_CONFIG, system_prompt, parsed_system_prompt
+            title, config, system_prompt, parsed_system_prompt
         )
         message = {
             "type": "parse_request",
@@ -119,15 +142,6 @@ async def handle_spa_message(websocket: WebSocket, message_text: str):
         session_id = message["data"]["session_id"]
         title = message["data"]["title"]
         await update_session_title(session_id, title)
-        # API.update_session_title(session_id, title)
-        # msg = {
-        #     "type": "update_session_title",
-        #     "data": {
-        #         "session_id": session_id,
-        #         "title": title,
-        #     },
-        # }
-        # await websocket.send_text(json.dumps(msg))
     elif type == "delete_session":
         session_id = message["data"]["session_id"]
         API.delete_session(session_id)
@@ -144,8 +158,9 @@ async def handle_spa_message(websocket: WebSocket, message_text: str):
             parsed_data = message["data"]["data"]
             message_id = parsed_data["message_id"]
             session_id = parsed_data["session_id"]
-            title = AI_CONFIG_DEFAULT["chat_title"]
-            system_prompt = AI_CONFIG_DEFAULT["system_prompt"]
+            config = API.get_session_ai_config(session_id)
+            title = config["chat_title"]
+            system_prompt = config["system_prompt"]
             parsed_text = {"sentences": parsed_data["sentences"]}
             API.update_message(message_id, parsed_text=json.dumps(parsed_text))
             msg = {
@@ -155,7 +170,7 @@ async def handle_spa_message(websocket: WebSocket, message_text: str):
                     "message_id": message_id,
                     "title": title,
                     "system_prompt": system_prompt,
-                    "ai_config": DEFAULT_AI_CONFIG,
+                    "config": config,
                 },
             }
             await websocket.send_text(json.dumps(msg))
@@ -167,7 +182,7 @@ async def websocketEndpointSpa(websocket: WebSocket):
     #  timestamp that's exact to the millisecond
     time_id = int(time.time() * 1000)
     spa_websockes[time_id] = websocket
-    await send_all_sessions(websocket)
+    await send_all_sessions()
 
     async def receive():
         while True:
@@ -305,6 +320,12 @@ async def handle_message(websocket: WebSocket, clientID: int, message_text: str)
                 },
             }
             await websocket.send_text(json.dumps(msg))
+
+            config = API.get_session_ai_config(session_id)
+            config["last_active_time"] = time.time()
+            config["suggestions"] = suggestions
+            API.update_session_ai_config(session_id, config)
+            await send_all_sessions()
 
         await system_handle()
 

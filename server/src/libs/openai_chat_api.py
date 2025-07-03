@@ -219,8 +219,8 @@ class OpenAIChatAPI:
             raise ValueError("System prompt creation failed")
         return (session_id, message_id)
 
-    def get_all_session_id_title(self) -> List[Dict[str, Any]]:
-        return self.db.get_all_session_id_title()
+    def get_all_session_id_title_config(self) -> List[Any]:
+        return self.db.get_all_session_id_title_config()
 
     def get_session_messages(self, session_id: int, limit=100) -> Optional[list[dict]]:
         messages = self.db.get_session_messages(session_id, limit)

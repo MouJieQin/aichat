@@ -2,8 +2,7 @@
     <div class="app-container">
 
         <div class="sidebar" @click="siderbar_click">
-            <el-menu :default-active="activeMenu" :collapse="isCollapse"
-                @open="handleOpen" @close="handleClose">
+            <el-menu :default-active="activeMenu" :collapse="isCollapse" @open="handleOpen" @close="handleClose">
                 <el-menu-item index="collapse" @click="isCollapse = !isCollapse" style="padding-left: 2px;">
                     <el-icon v-show="!isCollapse">
                         <Fold />
@@ -49,7 +48,9 @@
                                 <ChatDotSquare />
                             </el-icon>
                             <span class="truncate-text" :title="item.title">{{ item.title }}</span>
-
+                            <el-icon v-if="item.config['top']" style="float: right;">
+                                <LuPin />
+                            </el-icon>
                             <el-popover placement="top-end" :width="200" trigger="click">
                                 <div>
                                     <el-button :type="''" :icon="ChatDotSquare" text
@@ -111,6 +112,7 @@
 import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { Location, Plus, Expand, Fold, Menu, ChatDotSquare, Clock, MoreFilled, Delete, EditPen } from '@element-plus/icons-vue'
+import { LuPin, LuPinOff } from 'vue-icons-plus/lu'
 import { useWebSocket, WebSocketService } from '@/common/websocket-client'
 import { processMarkdown, SentenceInfo } from '@/common/markdown-processor'
 import debounce from 'lodash/debounce'
@@ -147,6 +149,25 @@ onMounted(() => {
 onBeforeUnmount(() => {
     currentWebSocket.close()
 })
+
+const sort_history_items = () => {
+    // 置顶的对话排在前面, 然后按最后活跃时间排序
+    historyItems.value.sort((a, b) => {
+        // 获取置顶状态，默认为false
+        const aTop = a.config?.top ?? false;
+        const bTop = b.config?.top ?? false;
+
+        // 优先比较置顶状态
+        if (aTop && !bTop) return -1;
+        if (!aTop && bTop) return 1;
+
+        // 当置顶状态相同时，比较最后活跃时间
+        const aTime = a.config?.last_active_time ?? 0;
+        const bTime = b.config?.last_active_time ?? 0;
+
+        return bTime - aTime; // 降序排列，最新的在前
+    });
+};
 
 const create_new_session = () => {
     const message = {
@@ -195,12 +216,15 @@ const websocket_connect = async () => {
                 case 'all_sessions':
                     console.log('收到聊天消息:', message.data)
                     historyItems.value = []
-                    for (const session of message.data) {
+                    console.log(message.data.sessions)
+                    for (const session of message.data.sessions) {
                         historyItems.value.push({
                             path: `/history/${session[0]}`,
                             title: session[1],
+                            config: JSON.parse(session[2]),
                         })
                     }
+                    sort_history_items()
                     siderbar_click()
                     setTimeout(() => {
                         highlight_actived_item_by_background_font_size(route.path, "")
@@ -257,11 +281,13 @@ const websocket_connect = async () => {
                 case 'new_session':
                     const session_id = message.data.session_id
                     const title = message.data.title
-                    const system_prompt = message.data.system_prompt
+                    const config = message.data.config
                     historyItems.value.push({
                         path: `/history/${session_id}`,
                         title: title,
+                        config: config,
                     })
+                    sort_history_items()
                     setTimeout(() => {
                         router.push(`/history/${session_id}`)
                     }, 300)

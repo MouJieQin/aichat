@@ -624,6 +624,7 @@ const loadHistoryData = async () => {
                         if (ai_config.tts_voice == undefined)
                             ai_config.tts_voice = "zh-CN-XiaochenNeural"
                         session_ai_config.value = ai_config
+                        session_suggestions.value = ai_config.suggestions
                         console.log("session_ai_config:", session_ai_config.value)
                     }
                     break

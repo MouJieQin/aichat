@@ -4,7 +4,8 @@
         <div class="chat-messages-container">
             <div class="chat-messages" v-for="(msg, text_index) in chatMessages" :key="text_index">
                 <MessageBubble :key="text_index" :msg="msg" :show-buttons="true"
-                    :handleSentenceClick="handleSentenceClick" :update_message="update_message" />
+                    :handleSentenceClick="handleSentenceClick" :update_message="update_message" @play="play"
+                    @pause="pause" @stop="stop" />
             </div>
             <div v-if="streaming">
                 <div class="message assistant">
@@ -119,6 +120,7 @@ interface Message {
     sentences: SentenceInfo[];
     time: string;
     role: string;
+    is_playing: boolean;
 }
 interface AIconfig {
     base_url: string;
@@ -351,7 +353,7 @@ const highlightPlayingSentence = () => {
     if (element) {
         element.classList.add('sentence-playing')
         // 滚动到高亮的句子
-        element.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        // element.scrollIntoView({ behavior: 'smooth', block: 'center' })
     }
 }
 
@@ -407,6 +409,7 @@ const loadHistoryData = async () => {
                                     sentences: result.sentences,
                                     time: format_time_now(),
                                     role: "user",
+                                    is_playing: false,
                                 })
                                 const msg = {
                                     type: 'parsed_response',
@@ -435,6 +438,7 @@ const loadHistoryData = async () => {
                                     sentences: result.sentences,
                                     time: format_time_now(),
                                     role: "assistant",
+                                    is_playing: false,
                                 })
                                 const msg = {
                                     type: 'parsed_response',
@@ -484,6 +488,10 @@ const loadHistoryData = async () => {
                     {
                         const message_id = message.data.message_id
                         const sentence_id = message.data.sentence_id
+                        const msg = chatMessages.value.find(msg => msg.message_id === message_id)
+                        if (msg) {
+                            msg.is_playing = sentence_id !== -1
+                        }
                         console.log("the_sentence_playing:", message_id, sentence_id)
                         currentPlayingSentence.value = { message_id, sentence_id }
                     }
@@ -516,6 +524,7 @@ const loadHistoryData = async () => {
                             sentences: result.sentences,
                             time: msg[4],
                             role: msg[1],
+                            is_playing: false,
                         })
                     })
                     scrollToBottomDebounced()
@@ -587,11 +596,18 @@ const pause = () => {
     })
 }
 
-const unpause = () => {
-    currentWebSocket?.send({
-        type: 'unpause',
-        data: {},
-    })
+const play = (message_id: number) => {
+    if (!session_ai_config.value) {
+        return
+    }
+    const msg = {
+        type: 'play',
+        data: {
+            message_id: message_id,
+            voice_name: session_ai_config.value.tts_voice,
+        },
+    }
+    currentWebSocket?.send(msg)
 }
 
 const stop = () => {

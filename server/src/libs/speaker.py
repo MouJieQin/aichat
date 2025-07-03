@@ -13,6 +13,7 @@ import azure.cognitiveservices.speech as speechsdk
 import time
 import shutil
 
+
 class PygameAudioOutputStream(speechsdk.audio.PushAudioOutputStreamCallback):
     """
     A custom audio output stream that passes speech data to Pygame.
@@ -160,11 +161,6 @@ class Speaker(metaclass=SingletonMeta):
         self.clock = pygame.time.Clock()
         self.audio_channel_assistant_synthesizer = pygame.mixer.Channel(0)
         self.audio_channel_system_prompt = pygame.mixer.Channel(1)
-
-        # self.keep_alive_channel = pygame.mixer.Channel(2)
-        # self.keep_alive_channel.set_volume(0.05)
-        # self.silent_sound = mixer.Sound(self.audio_files["send_message"])
-        # self.silent_sound.set_volume(0.05)
         self.audio_queue = deque()
 
     def close(self):
@@ -336,6 +332,9 @@ class Speaker(metaclass=SingletonMeta):
 
     def unpause(self):
         self.audio_channel_assistant_synthesizer.unpause()
+
+    def is_busy(self):
+        return self.audio_channel_assistant_synthesizer.get_busy()
 
     def stop(self):
         self.audio_channel_assistant_synthesizer.stop()

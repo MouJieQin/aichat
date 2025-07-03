@@ -173,6 +173,31 @@ def _create_play_sentence_callback(
     return play_sentence_callback
 
 
+def _play_sentences(
+    websocket: WebSocket,
+    clientID: int,
+    message_id: int,
+    sentence_id_start: int,
+    sentences: list,
+    voice_name: str,
+):
+    play_sentence_callback = _create_play_sentence_callback(websocket, message_id)
+
+    def play_sentences():
+        asyncio.run(
+            speaker.play_sentences(
+                str(clientID),
+                str(message_id),
+                str(sentence_id_start),
+                sentences,
+                play_sentence_callback,
+                voice_name,
+            )
+        )
+
+    threading.Thread(target=play_sentences, daemon=True).start()
+
+
 async def handle_message(websocket: WebSocket, clientID: int, message_text: str):
     message = json.loads(message_text)
     type = message["type"]
@@ -299,25 +324,28 @@ async def handle_message(websocket: WebSocket, clientID: int, message_text: str)
         if sentences is None:
             logger.warning("message_id:{} not found any sentences".format(message_id))
             return
-        play_sentence_callback = _create_play_sentence_callback(websocket, message_id)
-
-        def play_sentences():
-            asyncio.run(
-                speaker.play_sentences(
-                    str(clientID),
+        _play_sentences(
+            websocket, clientID, message_id, sentence_id_start, sentences, voice_name
+        )
+    elif type == "pause":
+        speaker.pause()
+    elif type == "play":
+        if speaker.is_busy():
+            speaker.unpause()
+        else:
+            message_id = message["data"]["message_id"]
+            voice_name = message["data"]["voice_name"]
+            sentence_id_start = 0
+            sentences = API.get_sentences(message_id)
+            if sentences is not None:
+                _play_sentences(
+                    websocket,
+                    clientID,
                     message_id,
                     sentence_id_start,
                     sentences,
-                    play_sentence_callback,
                     voice_name,
                 )
-            )
-
-        threading.Thread(target=play_sentences, daemon=True).start()
-    elif type == "pause":
-        speaker.pause()
-    elif type == "unpause":
-        speaker.unpause()
     elif type == "stop":
         speaker.stop()
 

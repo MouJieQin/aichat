@@ -18,11 +18,12 @@
             </el-button-group>
             <el-button-group
                 :style="{ opacity: showButtons && !show_edit_area ? '1' : '0', pointerEvents: showButtons && !show_edit_area ? 'auto' : 'none' }">
-                <el-button :type="''" :icon="VideoPlay" text @click="handlePlay" v-if="showPlayButton" />
+                <el-button v-if="!msg.is_playing || is_paused" :type="''" :icon="VideoPlay" text @click="handlePlay" />
+                <el-button v-else :type="''" :icon="VideoPause" text @click="handlePause" />
+                <el-button :type="''" :icon="VscStopCircle" text @click="handleStop" />
                 <el-button :type="''" :icon="Edit" text @click="handleEditClick" />
-                <el-button :type="''" :icon="show_copy_check ? Check : CopyDocument" text @click="handleCopyClick"
-                    v-if="showCopyButton" />
-                <el-button :type="''" :icon="Delete" text @click="handleDelete"/>
+                <el-button :type="''" :icon="show_copy_check ? Check : CopyDocument" text @click="handleCopyClick" />
+                <el-button :type="''" :icon="Delete" text @click="handleDelete" />
             </el-button-group>
         </div>
     </div>
@@ -34,13 +35,16 @@ import {
     CopyDocument,
     Delete,
     VideoPlay,
+    VideoPause,
     Close,
     Check,
 } from '@element-plus/icons-vue'
+import { VscStopCircle } from 'vue-icons-plus/vsc'
 import { ref } from 'vue'
 const show_edit_area = ref(false)
 const show_copy_check = ref(false)
 const showButtons = ref(false)
+const is_paused = ref(false)
 const edit_input = ref('')
 
 
@@ -77,7 +81,8 @@ const props = defineProps({
             raw_text: '',
             role: '',
             processed_html: '',
-            time: ''
+            time: '',
+            is_playing: false
         })
     },
     handleSentenceClick: {
@@ -88,25 +93,25 @@ const props = defineProps({
         type: Function,
         required: true,
     },
-    showPlayButton: {
-        type: Boolean,
-        default: false
-    },
-    showCopyButton: {
-        type: Boolean,
-        default: true
-    },
     showDeleteButton: {
         type: Boolean,
         default: false
     }
 })
 
-const emits = defineEmits(['play', 'edit', 'copy', 'delete'])
+const emits = defineEmits(['play', 'pause', 'stop', 'edit', 'delete'])
 
-const handlePlay = () => emits('play', props.msg)
-const handleCopy = () => emits('copy', props.msg)
-const handleDelete = () => emits('delete', props.msg)
+const handlePlay = () => {
+    is_paused.value = false
+    emits('play', props.msg.message_id)
+}
+
+const handlePause = () => {
+    is_paused.value = true
+    emits('pause')
+}
+const handleStop = () => emits('stop')
+const handleDelete = () => emits('delete', props.msg.message_id)
 </script>
 
 <style scoped>
@@ -120,12 +125,12 @@ const handleDelete = () => emits('delete', props.msg)
 
 .message-button-group.assistant {
     padding-top: 10px;
-    padding-right: 710px;
+    padding-right: 610px;
 }
 
 .message-button-group.system {
     padding-top: 10px;
-    padding-right: 710px;
+    padding-right: 610px;
 }
 
 /* 聊天消息样式优化 */

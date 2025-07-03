@@ -4,16 +4,13 @@
         <div class="chat-messages-container">
             <div class="chat-messages" v-for="(msg, text_index) in chatMessages" :key="text_index">
                 <MessageBubble :key="text_index" :msg="msg" :show-buttons="true"
+                    :showRefreshButton="msg.message_id === max_assistant_message_id"
                     :handleSentenceClick="handleSentenceClick" :update_message="update_message"
                     @delete_audio_files="delete_audio_files" @delete_message="delete_message" @play="play"
-                    @pause="pause" @stop="stop" />
+                    @pause="pause" @stop="stop" @regenerate="regenerate" />
             </div>
-            <div v-if="streaming">
-                <div class="message assistant">
-                    <div class="markdown-container">
-                        <p v-html="md.render(stream_response)"></p>
-                    </div>
-                </div>
+            <div v-if="streaming" class="message_assistant">
+                <p v-html="md.render(stream_response)"></p>
             </div>
         </div>
 
@@ -29,7 +26,7 @@
                     <el-button :icon="Microphone" :type="is_speech_recognizing ? 'success' : ''" text
                         style="font-size: 24px;" @click="handle_speech_recognize" />
                     <el-button :type="is_input_sendable ? 'primary' : 'info'" :icon="Promotion" circle
-                        :disabled="!is_input_sendable" @click="sendMessage" />
+                        :disabled="!is_input_sendable" @click="send_user_input" />
                 </div>
             </div>
         </div>
@@ -103,7 +100,7 @@
 
 
 <script lang="ts" setup>
-import { ref, onMounted, watch, computed, nextTick } from 'vue'
+import { ref, onMounted, watch, watchEffect, computed, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import MarkdownIt from 'markdown-it'
 import { Refresh, MoreFilled, CopyDocument, VideoPlay, VideoPause, Delete, More, Edit, Microphone, Promotion } from '@element-plus/icons-vue'
@@ -149,7 +146,8 @@ const loading = ref(false)
 const streaming = ref(false)
 const stream_response = ref('This is a test.')
 const chatMessages = ref<Message[]>([])
-
+const max_user_message_id = ref(-1)
+const max_assistant_message_id = ref(-1)
 const sentences = ref<SentenceInfo[]>([])
 const inputVal = ref('')
 const is_input_sendable = ref(false)
@@ -168,6 +166,20 @@ watch(() => route.params.id, (newId) => {
     }
     console.log('@newId:', newId)
 })
+
+watchEffect(() => {
+    // 直接使用chatMessages，自动追踪依赖
+    const userMessages = chatMessages.value.filter(m => m.role === 'user');
+    const assistantMessages = chatMessages.value.filter(m => m.role === 'assistant');
+
+    max_user_message_id.value = userMessages.length > 0
+        ? Math.max(...userMessages.map(m => m.message_id))
+        : -1;
+
+    max_assistant_message_id.value = assistantMessages.length > 0
+        ? Math.max(...assistantMessages.map(m => m.message_id))
+        : -1;
+});
 
 onMounted(async () => {
     loadHistoryData()
@@ -307,6 +319,22 @@ const update_message = (message_id: number, raw_text: string) => {
         },
     }
     currentWebSocket?.send(msg)
+}
+
+const regenerate = () => {
+    let last_user_input = ""
+    const msg = chatMessages.value.find(msg => msg.message_id === max_user_message_id.value)
+    if (msg) {
+        last_user_input = msg.raw_text
+    }
+    if (last_user_input) {
+        delete_message(max_assistant_message_id.value)
+        delete_message(max_user_message_id.value)
+        // make sure the message is deleted before sending the new message
+        setTimeout(() => {
+            send_message(last_user_input)
+        }, 500)
+    }
 }
 
 const delete_audio_files = (message_id: number) => {
@@ -591,22 +619,23 @@ const loadHistoryData = async () => {
     }
 }
 
-// 发送消息方法
-const sendMessage = () => {
+const send_user_input = () => {
     if (!is_input_sendable.value) return
+    send_message(inputVal.value)
+    inputVal.value = ''
+}
 
+// 发送消息方法
+const send_message = (user_input: string) => {
     const message = {
         type: 'user_input',
         data: {
-            user_message: inputVal.value,
-            session_id: historyId.value,
+            user_message: user_input,
+            session_id: get_session_id(),
         },
     }
     currentWebSocket?.send(message)
-    inputVal.value = ''
-
     scrollToBottom()
-
 }
 
 // 格式化时间
@@ -696,7 +725,7 @@ const handleKeyDown = (e: KeyboardEvent) => {
     }
     if (e.key === 'Enter' && e.shiftKey) {
         e.preventDefault()
-        sendMessage()
+        send_user_input()
     }
 }
 
@@ -713,6 +742,21 @@ const handleKeyDown = (e: KeyboardEvent) => {
 
 .chat-messages-container {
     margin-bottom: calc(var(--fixed-input-area-padding-top) + 100px);
+}
+
+.message_assistant {
+    padding: 8px 12px;
+    border-radius: 8px;
+    color: #333333;
+    background-blend-mode: luminosity;
+
+    max-width: clamp(300px, 80vw, 800px);
+    font-size: 16px;
+    line-height: 1.6;
+    padding: 20px;
+    margin: 0 auto;
+    text-align: left;
+    background-color: #f5f0e6;
 }
 
 .fixed-input-area {

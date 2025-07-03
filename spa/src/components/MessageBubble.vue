@@ -22,6 +22,7 @@
                 <el-button v-else :type="''" :icon="VideoPause" text @click="handlePause" />
                 <el-button :type="''" :icon="VscStopCircle" text @click="handleStop" />
                 <el-button :type="''" :icon="show_copy_check ? Check : CopyDocument" text @click="handleCopyClick" />
+                <el-button v-show="showRefreshButton" :icon="Refresh" text @click="handleRegenerate" />
                 <el-button :type="''" :icon="Edit" text @click="handleEditClick" />
 
                 <el-popover placement="bottom-start" :width="200" trigger="click">
@@ -66,6 +67,7 @@ import {
     Delete,
     VideoPlay,
     VideoPause,
+    Refresh,
     Close,
     Check,
     More
@@ -78,8 +80,6 @@ const showButtons = ref(false)
 const is_paused = ref(false)
 const edit_input = ref('')
 const show_delete_audo_file_check = ref(false)
-const is_more_collapse = ref(false)
-
 
 const handleCopyClick = () => {
     show_copy_check.value = true
@@ -126,13 +126,13 @@ const props = defineProps({
         type: Function,
         required: true,
     },
-    showDeleteButton: {
+    showRefreshButton: {
         type: Boolean,
-        default: false
+        required: true,
     }
 })
 
-const emits = defineEmits(['play', 'pause', 'stop', 'delete_audio_files', 'delete_message'])
+const emits = defineEmits(['play', 'pause', 'stop', 'delete_audio_files', 'delete_message', 'regenerate'])
 
 const handlePlay = () => {
     is_paused.value = false
@@ -152,6 +152,7 @@ const delete_audio_files = () => {
     }, 1000)
 }
 const handleDeleteMessage = () => emits('delete_message', props.msg.message_id)
+const handleRegenerate = () => emits('regenerate')
 
 </script>
 
@@ -165,14 +166,21 @@ const handleDeleteMessage = () => emits('delete_message', props.msg.message_id)
 }
 
 .message-button-group.assistant {
+    max-width: clamp(300px, 80vw, 800px);
+    font-size: 16px;
+    line-height: 1.6;
     padding-top: 10px;
-    padding-right: 610px;
+    margin: 0 auto;
+    text-align: left;
 }
 
 .message-button-group.system {
+    max-width: clamp(300px, 80vw, 800px);
+    font-size: 16px;
+    line-height: 1.6;
     padding-top: 10px;
-    margin-bottom: 20px;
-    padding-right: 610px;
+    margin: 0 auto;
+    text-align: left;
 }
 
 /* 聊天消息样式优化 */
@@ -193,7 +201,6 @@ const handleDeleteMessage = () => emits('delete_message', props.msg.message_id)
     text-align: left;
 
     background-color: #E5EAF3;
-    color: #333333;
 }
 
 .message.user {
@@ -215,7 +222,6 @@ const handleDeleteMessage = () => emits('delete_message', props.msg.message_id)
     text-align: left;
 
     background-color: #f5f0e6;
-    color: #333333;
 }
 
 /* 基础护眼背景 */

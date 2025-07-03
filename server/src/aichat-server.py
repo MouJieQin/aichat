@@ -284,6 +284,22 @@ async def handle_message(websocket: WebSocket, clientID: int, message_text: str)
             },
         }
         await websocket.send_text(json.dumps(msg))
+    elif type == "delete_audio_files":
+        message_id = message["data"]["message_id"]
+        session_id = message["data"]["session_id"]
+        speaker.remove_audio_dir(session_id, message_id)
+    elif type == "delete_message":
+        message_id = message["data"]["message_id"]
+        session_id = message["data"]["session_id"]
+        API.delete_message(message_id)
+        speaker.remove_audio_dir(session_id, message_id)
+        msg = {
+            "type": "delete_message",
+            "data": {
+                "message_id": message_id,
+            },
+        }
+        await websocket.send_text(json.dumps(msg))
     elif type == "start_speech_recognize":
         language = message["data"]["language"]
         input_text = message["data"]["input_text"]

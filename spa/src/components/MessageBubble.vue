@@ -21,9 +21,39 @@
                 <el-button v-if="!msg.is_playing || is_paused" :type="''" :icon="VideoPlay" text @click="handlePlay" />
                 <el-button v-else :type="''" :icon="VideoPause" text @click="handlePause" />
                 <el-button :type="''" :icon="VscStopCircle" text @click="handleStop" />
-                <el-button :type="''" :icon="Edit" text @click="handleEditClick" />
                 <el-button :type="''" :icon="show_copy_check ? Check : CopyDocument" text @click="handleCopyClick" />
-                <el-button :type="''" :icon="Delete" text @click="handleDelete" />
+                <el-button :type="''" :icon="Edit" text @click="handleEditClick" />
+
+                <el-popover placement="bottom-start" :width="200" trigger="click">
+                    <div>
+                        <el-menu :collapse="false">
+                            <el-menu-item index="delete_audio_files" @click="delete_audio_files">
+                                <div>
+                                    <el-icon>
+                                        <Delete v-show="!show_delete_audo_file_check" />
+                                        <Check v-if="show_delete_audo_file_check" />
+                                    </el-icon>
+                                    <span>删除音频文件</span>
+                                </div>
+                            </el-menu-item>
+                            <el-popconfirm placement="right" confirm-button-text="删除" confirm-button-type="danger"
+                                cancel-button-text="取消" :icon="Delete" icon-color="#FF4949" title="是否删除该条消息？"
+                                @confirm="handleDeleteMessage" @cancel="">
+                                <template #reference>
+                                    <el-menu-item index="delete_message" @click="" style="color: #FF4949;">
+                                        <el-icon>
+                                            <Delete />
+                                        </el-icon>
+                                        <span>删除</span>
+                                    </el-menu-item>
+                                </template>
+                            </el-popconfirm>
+                        </el-menu>
+                    </div>
+                    <template #reference>
+                        <el-button :type="''" :icon="More" text @click="" />
+                    </template>
+                </el-popover>
             </el-button-group>
         </div>
     </div>
@@ -38,6 +68,7 @@ import {
     VideoPause,
     Close,
     Check,
+    More
 } from '@element-plus/icons-vue'
 import { VscStopCircle } from 'vue-icons-plus/vsc'
 import { ref } from 'vue'
@@ -46,6 +77,8 @@ const show_copy_check = ref(false)
 const showButtons = ref(false)
 const is_paused = ref(false)
 const edit_input = ref('')
+const show_delete_audo_file_check = ref(false)
+const is_more_collapse = ref(false)
 
 
 const handleCopyClick = () => {
@@ -99,7 +132,7 @@ const props = defineProps({
     }
 })
 
-const emits = defineEmits(['play', 'pause', 'stop', 'edit', 'delete'])
+const emits = defineEmits(['play', 'pause', 'stop', 'delete_audio_files', 'delete_message'])
 
 const handlePlay = () => {
     is_paused.value = false
@@ -111,13 +144,21 @@ const handlePause = () => {
     emits('pause')
 }
 const handleStop = () => emits('stop')
-const handleDelete = () => emits('delete', props.msg.message_id)
+const delete_audio_files = () => {
+    emits('delete_audio_files', props.msg.message_id);
+    show_delete_audo_file_check.value = true
+    setTimeout(() => {
+        show_delete_audo_file_check.value = false
+    }, 1000)
+}
+const handleDeleteMessage = () => emits('delete_message', props.msg.message_id)
+
 </script>
 
 <style scoped>
 .message-button-group.user {
     max-width: clamp(300px, 80vw, 800px);
-    text-align: left;
+    text-align: right;
     margin-left: auto;
     margin-right: 30px;
     margin-bottom: 12px;
@@ -130,6 +171,7 @@ const handleDelete = () => emits('delete', props.msg.message_id)
 
 .message-button-group.system {
     padding-top: 10px;
+    margin-bottom: 20px;
     padding-right: 610px;
 }
 

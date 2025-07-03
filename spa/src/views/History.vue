@@ -4,7 +4,8 @@
         <div class="chat-messages-container">
             <div class="chat-messages" v-for="(msg, text_index) in chatMessages" :key="text_index">
                 <MessageBubble :key="text_index" :msg="msg" :show-buttons="true"
-                    :handleSentenceClick="handleSentenceClick" :update_message="update_message" @play="play"
+                    :handleSentenceClick="handleSentenceClick" :update_message="update_message"
+                    @delete_audio_files="delete_audio_files" @delete_message="delete_message" @play="play"
                     @pause="pause" @stop="stop" />
             </div>
             <div v-if="streaming">
@@ -308,6 +309,30 @@ const update_message = (message_id: number, raw_text: string) => {
     currentWebSocket?.send(msg)
 }
 
+const delete_audio_files = (message_id: number) => {
+    const session_id = get_session_id()
+    const msg = {
+        "type": "delete_audio_files",
+        "data": {
+            "session_id": session_id,
+            "message_id": message_id,
+        },
+    }
+    currentWebSocket?.send(msg)
+}
+
+const delete_message = (message_id: number) => {
+    const session_id = get_session_id()
+    const msg = {
+        "type": "delete_message",
+        "data": {
+            "session_id": session_id,
+            "message_id": message_id,
+        },
+    }
+    currentWebSocket?.send(msg)
+}
+
 const handleInput = () => {
     const textarea = document.querySelector('#input-box') as HTMLTextAreaElement;
     if (textarea) {
@@ -507,6 +532,15 @@ const loadHistoryData = async () => {
                             msg.raw_text = raw_text
                             msg.sentences = result.sentences
                             msg.processed_html = result.html
+                        }
+                    }
+                    break
+                case 'delete_message':
+                    {
+                        const message_id = message.data.message_id
+                        const index = chatMessages.value.findIndex(msg => msg.message_id === message_id)
+                        if (index !== -1) {
+                            chatMessages.value.splice(index, 1)
                         }
                     }
                     break

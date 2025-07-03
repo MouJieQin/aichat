@@ -55,6 +55,10 @@ body {
     transition: background-color 0.3s ease;
 }
 
+.el-menu {
+    border: none !important;
+}
+
 .el-sub-menu__title {
     padding-left: 2px !important;
     border-radius: 10px;

@@ -2,7 +2,7 @@
     <div class="app-container">
 
         <div class="sidebar" @click="siderbar_click">
-            <el-menu :default-active="activeMenu" class="el-menu-vertical-demo" :collapse="isCollapse"
+            <el-menu :default-active="activeMenu" :collapse="isCollapse"
                 @open="handleOpen" @close="handleClose">
                 <el-menu-item index="collapse" @click="isCollapse = !isCollapse" style="padding-left: 2px;">
                     <el-icon v-show="!isCollapse">

@@ -147,7 +147,7 @@ class OpenAIChatAPI:
     def get_session_ai_config(self, session_id: int) -> dict:
         ai_config_str = self.db.get_session_ai_config(session_id)[0]
         return json.loads(ai_config_str)
-    
+
     def update_session_ai_config(self, session_id: int, ai_config: dict):
         self.db.update_session_ai_config(session_id, ai_config)
 
@@ -156,6 +156,9 @@ class OpenAIChatAPI:
 
     def delete_session(self, session_id: int):
         self.db.delete_session_and_messages(session_id)
+
+    def delete_message(self, message_id: int):
+        self.db.delete_message(message_id)
 
     def update_message(
         self, message_id: int, parsed_text: str, raw_text: Optional[str] = None

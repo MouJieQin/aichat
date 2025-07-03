@@ -102,12 +102,28 @@ class ChatDatabase:
 
     def get_session_messages(self, session_id: int, limit=100) -> Optional[list[dict]]:
         cursor = self.conn.cursor()
-        cursor.execute(
-            "SELECT id, role, raw_text, parsed_text, timestamp FROM messages "
-            "WHERE session_id = ? ORDER BY timestamp LIMIT ?",
-            (session_id, limit),
-        )
+        if limit == -1:
+            cursor.execute(
+                "SELECT id, role, raw_text, parsed_text, timestamp FROM messages "
+                "WHERE session_id = ? ORDER BY timestamp",
+                (session_id,),
+            )
+        else:
+            cursor.execute(
+                "SELECT id, role, raw_text, parsed_text, timestamp FROM messages "
+                "WHERE session_id = ? ORDER BY timestamp LIMIT ?",
+                (session_id, limit),
+            )
         return cursor.fetchall()
+
+    def get_session_system_messages(self, session_id: int) -> List:
+        cursor = self.conn.cursor()
+        cursor.execute(
+            "SELECT raw_text FROM messages "
+            "WHERE session_id = ? AND role = 'system' ORDER BY timestamp",
+            (session_id,),
+        )
+        return cursor.fetchone()
 
     def get_session_ai_config(self, session_id: int) -> List:
         cursor = self.conn.cursor()

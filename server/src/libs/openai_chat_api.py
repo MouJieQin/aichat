@@ -4,16 +4,33 @@ import uuid
 from datetime import datetime
 from typing import List, Dict, Any, Optional, Callable
 from libs.chat_database import ChatDatabase
+from libs.log_config import logger
 
 
 class OpenAIChatAPI:
-    def __init__(self, db: ChatDatabase, api_key: str, base_url: Optional[str] = None):
+    def __init__(
+        self,
+        ai_config: dict,
+        db: ChatDatabase,
+        api_key: str,
+        base_url: Optional[str] = None,
+    ):
         self.db = db
         self.client = openai.OpenAI(api_key=api_key, base_url=base_url)
         self.api_key = api_key
         self.base_url = base_url
 
-    def get_messages_for_prompt(self, session_id, max_tokens=4000, max_messages=50):
+        system_ai_config = ai_config[ai_config["system_ai_config"]["ai_config_name"]]
+        self.system_client = openai.OpenAI(
+            # 此为默认路径，您可根据业务所在地域进行配置
+            base_url=system_ai_config["base_url"],
+            # 从环境变量中获取您的 API Key
+            api_key=system_ai_config["api_key"],
+        )
+        self.system_model = system_ai_config["model"]
+        self.system_temperature = 0.5
+
+    def get_messages_for_prompt(self, session_id, max_tokens=4000, max_messages=-1):
         messages = self.db.get_session_messages(session_id, max_messages)
         messages = sorted(messages, key=lambda x: x[4])  # type:ignore 按时间排序
 
@@ -48,6 +65,72 @@ class OpenAIChatAPI:
         messages_to_send = messages_to_send[::-1]
 
         return prompt_messages + messages_to_send
+
+    def _create_system_chat_system_prompt(self) -> str:
+        return """
+你的任务是根据提供的用户和AI的对话，用标题总结对话内容，并给出3个用户接下来可能的回复或会问的问题。最终输出需为纯json格式，其中包含两个键："title"用于存放对话总结标题，"suggestions"用于存放用户接下来可能的回复或问题的数组。
+请先仔细阅读对话内容，为对话生成一个简洁准确的标题，总结对话的核心内容。然后，根据对话的主题和上下文，推测用户接下来可能会说的话或提出的问题，列出3个可能的回复或问题。
+最终输出格式如下：
+{
+    "title": "对话总结标题",
+    "suggestions": [
+        "用户可能的回复或问题1",
+        "用户可能的回复或问题2",
+        "用户可能的回复或问题3"
+    ]
+}
+"""
+
+    def system_chat(
+        self,
+        system_prompt_content: Optional[str],
+        usr_input: str,
+        ai_response: str,
+    ) -> Optional[str]:
+        system_prompt = {
+            "role": "system",
+            "content": self._create_system_chat_system_prompt(),
+        }
+
+        content = []
+        if system_prompt_content:
+            content.append(
+                {
+                    "role": "system",
+                    "content": system_prompt_content,
+                }
+            )
+        content.extend(
+            [
+                {
+                    "role": "user",
+                    "content": usr_input,
+                },
+                {
+                    "role": "assistant",
+                    "content": ai_response,
+                },
+            ]
+        )
+
+        prompt_messages = []
+        prompt_messages.append(system_prompt)
+        prompt_messages.append(
+            {
+                "role": "user",
+                "content": json.dumps(content, ensure_ascii=False),
+            }
+        )
+        logger.info(f"#######prompt_messages:{prompt_messages}")
+        # Non-streaming:
+        print("----- standard system request -----")
+        completion = self.system_client.chat.completions.create(
+            model=self.system_model,
+            messages=prompt_messages,
+            temperature=self.system_temperature,
+        )
+        print(completion.choices[0].message.content)
+        return completion.choices[0].message.content
 
     async def chat(
         self,
@@ -147,6 +230,12 @@ class OpenAIChatAPI:
     def get_session_ai_config(self, session_id: int) -> dict:
         ai_config_str = self.db.get_session_ai_config(session_id)[0]
         return json.loads(ai_config_str)
+
+    def get_session_system_message(self, session_id: int) -> Optional[str]:
+        system_message = self.db.get_session_system_messages(session_id)
+        if system_message:
+            return system_message[0]
+        return None
 
     def update_session_ai_config(self, session_id: int, ai_config: dict):
         self.db.update_session_ai_config(session_id, ai_config)

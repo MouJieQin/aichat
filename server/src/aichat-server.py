@@ -49,7 +49,9 @@ AI_CONFIG = configure["ai_assistant"]
 AI_CONFIG_DEFAULT = AI_CONFIG["default"]
 DEFAULT_AI_CONFIG = AI_CONFIG[AI_CONFIG_DEFAULT["ai_config_name"]]
 DB = ChatDatabase()
-API = OpenAIChatAPI(DB, DEFAULT_AI_CONFIG["api_key"], DEFAULT_AI_CONFIG["base_url"])
+API = OpenAIChatAPI(
+    AI_CONFIG, DB, DEFAULT_AI_CONFIG["api_key"], DEFAULT_AI_CONFIG["base_url"]
+)
 speaker = Speaker(configure)
 recognizer = Recognizer(configure)
 
@@ -247,6 +249,26 @@ async def handle_message(websocket: WebSocket, clientID: int, message_text: str)
             },
         }
         await websocket.send_text(json.dumps(msg))
+
+        if response is None:
+            return
+
+        # SQLite objects created in a thread can only be used in that same thread.
+        system_prompt_content = API.get_session_system_message(session_id)
+
+        def system_handle():
+            system_ai_response = API.system_chat(
+                system_prompt_content, user_message, response
+            )
+            if system_ai_response is None:
+                return
+            system_info = json.loads(system_ai_response)
+            title = system_info["title"]
+            suggestions = system_info["suggestions"]
+            logger.info("title:%s, suggestions:%s", title, suggestions)
+
+        threading.Thread(target=system_handle, daemon=True).start()
+
     elif type == "parsed_response":
         parsed_type = message["data"]["type"]
         if parsed_type == "user_message":

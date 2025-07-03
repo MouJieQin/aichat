@@ -96,7 +96,8 @@ const handleEditClick = () => {
 
 const handleEditConfirm = () => {
     show_edit_area.value = false
-    if (edit_input.value !== props.msg.raw_text) {
+    const input_trim = edit_input.value.trim()
+    if (input_trim !== '' && input_trim !== props.msg.raw_text) {
         props.update_message(props.msg.message_id, edit_input.value)
     }
 }

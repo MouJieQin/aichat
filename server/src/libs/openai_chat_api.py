@@ -1,6 +1,5 @@
 import openai
 import json
-import uuid
 from datetime import datetime
 from typing import List, Dict, Any, Optional, Callable
 from libs.chat_database import ChatDatabase
@@ -12,14 +11,8 @@ class OpenAIChatAPI:
         self,
         ai_config: dict,
         db: ChatDatabase,
-        api_key: str,
-        base_url: Optional[str] = None,
     ):
         self.db = db
-        self.client = openai.OpenAI(api_key=api_key, base_url=base_url)
-        self.api_key = api_key
-        self.base_url = base_url
-
         system_ai_config = ai_config[ai_config["system_ai_config"]["ai_config_name"]]
         self.system_client = openai.OpenAI(
             # 此为默认路径，您可根据业务所在地域进行配置
@@ -69,7 +62,7 @@ class OpenAIChatAPI:
     def _create_system_chat_system_prompt(self) -> str:
         return """
 你的任务是根据提供的用户和AI的对话，用标题总结对话内容，并给出3个用户接下来可能的回复或会问的问题。最终输出需为纯json格式，其中包含两个键："title"用于存放对话总结标题，"suggestions"用于存放用户接下来可能的回复或问题的数组。
-请先仔细阅读对话内容，为对话生成一个简洁准确的标题，不要提及用户和AI，总结对话的核心内容。然后，根据对话的主题和上下文，推测用户接下来可能会说的话或提出的问题，列出3个可能的回复或问题。回复的语言要与对话中的相同。
+请先仔细阅读对话内容，为对话生成一个简洁准确的标题，不要提及用户和AI，总结对话的核心内容。然后，根据对话的主题和上下文，推测用户接下来可能会说的话或提出的问题，列出3个可能的回复或问题。标题和建议所使用的语言要与要总结的对话内容中的相同。
 最终输出格式如下：
 {
     "title": "对话总结标题",
@@ -140,7 +133,6 @@ class OpenAIChatAPI:
         user_message_callback_async: Callable,
         assistant_response_callback_async: Callable,
     ) -> Optional[str]:
-        # 生成消息ID
 
         # 保存用户消息到数据库
         message_id = self.db.add_message(
@@ -166,11 +158,15 @@ class OpenAIChatAPI:
         # 添加当前用户消息
         prompt_messages.append({"role": "user", "content": user_message})
 
-        print("@@@@@prompt_messages:", prompt_messages)
+        logger.info(f"@@@@@prompt_messages:{prompt_messages}")
 
+        ai_config = self.get_session_ai_config(session_id)
+        client = openai.OpenAI(
+            api_key=ai_config["api_key"], base_url=ai_config["base_url"]
+        )
         # 调用OpenAI API
         print("----- streaming request -----")
-        stream = self.client.chat.completions.create(
+        stream = client.chat.completions.create(
             model=ai_config.get("model", "gpt-3.5-turbo"),
             messages=prompt_messages,
             temperature=ai_config.get("temperature", 0.7),

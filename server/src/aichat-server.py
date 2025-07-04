@@ -49,9 +49,7 @@ AI_CONFIG = configure["ai_assistant"]
 AI_CONFIG_DEFAULT = AI_CONFIG["default"]
 DEFAULT_AI_CONFIG = AI_CONFIG[AI_CONFIG_DEFAULT["ai_config_name"]]
 DB = ChatDatabase()
-API = OpenAIChatAPI(
-    AI_CONFIG, DB, DEFAULT_AI_CONFIG["api_key"], DEFAULT_AI_CONFIG["base_url"]
-)
+API = OpenAIChatAPI(AI_CONFIG, DB)
 speaker = Speaker(configure)
 recognizer = Recognizer(configure)
 spa_websockes: Dict[int, WebSocket] = {}

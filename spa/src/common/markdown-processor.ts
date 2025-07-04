@@ -56,6 +56,15 @@ export function processMarkdown(markdownContent: string, message_id: number): Pr
 
                     // 在原位置插入新节点
                     parent?.insertBefore(span, children[nodeIndex + i + 1] || null);
+                    
+                    // 添加空格字符，保留原始空格
+                    if (i < nodes.length - 1) {
+                        // 检测原始文本中句子后的空格
+                        const nextCharIndex = n.range[1];
+                        if (nextCharIndex < text.length && text[nextCharIndex] === ' ') {
+                            parent?.insertBefore(document.createTextNode(' '), children[nodeIndex + i + 2] || null);
+                        }
+                    }
                 });
 
                 return [messageId, sentenceId + nodes.length];

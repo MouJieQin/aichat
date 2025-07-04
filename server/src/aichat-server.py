@@ -235,7 +235,7 @@ def _create_play_sentence_callback(
     return play_sentence_callback
 
 
-def _play_sentences(
+async def _play_sentences(
     websocket: WebSocket,
     clientID: int,
     message_id: int,
@@ -244,6 +244,7 @@ def _play_sentences(
     voice_name: str,
 ):
     play_sentence_callback = _create_play_sentence_callback(websocket, message_id)
+    await play_sentence_callback(-2)
 
     def play_sentences():
         asyncio.run(
@@ -415,6 +416,7 @@ async def handle_message(websocket: WebSocket, clientID: int, message_text: str)
         logger.info("play_the_sentence:{}".format(sentences[sentence_id]["text"]))
 
         play_sentence_callback = _create_play_sentence_callback(websocket, message_id)
+        await play_sentence_callback(-2)
 
         def play_sentence():
             asyncio.run(
@@ -437,7 +439,7 @@ async def handle_message(websocket: WebSocket, clientID: int, message_text: str)
         if sentences is None:
             logger.warning("message_id:{} not found any sentences".format(message_id))
             return
-        _play_sentences(
+        await _play_sentences(
             websocket, clientID, message_id, sentence_id_start, sentences, voice_name
         )
     elif type == "pause":
@@ -451,7 +453,7 @@ async def handle_message(websocket: WebSocket, clientID: int, message_text: str)
             sentence_id_start = 0
             sentences = API.get_sentences(message_id)
             if sentences is not None:
-                _play_sentences(
+                await _play_sentences(
                     websocket,
                     clientID,
                     message_id,

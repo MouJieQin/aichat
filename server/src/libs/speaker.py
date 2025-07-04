@@ -147,10 +147,9 @@ class Speaker(metaclass=SingletonMeta):
         self.azure_region = self.azure_config["region"]
         self.speaker_config = self.configure["speaker"]
         # Cache loaded audio files
-        self.audio_cache = {}
         self._init_mixer()
         self._init_speech_synthesizer()
-        self.lock = threading.Lock()
+        self._create_audio_queue_lock = threading.Lock()
 
     def _init_mixer(self):
         """Initialize the Pygame mixer."""
@@ -316,16 +315,17 @@ class Speaker(metaclass=SingletonMeta):
         voice_name: str,
     ):
         """Create the audio queue."""
-        for sentence_id in range(int(sentence_id_start), int(sentence_id_end) + 1):
-            sound = self._create_audio_sound(
-                session_id,
-                message_id,
-                str(sentence_id),
-                sentences[sentence_id]["text"],
-                voice_name,
-            )
-            self.audio_queue.append(sound)
-        print(f"@:len(self.audio_queue):{len(self.audio_queue)}")
+        with self._create_audio_queue_lock:
+            for sentence_id in range(int(sentence_id_start), int(sentence_id_end) + 1):
+                sound = self._create_audio_sound(
+                    session_id,
+                    message_id,
+                    str(sentence_id),
+                    sentences[sentence_id]["text"],
+                    voice_name,
+                )
+                self.audio_queue.append(sound)
+            print(f"@:len(self.audio_queue):{len(self.audio_queue)}")
 
     def pause(self):
         self.audio_channel_assistant_synthesizer.pause()
@@ -428,111 +428,3 @@ class Speaker(metaclass=SingletonMeta):
             play_sentence_callback,
             voice_name,
         )
-
-    def speak_text(self, text: str):
-        """Speak the given text in real-time."""
-        with self.lock:
-            self._set_volume_based_on_time()
-            result = self.real_time_speech_synthesizer.speak_text_async(text)
-            return self._handle_tts_result(result, text)
-
-    def speak_warning(self, text: str):
-        """Speak the given warning text in real-time."""
-        logger.warning(f"{text}")
-        self.speak_text(text)
-
-    def start_speaking_text(self, text: str):
-        """Start speaking the given text in real-time."""
-        with self.lock:
-            self._set_volume_based_on_time()
-            result = self.real_time_speech_synthesizer.speak_text_async(text)
-            return self._handle_tts_result(result, text)
-
-    def tts(self, text: str) -> bool:
-        """Perform text-to-speech synthesis and handle the result."""
-        with self.lock:
-            self._set_volume_based_on_time()
-            result = self.real_time_speech_synthesizer.speak_text_async(text)
-            return self._handle_tts_result(result, text)
-
-    async def _play_audio_core(
-        self, vfile: str, is_cache: bool, event: Optional[asyncio.Event]
-    ):
-        """Core logic for playing audio."""
-        with self.lock:
-            try:
-                self._set_volume_based_on_time()
-                if not is_cache:
-                    sound = mixer.Sound(vfile)
-                    self.audio_channel_system_prompt.play(sound)
-                    while self.audio_channel_system_prompt.get_busy() and (
-                        event is None or not event.is_set()
-                    ):
-                        await asyncio.sleep(0.1)
-                    if event and event.is_set():
-                        self.audio_channel_system_prompt.stop()
-                else:
-                    if vfile not in self.audio_cache:
-                        sound = mixer.Sound(vfile)
-                        self.audio_cache[vfile] = sound
-                    else:
-                        sound = self.audio_cache[vfile]
-                    self.audio_channel_system_prompt.play(sound)
-                    while self.audio_channel_system_prompt.get_busy() and (
-                        event is None or not event.is_set()
-                    ):
-                        await asyncio.sleep(0.1)
-                    if event and event.is_set():
-                        self.audio_channel_system_prompt.stop()
-            except Exception as e:
-                logger.exception(f"An error occurred while playing the audio: {e}")
-
-    async def play_audio(
-        self, vfile: str, is_cache: bool = False, event: Optional[asyncio.Event] = None
-    ):
-        """Play audio asynchronously."""
-        await self._play_audio_core(vfile, is_cache, event)
-
-    def play_audio_blocking(self, vfile: str, is_cache: bool = False):
-        """Blocking call to play audio until playback is complete."""
-        if asyncio.get_event_loop().is_running():
-
-            def run_async_play():
-                asyncio.run(self.play_audio(vfile, is_cache))
-
-            thread = threading.Thread(target=run_async_play)
-            thread.start()
-            thread.join()
-        else:
-            asyncio.run(self.play_audio(vfile, is_cache))
-
-    def play_audio_nonblocking(
-        self, vfile: str, is_cache: bool = False
-    ) -> threading.Thread:
-        """Non-blocking call to play audio in a separate thread."""
-
-        def run_async_play():
-            asyncio.run(self.play_audio(vfile, is_cache))
-            # if vfile == self.audio_files["start_record"]:
-            #     asyncio.run(self.play_audio(vfile, is_cache))
-
-        thread = threading.Thread(target=run_async_play)
-        thread.daemon = True
-        thread.start()
-        return thread
-
-    def play_start_record(self):
-        """Play the start record audio."""
-        self.play_audio_nonblocking(self.audio_files["start_record"], True)
-
-    def play_end_record(self):
-        """Play the end record audio."""
-        self.play_audio_nonblocking(self.audio_files["end_record"], True)
-
-    def play_send_message(self):
-        """Play the send message audio."""
-        self.play_audio_nonblocking(self.audio_files["send_message"], True)
-
-    def play_receive_response(self):
-        """Play the receive response audio."""
-        self.play_audio_nonblocking(self.audio_files["receive_response"], True)

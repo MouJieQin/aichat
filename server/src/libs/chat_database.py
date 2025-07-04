@@ -138,6 +138,11 @@ class ChatDatabase:
         )
         self.conn.commit()
 
+    def is_session_exist(self, session_id: int) -> bool:
+        cursor = self.conn.cursor()
+        cursor.execute("SELECT id FROM sessions WHERE id = ?", (session_id,))
+        return cursor.fetchone() is not None
+
     def get_session(self, session_id: int) -> Optional[dict]:
         cursor = self.conn.cursor()
         cursor.execute("SELECT * FROM sessions WHERE id = ?", (session_id,))

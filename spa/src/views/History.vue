@@ -632,6 +632,13 @@ const loadHistoryData = async () => {
                         console.log("session_ai_config:", session_ai_config.value)
                     }
                     break
+                case 'error_session_not_exist':
+                    {
+                        console.log("session_id:", message.data.session_id, " not exist")
+                        router.push({ name: 'Home' })
+                        currentWebSocket?.close()
+                    }
+                    break
                 default:
                     console.log('未知消息类型:', message)
             }

@@ -231,6 +231,9 @@ class OpenAIChatAPI:
         ai_config_str = self.db.get_session_ai_config(session_id)[0]
         return json.loads(ai_config_str)
 
+    def is_session_exist(self, session_id: int) -> bool:
+        return self.db.is_session_exist(session_id)
+
     def get_session_system_message(self, session_id: int) -> Optional[str]:
         system_message = self.db.get_session_system_messages(session_id)
         if system_message:

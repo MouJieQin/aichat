@@ -488,8 +488,14 @@ async def send_session_ai_config(websocket: WebSocket, session_id: int):
 @app.websocket("/ws/aichat/{clientID}")
 async def websocketEndpointAIchatSession(websocket: WebSocket, clientID: int):
     await websocket.accept()
-    await send_session_messages(websocket, int(clientID))
-    await send_session_ai_config(websocket, int(clientID))
+    session_id = int(clientID)
+    if not API.is_session_exist(session_id):
+        msg = {"type": "error_session_not_exist", "data": {"session_id": session_id}}
+        await websocket.send_text(json.dumps(msg))
+        await websocket.close()
+        return
+    await send_session_messages(websocket, session_id)
+    await send_session_ai_config(websocket, session_id)
 
     async def receive():
         while True:

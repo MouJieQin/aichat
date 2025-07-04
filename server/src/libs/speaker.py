@@ -327,6 +327,26 @@ class Speaker(metaclass=SingletonMeta):
                 self.audio_queue.append(sound)
             print(f"@:len(self.audio_queue):{len(self.audio_queue)}")
 
+    def generate_audio_files(
+        self,
+        session_id: str,
+        message_id: str,
+        sentence_id_start: str,
+        sentence_id_end: str,
+        sentences: list[Dict],
+        voice_name: str,
+    ):
+        """Generate the audio files."""
+        with self._create_audio_queue_lock:
+            for sentence_id in range(int(sentence_id_start), int(sentence_id_end) + 1):
+                self._create_audio_sound(
+                    session_id,
+                    message_id,
+                    str(sentence_id),
+                    sentences[sentence_id]["text"],
+                    voice_name,
+                )
+
     def pause(self):
         self.audio_channel_assistant_synthesizer.pause()
 

@@ -94,7 +94,10 @@
                             <el-input-number v-model="session_ai_config_for_drawer.max_messages" :max="100" :min="1"
                                 :step="1" placeholder="请输入Max Messages" />
                         </el-form-item>
-
+                        <el-form-item label="Auto Play" prop="auto_play">
+                            <el-switch v-model="session_ai_config_for_drawer.auto_play" active-value="true"
+                                inactive-value="false" />
+                        </el-form-item>
                     </el-form>
                 </div>
             </div>
@@ -141,6 +144,7 @@ interface AIconfig {
     max_messages: number;
     language: string;
     tts_voice: string;
+    auto_play: boolean;
 }
 const session_ai_config = ref<AIconfig>()
 const session_ai_config_for_drawer = ref<AIconfig>()
@@ -372,6 +376,25 @@ const delete_audio_files = (message_id: number) => {
     currentWebSocket?.send(msg)
 }
 
+const generate_audio_files = (message_id: number, sentence_id_start: number, sentence_id_end: number) => {
+    if (!session_ai_config.value) {
+        return
+    }
+    const session_id = get_session_id()
+    const voice_name = session_ai_config.value.tts_voice
+    const msg = {
+        "type": "generate_audio_files",
+        "data": {
+            "session_id": session_id,
+            "message_id": message_id,
+            "sentence_id_start": sentence_id_start,
+            "sentence_id_end": sentence_id_end,
+            "voice_name": voice_name,
+        },
+    }
+    currentWebSocket?.send(msg)
+}
+
 const delete_message = (message_id: number) => {
     const session_id = get_session_id()
     const msg = {
@@ -531,6 +554,15 @@ const loadHistoryData = async () => {
                                 }
                                 currentWebSocket?.send(msg)
                                 scrollToBottomDebounced()
+
+                                if (session_ai_config.value && session_ai_config.value.auto_play) {
+                                    setTimeout(() => {
+                                        if (result.sentences.length >= 2) {
+                                            generate_audio_files(messageId, 0, 0)
+                                        }
+                                        play(messageId)
+                                    }, 1000)
+                                }
                             }
                             break;
                         default:
@@ -627,6 +659,8 @@ const loadHistoryData = async () => {
                             ai_config.language = "中文"
                         if (ai_config.tts_voice == undefined)
                             ai_config.tts_voice = "zh-CN-XiaochenNeural"
+                        if (ai_config.auto_play == undefined)
+                            ai_config.auto_play = false
                         session_ai_config.value = ai_config
                         session_suggestions.value = ai_config.suggestions
                         console.log("session_ai_config:", session_ai_config.value)

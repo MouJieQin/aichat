@@ -230,7 +230,11 @@ def _create_play_sentence_callback(
             },
         }
         print("the_sentence_playing:", msg)
-        await websocket.send_text(json.dumps(msg))
+        try:
+            await websocket.send_text(json.dumps(msg))
+        except Exception as e:
+            speaker.stop()
+            logger.error(f"_create_play_sentence_callback error: {e}")
 
     return play_sentence_callback
 
@@ -405,6 +409,29 @@ async def handle_message(websocket: WebSocket, clientID: int, message_text: str)
         recognizer.start_recognizer(websocket, language, input_text, cursor_position)
     elif type == "stop_speech_recognize":
         recognizer.stop_recognizer_sync()
+    elif type == "generate_audio_files":
+        session_id = message["data"]["session_id"]
+        message_id = message["data"]["message_id"]
+        sentence_id_start = message["data"]["sentence_id_start"]
+        sentence_id_end = message["data"]["sentence_id_end"]
+        voice_name = message["data"]["voice_name"]
+        sentences = API.get_sentences(message_id)
+        if sentences is None:
+            logger.warning("message_id:{} not found any sentences".format(message_id))
+            return
+        threading.Thread(
+            target=speaker.generate_audio_files,
+            args=(
+                session_id,
+                message_id,
+                sentence_id_start,
+                sentence_id_end,
+                sentences,
+                voice_name,
+            ),
+            daemon=True,
+        ).start()
+
     elif type == "play_the_sentence":
         message_id = message["data"]["message_id"]
         sentence_id = message["data"]["sentence_id"]

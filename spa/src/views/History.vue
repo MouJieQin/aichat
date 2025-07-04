@@ -40,7 +40,7 @@
             </div>
         </div>
     </div>
-    <el-drawer v-model="drawer_visible" :direction="drawer_direction" size="70%">
+    <el-drawer header-class="drawer-header" v-model="drawer_visible" :direction="drawer_direction" size="60%">
         <template #header>
             <h4>AI Config</h4>
         </template>
@@ -49,6 +49,23 @@
                 <div v-if="session_ai_config_for_drawer" class="form-wrapper">
                     <el-form :model="session_ai_config_for_drawer" ref="formRef" label-width="200px"
                         class="left-aligned-form">
+                        <el-form-item label="Language" prop="language">
+                            <el-select v-model="session_ai_config_for_drawer.language" placeholder="请选择语言"
+                                @change="session_ai_config_for_drawer.tts_voice = tts_voices[session_ai_config_for_drawer.language][0].ShortName">
+                                <el-option v-for="item in languages" :key="item" :label="item" :value="item">
+                                </el-option>
+                            </el-select>
+                        </el-form-item>
+                        <el-form-item label="TTS Voice" prop="tts_voice">
+                            <el-select v-model="session_ai_config_for_drawer.tts_voice" filterable
+                                placeholder="请选择TTS Voice">
+                                <el-option v-for="item in tts_voices[session_ai_config_for_drawer.language]"
+                                    :key="item.ShortName"
+                                    :label="item.LocalName + '——' + item.Gender + '——' + item.LocaleName"
+                                    :value="item.ShortName">
+                                </el-option>
+                            </el-select>
+                        </el-form-item>
                         <el-form-item label="Base URL" prop="base_url">
                             <el-input v-model="session_ai_config_for_drawer.base_url" style="max-width: 600px;"
                                 placeholder="请输入Base URL" />
@@ -77,23 +94,7 @@
                             <el-input-number v-model="session_ai_config_for_drawer.max_messages" :max="100" :min="1"
                                 :step="1" placeholder="请输入Max Messages" />
                         </el-form-item>
-                        <el-form-item label="Language" prop="language">
-                            <el-select v-model="session_ai_config_for_drawer.language" placeholder="请选择语言"
-                                @change="session_ai_config_for_drawer.tts_voice = tts_voices[session_ai_config_for_drawer.language][0].ShortName">
-                                <el-option v-for="item in languages" :key="item" :label="item" :value="item">
-                                </el-option>
-                            </el-select>
-                        </el-form-item>
-                        <el-form-item label="TTS Voice" prop="tts_voice">
-                            <el-select v-model="session_ai_config_for_drawer.tts_voice" filterable
-                                placeholder="请选择TTS Voice">
-                                <el-option v-for="item in tts_voices[session_ai_config_for_drawer.language]"
-                                    :key="item.ShortName"
-                                    :label="item.LocalName + '——' + item.Gender + '——' + item.LocaleName"
-                                    :value="item.ShortName">
-                                </el-option>
-                            </el-select>
-                        </el-form-item>
+
                     </el-form>
                 </div>
             </div>
@@ -119,6 +120,7 @@ import { loadJsonFile } from '@/common/json-loader'
 import { processMarkdown, SentenceInfo } from '@/common/markdown-processor'
 import MessageBubble from '@/components/MessageBubble.vue'
 import debounce from 'lodash/debounce'
+import { set } from 'lodash'
 
 interface Message {
     message_id: number;
@@ -202,14 +204,15 @@ onMounted(async () => {
 
 // 实时更新光标位置
 const updateCursorPosition = () => {
-    nextTick(() => {
+    setTimeout(() => {
         if (inputRef.value) {
             const textarea = inputRef.value.$refs.textarea;
             if (textarea) {
                 cursor_position.value = textarea.selectionStart;
+                console.log('cursor_position.value:', cursor_position.value)
             }
         }
-    });
+    }, 100);
 };
 
 
@@ -243,6 +246,7 @@ const set_cursor_position = (position: number) => {
 
 const handle_input_change = () => {
     is_input_sendable.value = inputVal.value.trim() != ""
+    updateCursorPosition()
 }
 
 const handle_speech_recognize = () => {
@@ -617,7 +621,7 @@ const loadHistoryData = async () => {
                     break
                 case 'session_ai_config':
                     {
-                        const ai_config = message.data
+                        const ai_config = message.data.ai_config
                         //如果如果session_ai_config的某些key不存在与ai_config，给ai_config填入默认值
                         if (ai_config.language == undefined)
                             ai_config.language = "中文"
@@ -747,7 +751,7 @@ const handleKeyDown = (e: KeyboardEvent) => {
         stop_speech_recognize()
     }
     if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Tab'].includes(e.key)) {
-        setTimeout(updateCursorPosition, 0);
+        updateCursorPosition()
     }
     if (e.key === 'Enter' && e.shiftKey) {
         e.preventDefault()

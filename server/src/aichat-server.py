@@ -476,7 +476,9 @@ async def send_session_ai_config(websocket: WebSocket, session_id: int):
     ai_config = API.get_session_ai_config(session_id)
     msg = {
         "type": "session_ai_config",
-        "data": ai_config,
+        "data": {
+            "ai_config": ai_config,
+        },
     }
     await websocket.send_text(json.dumps(msg))
 

@@ -51,29 +51,44 @@
                             <el-icon v-if="item.config['top']" style="padding-right: 10px;">
                                 <LuPin />
                             </el-icon>
-                            <el-popover placement="top-end" :width="200" trigger="click">
-                                <div>
-                                    <el-button :type="''" :icon="item.config['top'] ? LuPinOff : LuPin" text
-                                        style="padding-right: 50%;margin-left: 7%;" @click.stop="handle_top(item)">
-                                        {{ item.config['top'] ? '取消置顶' : '置顶' }}
-                                    </el-button>
 
-                                    <el-button :type="''" :icon="EditPen" text style="padding-right: 50%;"
-                                        @click="rename_dialog_visible = true">
-                                        重命名
-                                    </el-button>
+                            <el-popover placement="top-end" :width="200" trigger="click">
+                                <el-menu :collapse="false">
+                                    <el-menu-item index="top" @click="handle_top(item)">
+                                        <div>
+                                            <el-icon>
+                                                <LuPinOff v-show="!item.config['top']" />
+                                                <LuPin v-show="item.config['top']" />
+                                            </el-icon>
+                                            <span>{{ item.config['top'] ? '取消置顶' : '置顶' }}</span>
+                                        </div>
+                                    </el-menu-item>
+
+                                    <el-menu-item index="rename" @click="rename_dialog_visible = true">
+                                        <div>
+                                            <el-icon>
+                                                <EditPen />
+                                            </el-icon>
+                                            <span>重命名</span>
+                                        </div>
+                                    </el-menu-item>
 
                                     <el-popconfirm placement="right" confirm-button-text="删除"
                                         confirm-button-type="danger" cancel-button-text="取消" :icon="Delete"
                                         icon-color="#FF4949" title="确定删除对话？"
                                         @confirm="delete_session(get_session_id(item.path))" @cancel="">
                                         <template #reference>
-                                            <el-button :type="'danger'" :icon="Delete" text style="padding-right: 60%;">
-                                                删除
-                                            </el-button>
+                                            <el-menu-item index="delete_session">
+                                                <div>
+                                                    <el-icon>
+                                                        <Delete style="color: #FF4949;" />
+                                                    </el-icon>
+                                                    <span>删除</span>
+                                                </div>
+                                            </el-menu-item>
                                         </template>
                                     </el-popconfirm>
-                                </div>
+                                </el-menu>
                                 <template #reference>
                                     <el-icon class="hover-icon"
                                         @click.stop="rename_session.title = item.title; rename_session.session_id = get_session_id(item.path)">

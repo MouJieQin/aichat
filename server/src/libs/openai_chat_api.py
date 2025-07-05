@@ -23,7 +23,30 @@ class OpenAIChatAPI:
         self.system_model = system_ai_config["model"]
         self.system_temperature = 0.5
 
-    def get_messages_for_prompt(self, session_id, max_tokens=4000, max_messages=-1):
+    def _create_system_prompt(
+        self, user_system_prompt: str, with_system_prompt: bool
+    ) -> str:
+        if not with_system_prompt:
+            return user_system_prompt
+
+        return f"""
+        用户设置：{user_system_prompt}
+        
+        请按照以下格式进行回复（请严格保持此纯json格式，不要添加额外文本）：
+        {{
+            "response": "针对用户问题的详细回答",
+            "title": "问题的简短标题",
+            "suggestions": ["用户可能接下来问的问题或回应1", "用户可能接下来问的问题或回应2", "用户可能接下来问的问题或回应3"],
+        }}
+    """
+
+    def get_messages_for_prompt(
+        self,
+        with_system_prompt: bool,
+        session_id: int,
+        max_tokens=4000,
+        max_messages=-1,
+    ):
         messages = self.db.get_session_messages(session_id, max_messages)
         messages = sorted(messages, key=lambda x: x[4])  # type:ignore 按时间排序
 
@@ -35,14 +58,27 @@ class OpenAIChatAPI:
             msg_id, role, raw_text, _, _ = msg
             if role == "system":
                 has_system_prompt = True
-                system_messages.append({"role": role, "content": raw_text})
+                system_messages.append(
+                    {
+                        "role": role,
+                        "content": self._create_system_prompt(
+                            raw_text, with_system_prompt
+                        ),
+                    }
+                )
             else:
                 user_assistant_messages.append({"role": role, "content": raw_text})
 
         if not has_system_prompt:
             system_prompt = self.get_session_system_message(session_id)
-            if system_prompt:
-                system_messages.append({"role": "system", "content": system_prompt})
+            system_messages.append(
+                {
+                    "role": "system",
+                    "content": self._create_system_prompt(
+                        system_prompt or "", with_system_prompt
+                    ),
+                }
+            )
 
         # 优先保留system消息
         prompt_messages = system_messages
@@ -134,12 +170,13 @@ class OpenAIChatAPI:
 
     async def chat(
         self,
+        with_system_prompt: bool,
         session_id: int,
         user_message: str,
         parsed_text: str,
         user_message_callback_async: Callable,
         assistant_response_callback_async: Callable,
-    ) -> Optional[str]:
+    ) -> Dict:
 
         # 保存用户消息到数据库
         message_id = self.db.add_message(
@@ -159,6 +196,7 @@ class OpenAIChatAPI:
 
         # 获取历史消息
         prompt_messages = self.get_messages_for_prompt(
+            with_system_prompt,
             session_id,
             max_tokens=ai_config.get("context_max_tokens", 4000),
             max_messages=ai_config.get("max_messages", 10),
@@ -175,23 +213,122 @@ class OpenAIChatAPI:
         )
         # 调用OpenAI API
         print("----- streaming request -----")
-        stream = client.chat.completions.create(
+        response_stream = client.chat.completions.create(
             model=ai_config.get("model", "gpt-3.5-turbo"),
             messages=prompt_messages,
             temperature=ai_config.get("temperature", 0.7),
             max_tokens=ai_config.get("max_tokens", 800),
             stream=True,
         )
-        ai_response = ""  # 初始化累积变量
-        for chunk in stream:
+        if with_system_prompt:
+            return await self.stream_processor(
+                response_stream, assistant_response_callback_async
+            )
+        else:
+            ai_response = ""  # 初始化累积变量
+            for chunk in response_stream:
+                if chunk.choices and chunk.choices[0].delta.content:
+                    content = chunk.choices[0].delta.content
+                    ai_response += content  # 累加每个增量内容
+                    await assistant_response_callback_async(ai_response, True)
+                    print(content, end="", flush=True)  # 实时打印（可选）
+            print()
+            await assistant_response_callback_async(ai_response, False)
+            return {"response": ai_response}
+
+    async def stream_processor(
+        self,
+        response_stream: openai.Stream,
+        assistant_response_callback_async: Callable,
+    ) -> dict:
+        full_response = ""
+        response_content = ""
+        in_response_field = False
+        response_ended = False
+        escaped = False
+
+        for chunk in response_stream:
             if chunk.choices and chunk.choices[0].delta.content:
                 content = chunk.choices[0].delta.content
-                ai_response += content  # 累加每个增量内容
-                await assistant_response_callback_async(ai_response, True)
-                print(content, end="", flush=True)  # 实时打印（可选）
+                full_response += content
+
+                if response_ended:
+                    continue
+
+                # 简单的状态机来提取 "response" 字段内容
+                if not in_response_field:
+                    response_pos = full_response.find('"response": "')
+                    if response_pos != -1:
+                        in_response_field = True
+                        # 计算实际响应内容的起始位置
+                        response_start = response_pos + len('"response": "')
+                        # 如果有部分响应内容已经收到
+                        if len(full_response) > response_start:
+                            content = full_response[response_start:]
+                            # 处理转义双引号
+                            clean_content = ""
+                            for char in content:
+                                if escaped:
+                                    clean_content += char
+                                    escaped = False
+                                elif char == "\\":
+                                    escaped = True
+                                elif char == '"':
+                                    # 非转义的双引号表示响应结束
+                                    response_ended = True
+                                    break
+                                else:
+                                    clean_content += char
+
+                            if clean_content:
+                                response_content += clean_content
+                                await assistant_response_callback_async(
+                                    response_content, True
+                                )
+                                print(
+                                    clean_content, end="", flush=True
+                                )  # 实时打印（可选）
+                else:
+                    # 已经在响应字段中，直接添加内容
+                    # 处理转义双引号
+                    clean_content = ""
+                    for char in content:
+                        if escaped:
+                            clean_content += char
+                            escaped = False
+                        elif char == "\\":
+                            escaped = True
+                        elif char == '"':
+                            # 非转义的双引号表示响应结束
+                            response_ended = True
+                            break
+                        else:
+                            clean_content += char
+
+                    if clean_content:
+                        response_content += clean_content
+                        await assistant_response_callback_async(response_content, True)
+                        print(clean_content, end="", flush=True)  # 实时打印（可选）
+
         print()
-        await assistant_response_callback_async(ai_response, False)
-        return ai_response
+        print("-----------------------------------------------")
+        print("full_response:", full_response)
+        await assistant_response_callback_async(response_content, False)
+
+        # 解析完整响应
+        try:
+            parsed = json.loads(full_response)
+            return parsed
+        except json.JSONDecodeError:
+            # 如果解析失败，尝试从累积的 response_content 构建
+            return {
+                "response": response_content,
+                "title": "问题总结",
+                "suggestions": [
+                    "能否提供更多细节？",
+                    "还有其他补充信息吗？",
+                ],
+            }
 
     def add_assistant_message(
         self, session_id, raw_response, parsed_text

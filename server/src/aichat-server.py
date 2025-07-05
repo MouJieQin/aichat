@@ -298,13 +298,16 @@ async def handle_message(websocket: WebSocket, clientID: int, message_text: str)
             }
             await websocket.send_text(json.dumps(msg))
 
-        response = await API.chat(
+        with_system_prompt = True
+        response_dict = await API.chat(
+            with_system_prompt,
             session_id,
             user_message,
             json.dumps({"sentences": []}),
             user_message_callback_async,
             assistant_response_callback_async,
         )
+        response = response_dict["response"]
         message_id = API.add_assistant_message(
             session_id, response, json.dumps({"sentences": []})
         )
@@ -320,16 +323,19 @@ async def handle_message(websocket: WebSocket, clientID: int, message_text: str)
         if response is None:
             return
 
-        # SQLite objects created in a thread can only be used in that same thread.
-        system_prompt_content = API.get_session_system_message(session_id)
-
         async def system_handle():
-            system_ai_response = API.system_chat(
-                system_prompt_content, user_message, response
-            )
-            if system_ai_response is None:
-                return
-            system_info = json.loads(system_ai_response)
+            system_info = {}
+            if with_system_prompt:
+                system_info = response_dict
+            else:
+                # SQLite objects created in a thread can only be used in that same thread.
+                system_prompt_content = API.get_session_system_message(session_id)
+                system_ai_response = API.system_chat(
+                    system_prompt_content, user_message, response
+                )
+                if system_ai_response is None:
+                    return
+                system_info = json.loads(system_ai_response)
             title = system_info["title"]
             suggestions = system_info["suggestions"]
             logger.info("title:%s, suggestions:%s", title, suggestions)

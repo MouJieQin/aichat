@@ -204,6 +204,7 @@ async def websocketEndpointSpa(websocket: WebSocket):
                 print(data)
                 await handle_spa_message(websocket, data)
             except WebSocketDisconnect:
+                logger.info(f"websocket spa disconnected.")
                 break
 
     tasks_list = [
@@ -212,8 +213,11 @@ async def websocketEndpointSpa(websocket: WebSocket):
     try:
         await asyncio.gather(*tasks_list)
     except WebSocketDisconnect:
-        spa_websockes.pop(time_id)
         logger.info(f"websocket spa disconnected.")
+    except Exception as e:
+        logger.error(f"websocket spa error: {e}")
+    finally:
+        del spa_websockes[time_id]
 
 
 def _create_play_sentence_callback(
@@ -529,6 +533,7 @@ async def websocketEndpointAIchatSession(websocket: WebSocket, clientID: int):
                 print(data)
                 await handle_message(websocket, clientID, data)
             except WebSocketDisconnect:
+                logger.info(f"websocket {clientID} disconnected.")
                 break
 
     tasks_list = [
@@ -538,6 +543,10 @@ async def websocketEndpointAIchatSession(websocket: WebSocket, clientID: int):
         await asyncio.gather(*tasks_list)
     except WebSocketDisconnect:
         print(f"websocket {clientID} disconnected.")
+    except Exception as e:
+        logger.error(f"websocket {clientID} error: {e}")
+    finally:
+        pass
 
 
 if __name__ == "__main__":

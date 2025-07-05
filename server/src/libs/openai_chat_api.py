@@ -30,12 +30,19 @@ class OpenAIChatAPI:
         system_messages = []
         user_assistant_messages = []
 
+        has_system_prompt = False
         for msg in messages:
             msg_id, role, raw_text, _, _ = msg
             if role == "system":
+                has_system_prompt = True
                 system_messages.append({"role": role, "content": raw_text})
             else:
                 user_assistant_messages.append({"role": role, "content": raw_text})
+
+        if not has_system_prompt:
+            system_prompt = self.get_session_system_message(session_id)
+            if system_prompt:
+                system_messages.append({"role": "system", "content": system_prompt})
 
         # 优先保留system消息
         prompt_messages = system_messages
@@ -152,7 +159,9 @@ class OpenAIChatAPI:
 
         # 获取历史消息
         prompt_messages = self.get_messages_for_prompt(
-            session_id, max_tokens=ai_config.get("context_max_tokens", 4000)
+            session_id,
+            max_tokens=ai_config.get("context_max_tokens", 4000),
+            max_messages=ai_config.get("max_messages", 10),
         )
 
         # 添加当前用户消息

@@ -59,16 +59,25 @@ session_websockes: Dict[int, Dict[int, WebSocket]] = {}
 def update_session_ai_config():
     sessions = API.get_all_session_id_title_config()
     # API.delete_session(35)
-    # for session in sessions:
-    #     session_id = session[0]
-    #     config = json.loads(session[2])
-    #     if "top" not in config:
-    #         config["top"] = False
-    #     if "suggestions" not in config:
-    #         config["suggestions"] = []
-    #     if "last_active_time" not in config:
-    #         config["last_active_time"] = time.time()
-    #     API.update_session_ai_config(session_id, config)
+    for session in sessions:
+        session_id = session[0]
+        config = json.loads(session[2])
+
+        if "top" not in config:
+            config["top"] = False
+        if "speech_rate" not in config:
+            config["speech_rate"] = 1.0
+        if "auto_play" not in config:
+            config["auto_play"] = False
+        if "tts_voice" not in config:
+            config["tts_voice"] = "zh-CN-XiaochenNeural"
+        if "auto_gen_title" not in config:
+            config["auto_gen_title"] = True
+        if "suggestions" not in config:
+            config["suggestions"] = []
+        if "last_active_time" not in config:
+            config["last_active_time"] = time.time()
+        API.update_session_ai_config(session_id, config)
 
 
 update_session_ai_config()
@@ -87,7 +96,6 @@ async def broadcast_spa_websockes(msg: str):
 
 
 async def broadcast_session_websockes(session_id: int, msg: str):
-    print("broadcast_session_websockes:", session_id, session_websockes)
     # 确保 session_id 是整数类型
     session_id = int(session_id)
     if session_id not in session_websockes:
@@ -267,6 +275,7 @@ async def _play_sentences(
     sentence_id_start: int,
     sentences: list,
     voice_name: str,
+    speech_rate: float,
 ):
     play_sentence_callback = _create_play_sentence_callback(websocket, message_id)
     await play_sentence_callback(-2)
@@ -280,6 +289,7 @@ async def _play_sentences(
                 sentences,
                 play_sentence_callback,
                 voice_name,
+                speech_rate,
             )
         )
 
@@ -287,6 +297,7 @@ async def _play_sentences(
 
 
 async def handle_message(websocket: WebSocket, clientID: int, message_text: str):
+    session_id = int(clientID)
     message = json.loads(message_text)
     type = message["type"]
     if type != "parsed_response":
@@ -465,7 +476,9 @@ async def handle_message(websocket: WebSocket, clientID: int, message_text: str)
     elif type == "play_the_sentence":
         message_id = message["data"]["message_id"]
         sentence_id = message["data"]["sentence_id"]
-        voice_name = message["data"]["voice_name"]
+        ai_config = API.get_session_ai_config(session_id)
+        voice_name = ai_config["tts_voice"]
+        speech_rate = ai_config["speech_rate"]
         sentences = API.get_sentences(message_id)
         if sentences is None:
             logger.warning("message_id:{} not found any sentences".format(message_id))
@@ -484,6 +497,7 @@ async def handle_message(websocket: WebSocket, clientID: int, message_text: str)
                     sentences,
                     play_sentence_callback,
                     voice_name,
+                    speech_rate,
                 )
             )
 
@@ -492,12 +506,20 @@ async def handle_message(websocket: WebSocket, clientID: int, message_text: str)
         message_id = message["data"]["message_id"]
         sentence_id_start = message["data"]["sentence_id"]
         sentences = API.get_sentences(message_id)
-        voice_name = message["data"]["voice_name"]
+        ai_config = API.get_session_ai_config(session_id)
+        voice_name = ai_config["tts_voice"]
+        speech_rate = ai_config["speech_rate"]
         if sentences is None:
             logger.warning("message_id:{} not found any sentences".format(message_id))
             return
         await _play_sentences(
-            websocket, clientID, message_id, sentence_id_start, sentences, voice_name
+            websocket,
+            clientID,
+            message_id,
+            sentence_id_start,
+            sentences,
+            voice_name,
+            speech_rate,
         )
     elif type == "pause":
         speaker.pause()
@@ -506,7 +528,9 @@ async def handle_message(websocket: WebSocket, clientID: int, message_text: str)
             speaker.unpause()
         else:
             message_id = message["data"]["message_id"]
-            voice_name = message["data"]["voice_name"]
+            ai_config = API.get_session_ai_config(session_id)
+            voice_name = ai_config["tts_voice"]
+            speech_rate = ai_config["speech_rate"]
             sentence_id_start = 0
             sentences = API.get_sentences(message_id)
             if sentences is not None:
@@ -517,6 +541,7 @@ async def handle_message(websocket: WebSocket, clientID: int, message_text: str)
                     sentence_id_start,
                     sentences,
                     voice_name,
+                    speech_rate,
                 )
     elif type == "stop":
         speaker.stop()

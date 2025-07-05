@@ -288,6 +288,28 @@ class Speaker(metaclass=SingletonMeta):
             speech_config=speech_config, audio_config=audio_output_config
         )
 
+    def _synthesize(
+        self,
+        synthesizer: speechsdk.SpeechSynthesizer,
+        sentence: str,
+        voice_name: str,
+        speech_rate: float,
+    ):
+        """Synthesize the sentence."""
+        if speech_rate == 1.0:
+            synthesizer.speak_text(sentence)
+        else:
+            ssml = f"""<speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis" xml:lang="en-US">
+                    <voice name="{voice_name}">
+
+                        <prosody rate="{int((speech_rate-1)*100)}%">
+                            {sentence}
+                        </prosody>
+                    </voice>
+                </speak>"""
+            logger.info(f"ssml:{ssml}")
+            synthesizer.speak_ssml(ssml)
+
     def _create_audio_sound(
         self,
         session_id: str,
@@ -295,13 +317,15 @@ class Speaker(metaclass=SingletonMeta):
         sentence_id: str,
         sentence: str,
         voice_name: str,
+        speech_rate: float,
     ) -> mixer.Sound:
         """Create the audio sound."""
+
         audio_file = self._get_audio_file(session_id, message_id, sentence_id)
         if not os.path.isfile(audio_file):
             self._create_audio_dir(session_id, message_id)
             synthesizer = self._create_speech_synthesizer(voice_name, audio_file)
-            synthesizer.speak_text(sentence)
+            self._synthesize(synthesizer, sentence, voice_name, speech_rate)
         sound = mixer.Sound(audio_file)
         return sound
 
@@ -313,6 +337,7 @@ class Speaker(metaclass=SingletonMeta):
         sentence_id_end: str,
         sentences: list[Dict],
         voice_name: str,
+        speech_rate: float,
     ):
         """Create the audio queue."""
         with self._create_audio_queue_lock:
@@ -323,6 +348,7 @@ class Speaker(metaclass=SingletonMeta):
                     str(sentence_id),
                     sentences[sentence_id]["text"],
                     voice_name,
+                    speech_rate,
                 )
                 self.audio_queue.append(sound)
             print(f"@:len(self.audio_queue):{len(self.audio_queue)}")
@@ -335,6 +361,7 @@ class Speaker(metaclass=SingletonMeta):
         sentence_id_end: str,
         sentences: list[Dict],
         voice_name: str,
+        speech_rate: float,
     ):
         """Generate the audio files."""
         with self._create_audio_queue_lock:
@@ -345,6 +372,7 @@ class Speaker(metaclass=SingletonMeta):
                     str(sentence_id),
                     sentences[sentence_id]["text"],
                     voice_name,
+                    speech_rate,
                 )
 
     def pause(self):
@@ -368,6 +396,7 @@ class Speaker(metaclass=SingletonMeta):
         sentences: list[Dict],
         play_sentence_callback: Callable[[int], Awaitable[None]],
         voice_name: str,
+        speech_rate: float,
     ):
         """Play the response core."""
         self.audio_channel_assistant_synthesizer.stop()
@@ -381,6 +410,7 @@ class Speaker(metaclass=SingletonMeta):
                 sentence_id_end,
                 sentences,
                 voice_name,
+                speech_rate,
             ),
             daemon=True,
         ).start()
@@ -417,6 +447,7 @@ class Speaker(metaclass=SingletonMeta):
         sentences: list[Dict],
         play_sentence_callback: Callable[[int], Awaitable[None]],
         voice_name: str,
+        speech_rate: float,
     ):
         """Play a sentence in real-time."""
         await self._play_response_core(
@@ -427,6 +458,7 @@ class Speaker(metaclass=SingletonMeta):
             sentences,
             play_sentence_callback,
             voice_name,
+            speech_rate,
         )
 
     async def play_sentences(
@@ -437,6 +469,7 @@ class Speaker(metaclass=SingletonMeta):
         sentences: list[Dict],
         play_sentence_callback: Callable[[int], Awaitable[None]],
         voice_name: str,
+        speech_rate: float,
     ):
         """Play a sentence in real-time."""
         await self._play_response_core(
@@ -447,4 +480,5 @@ class Speaker(metaclass=SingletonMeta):
             sentences,
             play_sentence_callback,
             voice_name,
+            speech_rate,
         )

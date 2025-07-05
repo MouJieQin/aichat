@@ -66,6 +66,10 @@
                                 </el-option>
                             </el-select>
                         </el-form-item>
+                        <el-form-item label="Speech Rate" prop="speech_rate">
+                            <el-input-number v-model="session_ai_config_for_drawer.speech_rate" :max="2.0" :min="0.5"
+                                :step="0.1" placeholder="请输入Speech Rate" />
+                        </el-form-item>
                         <el-form-item label="Base URL" prop="base_url">
                             <el-input v-model="session_ai_config_for_drawer.base_url" style="max-width: 600px;"
                                 placeholder="请输入Base URL" />
@@ -150,6 +154,7 @@ interface AIconfig {
     tts_voice: string;
     auto_play: boolean;
     auto_gen_title: boolean;
+    speech_rate: number;
 }
 const session_ai_config = ref<AIconfig>()
 const session_ai_config_for_drawer = ref<AIconfig>()
@@ -661,12 +666,6 @@ const loadHistoryData = async () => {
                         //如果如果session_ai_config的某些key不存在与ai_config，给ai_config填入默认值
                         if (ai_config.language == undefined)
                             ai_config.language = "中文"
-                        if (ai_config.tts_voice == undefined)
-                            ai_config.tts_voice = "zh-CN-XiaochenNeural"
-                        if (ai_config.auto_play == undefined)
-                            ai_config.auto_play = false
-                        if (ai_config.auto_gen_title == undefined)
-                            ai_config.auto_gen_title = true
                         session_ai_config.value = ai_config
                         session_suggestions.value = ai_config.suggestions
                         console.log("session_ai_config:", session_ai_config.value)

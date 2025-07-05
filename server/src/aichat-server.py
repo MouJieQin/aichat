@@ -11,7 +11,7 @@ from fastapi import (
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.responses import FileResponse
 from pydantic import BaseModel
-from typing import Callable, Awaitable, Dict
+from typing import Callable, Awaitable, Dict, Optional
 import uvicorn
 import plistlib
 import netifaces
@@ -53,6 +53,7 @@ API = OpenAIChatAPI(AI_CONFIG, DB)
 speaker = Speaker(configure)
 recognizer = Recognizer(configure)
 spa_websockes: Dict[int, WebSocket] = {}
+session_websockes: Dict[int, Dict[int, WebSocket]] = {}
 
 
 def update_session_ai_config():
@@ -74,15 +75,32 @@ update_session_ai_config()
 
 
 async def broadcast_spa_websockes(msg: str):
-    in_valide_keys = []
+    invalide_keys = []
     for key, websocket in spa_websockes.items():
         try:
             await websocket.send_text(msg)
         except Exception as e:
             logger.error(f"broadcast_spa_websockes error: {e}")
-            in_valide_keys.append(key)
-    for key in in_valide_keys:
+            invalide_keys.append(key)
+    for key in invalide_keys:
         del spa_websockes[key]
+
+
+async def broadcast_session_websockes(session_id: int, msg: str):
+    print("broadcast_session_websockes:", session_id, session_websockes)
+    # 确保 session_id 是整数类型
+    session_id = int(session_id)
+    if session_id not in session_websockes:
+        return
+    invalid_keys = []
+    for key, websocket in session_websockes[session_id].items():
+        try:
+            await websocket.send_text(msg)
+        except Exception as e:
+            invalid_keys.append(key)
+    # 移除无效的 WebSocket 连接
+    for key in invalid_keys:
+        del session_websockes[session_id][key]
 
 
 async def update_session_title(session_id: int, title: str):
@@ -142,6 +160,8 @@ async def handle_spa_message(websocket: WebSocket, message_text: str):
         session_id = message["data"]["session_id"]
         title = message["data"]["title"]
         await update_session_title(session_id, title)
+        API.update_session_ai_config_by_key(session_id, "auto_gen_title", False)
+        await send_session_ai_config(session_id)
     elif type == "delete_session":
         session_id = message["data"]["session_id"]
         API.delete_session(session_id)
@@ -192,7 +212,6 @@ async def handle_spa_message(websocket: WebSocket, message_text: str):
 @app.websocket("/ws/aichat/spa")
 async def websocketEndpointSpa(websocket: WebSocket):
     await websocket.accept()
-    #  timestamp that's exact to the millisecond
     time_id = int(time.time() * 1000)
     spa_websockes[time_id] = websocket
     await send_all_sessions()
@@ -275,6 +294,7 @@ async def handle_message(websocket: WebSocket, clientID: int, message_text: str)
     if type == "user_input":
         user_message = message["data"]["user_message"]
         session_id = message["data"]["session_id"]
+        auto_gen_title = message["data"]["auto_gen_title"]
 
         async def user_message_callback_async(message_id: int):
             msg = {
@@ -340,7 +360,8 @@ async def handle_message(websocket: WebSocket, clientID: int, message_text: str)
             title = system_info["title"]
             suggestions = system_info["suggestions"]
             logger.info("title:%s, suggestions:%s", title, suggestions)
-            await update_session_title(session_id, title)
+            if auto_gen_title:
+                await update_session_title(session_id, title)
             msg = {
                 "type": "session_suggestions",
                 "data": {
@@ -376,7 +397,7 @@ async def handle_message(websocket: WebSocket, clientID: int, message_text: str)
         session_id = message["data"]["session_id"]
         ai_config = message["data"]["ai_config"]
         API.update_session_ai_config(session_id, ai_config)
-        await send_session_ai_config(websocket, session_id)
+        await send_session_ai_config(session_id)
     elif type == "update_message":
         session_id = message["data"]["session_id"]
         message_id = message["data"]["message_id"]
@@ -510,7 +531,9 @@ async def send_session_messages(websocket: WebSocket, session_id: int):
     await websocket.send_text(json.dumps(msg))
 
 
-async def send_session_ai_config(websocket: WebSocket, session_id: int):
+async def send_session_ai_config(
+    session_id: int, websocket: Optional[WebSocket] = None
+):
     ai_config = API.get_session_ai_config(session_id)
     msg = {
         "type": "session_ai_config",
@@ -518,7 +541,10 @@ async def send_session_ai_config(websocket: WebSocket, session_id: int):
             "ai_config": ai_config,
         },
     }
-    await websocket.send_text(json.dumps(msg))
+    if websocket is None:
+        await broadcast_session_websockes(session_id, json.dumps(msg))
+    else:
+        await websocket.send_text(json.dumps(msg))
 
 
 @app.websocket("/ws/aichat/{clientID}")
@@ -530,8 +556,14 @@ async def websocketEndpointAIchatSession(websocket: WebSocket, clientID: int):
         await websocket.send_text(json.dumps(msg))
         await websocket.close()
         return
+
+    time_id = int(time.time() * 1000)
+    if session_id not in session_websockes:
+        session_websockes[session_id] = {}
+    session_websockes[session_id][time_id] = websocket
+
     await send_session_messages(websocket, session_id)
-    await send_session_ai_config(websocket, session_id)
+    await send_session_ai_config(session_id, websocket)
 
     async def receive():
         while True:
@@ -552,7 +584,7 @@ async def websocketEndpointAIchatSession(websocket: WebSocket, clientID: int):
     except Exception as e:
         logger.error(f"websocket {clientID} error: {e}")
     finally:
-        pass
+        del session_websockes[session_id][time_id]
 
 
 if __name__ == "__main__":

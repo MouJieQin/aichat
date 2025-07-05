@@ -98,6 +98,10 @@
                             <el-switch v-model="session_ai_config_for_drawer.auto_play" :active-value="true"
                                 :inactive-value="false" />
                         </el-form-item>
+                        <el-form-item label="Auto Gen Title" prop="auto_gen_title">
+                            <el-switch v-model="session_ai_config_for_drawer.auto_gen_title" :active-value="true"
+                                :inactive-value="false" />
+                        </el-form-item>
                     </el-form>
                 </div>
             </div>
@@ -145,6 +149,7 @@ interface AIconfig {
     language: string;
     tts_voice: string;
     auto_play: boolean;
+    auto_gen_title: boolean;
 }
 const session_ai_config = ref<AIconfig>()
 const session_ai_config_for_drawer = ref<AIconfig>()
@@ -550,7 +555,6 @@ const loadHistoryData = async () => {
                                             sentences: result.sentences,
                                         },
                                     },
-
                                 }
                                 currentWebSocket?.send(msg)
                                 scrollToBottomDebounced()
@@ -661,6 +665,8 @@ const loadHistoryData = async () => {
                             ai_config.tts_voice = "zh-CN-XiaochenNeural"
                         if (ai_config.auto_play == undefined)
                             ai_config.auto_play = false
+                        if (ai_config.auto_gen_title == undefined)
+                            ai_config.auto_gen_title = true
                         session_ai_config.value = ai_config
                         session_suggestions.value = ai_config.suggestions
                         console.log("session_ai_config:", session_ai_config.value)
@@ -698,11 +704,15 @@ const send_user_input = () => {
 // 发送消息方法
 const send_message = (user_input: string) => {
     session_suggestions.value = []
+    if (!session_ai_config.value) {
+        return
+    }
     const message = {
         type: 'user_input',
         data: {
             user_message: user_input,
             session_id: get_session_id(),
+            auto_gen_title: session_ai_config.value.auto_gen_title,
         },
     }
     currentWebSocket?.send(message)

@@ -407,10 +407,18 @@ class OpenAIChatAPI:
     def update_session_title(self, session_id: int, title: str):
         self.db.update_session_title(session_id, title)
 
-    def update_session_top(self, session_id: int, top: bool):
+    def update_session_ai_config_by_key(self, session_id: int, key: str, value: Any):
         ai_config = self.get_session_ai_config(session_id)
-        ai_config["top"] = top
+        ai_config[key] = value
         self.update_session_ai_config(session_id, ai_config)
+
+    def update_session_top(self, session_id: int, top: bool):
+        self.update_session_ai_config_by_key(session_id, "top", top)
+
+    def update_session_auto_gen_title(self, session_id: int, auto_gen_title: bool):
+        self.update_session_ai_config_by_key(
+            session_id, "auto_gen_title", auto_gen_title
+        )
 
     def delete_session(self, session_id: int):
         self.db.delete_session_and_messages(session_id)

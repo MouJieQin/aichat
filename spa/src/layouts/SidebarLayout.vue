@@ -49,7 +49,7 @@
                             </el-icon>
                             <span class="truncate-text" :title="item.title">{{ item.title }}</span>
                             <el-icon v-if="item.config['top']" style="padding-right: 10px;">
-                                <LuPin />
+                                <LuPin style="opacity: 0.5;"/>
                             </el-icon>
 
                             <el-popover placement="top-end" :width="200" trigger="click">
@@ -57,8 +57,8 @@
                                     <el-menu-item index="top" @click="handle_top(item)">
                                         <div>
                                             <el-icon>
-                                                <LuPinOff v-show="!item.config['top']" />
-                                                <LuPin v-show="item.config['top']" />
+                                                <LuPinOff v-show="item.config['top']" />
+                                                <LuPin v-show="!item.config['top']" />
                                             </el-icon>
                                             <span>{{ item.config['top'] ? '取消置顶' : '置顶' }}</span>
                                         </div>
@@ -92,7 +92,7 @@
                                 <template #reference>
                                     <el-icon class="hover-icon"
                                         @click.stop="rename_session.title = item.title; rename_session.session_id = get_session_id(item.path)">
-                                        <MoreFilled />
+                                        <More />
                                     </el-icon>
                                 </template>
                             </el-popover>
@@ -125,7 +125,7 @@
 <script lang="ts" setup>
 import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { Location, Plus, Expand, Fold, Menu, ChatDotSquare, Clock, MoreFilled, Delete, EditPen } from '@element-plus/icons-vue'
+import { Location, Plus, Expand, Fold, Menu, ChatDotSquare, Clock, More, Delete, EditPen } from '@element-plus/icons-vue'
 import { LuPin, LuPinOff } from 'vue-icons-plus/lu'
 import { useWebSocket, WebSocketService } from '@/common/websocket-client'
 import { processMarkdown, SentenceInfo } from '@/common/markdown-processor'

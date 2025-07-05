@@ -1,5 +1,6 @@
 import openai
 import json
+import ast
 from datetime import datetime
 from typing import List, Dict, Any, Optional, Callable
 from libs.chat_database import ChatDatabase
@@ -22,6 +23,16 @@ class OpenAIChatAPI:
         )
         self.system_model = system_ai_config["model"]
         self.system_temperature = 0.5
+
+    @staticmethod
+    def unescape_string(s):
+        # 给字符串添加引号，使其成为合法的Python字符串字面值
+        quoted = f'"{s}"'
+        # 用literal_eval对字符串进行求值，实现转义字符的转换
+        try:
+            return ast.literal_eval(quoted)
+        except Exception:
+            return None
 
     def _create_system_prompt(
         self, user_system_prompt: str, with_system_prompt: bool
@@ -272,6 +283,7 @@ class OpenAIChatAPI:
                                     clean_content += char
                                     escaped = False
                                 elif char == "\\":
+                                    clean_content += char
                                     escaped = True
                                 elif char == '"':
                                     # 非转义的双引号表示响应结束
@@ -282,12 +294,14 @@ class OpenAIChatAPI:
 
                             if clean_content:
                                 response_content += clean_content
-                                await assistant_response_callback_async(
-                                    response_content, True
-                                )
-                                print(
-                                    clean_content, end="", flush=True
-                                )  # 实时打印（可选）
+                                # fmt: off
+                                send_str = self.unescape_string(response_content)
+                                if send_str:
+                                    await assistant_response_callback_async(
+                                        send_str, True
+                                    )
+                                print(clean_content, end="", flush=True)  # 实时打印（可选）
+                                # fmt: on
                 else:
                     # 已经在响应字段中，直接添加内容
                     # 处理转义双引号
@@ -297,6 +311,7 @@ class OpenAIChatAPI:
                             clean_content += char
                             escaped = False
                         elif char == "\\":
+                            clean_content += char
                             escaped = True
                         elif char == '"':
                             # 非转义的双引号表示响应结束
@@ -307,7 +322,11 @@ class OpenAIChatAPI:
 
                     if clean_content:
                         response_content += clean_content
-                        await assistant_response_callback_async(response_content, True)
+                        # fmt: off
+                        send_str = self.unescape_string(response_content)
+                        # fmt: on
+                        if send_str:
+                            await assistant_response_callback_async(send_str, True)
                         print(clean_content, end="", flush=True)  # 实时打印（可选）
 
         print()

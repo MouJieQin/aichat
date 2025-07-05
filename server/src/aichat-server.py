@@ -270,7 +270,8 @@ async def _play_sentences(
 async def handle_message(websocket: WebSocket, clientID: int, message_text: str):
     message = json.loads(message_text)
     type = message["type"]
-    print("receive message:", message)
+    if type != "parsed_response":
+        logger.info(f"receive message:{message}")
     if type == "user_input":
         user_message = message["data"]["user_message"]
         session_id = message["data"]["session_id"]
@@ -298,9 +299,9 @@ async def handle_message(websocket: WebSocket, clientID: int, message_text: str)
             }
             await websocket.send_text(json.dumps(msg))
 
-        with_system_prompt = True
+        WITH_SYSTEM_PROMPT = True
         response_dict = await API.chat(
-            with_system_prompt,
+            WITH_SYSTEM_PROMPT,
             session_id,
             user_message,
             json.dumps({"sentences": []}),
@@ -325,7 +326,7 @@ async def handle_message(websocket: WebSocket, clientID: int, message_text: str)
 
         async def system_handle():
             system_info = {}
-            if with_system_prompt:
+            if WITH_SYSTEM_PROMPT:
                 system_info = response_dict
             else:
                 # SQLite objects created in a thread can only be used in that same thread.
@@ -536,7 +537,6 @@ async def websocketEndpointAIchatSession(websocket: WebSocket, clientID: int):
         while True:
             try:
                 data = await websocket.receive_text()
-                print(data)
                 await handle_message(websocket, clientID, data)
             except WebSocketDisconnect:
                 logger.info(f"websocket {clientID} disconnected.")

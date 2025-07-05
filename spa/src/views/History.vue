@@ -95,8 +95,8 @@
                                 :step="1" placeholder="请输入Max Messages" />
                         </el-form-item>
                         <el-form-item label="Auto Play" prop="auto_play">
-                            <el-switch v-model="session_ai_config_for_drawer.auto_play" active-value="true"
-                                inactive-value="false" />
+                            <el-switch v-model="session_ai_config_for_drawer.auto_play" :active-value="true"
+                                :inactive-value="false" />
                         </el-form-item>
                     </el-form>
                 </div>

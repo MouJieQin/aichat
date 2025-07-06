@@ -9,8 +9,9 @@
                     @delete_audio_files="delete_audio_files" @delete_message="delete_message" @play="play"
                     @pause="pause" @stop="stop" @regenerate="regenerate" />
             </div>
-            <div v-if="streaming" class="message_assistant">
-                <p v-html="md.render(stream_response)"></p>
+            <div v-show="streaming" class="message_assistant">
+                <p v-if="!is_chat_error" v-html="md.render(stream_response)"></p>
+                <p v-else style="color: red;">{{ stream_response }}</p>
             </div>
             <div style="margin-top: 12px;"></div>
             <div class="message_suggestions" v-for="(suggestion, index) in session_suggestions" :key="index">
@@ -169,6 +170,7 @@ const drawer_direction = ref<DrawerProps['direction']>('ttb')
 const historyId = ref('')
 const loading = ref(false)
 const streaming = ref(false)
+const is_chat_error = ref(false)
 const stream_response = ref('')
 const session_suggestions = ref<string[]>([])
 const chatMessages = ref<Message[]>([])
@@ -581,6 +583,7 @@ const loadHistoryData = async () => {
                 case "stream_response":
                     {
                         streaming.value = message.data.is_streaming
+                        is_chat_error.value = message.data.is_chat_error
                         stream_response.value = message.data.response
                         scrollToBottom()
                     }

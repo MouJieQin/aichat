@@ -356,25 +356,33 @@ async def handle_message(websocket: WebSocket, clientID: int, message_text: str)
             }
             await websocket.send_text(json.dumps(msg))
 
-        async def assistant_response_callback_async(response: str, is_streaming: bool):
+        async def assistant_response_callback_async(
+            response: str, is_streaming: bool, error: bool = False
+        ):
             msg = {
                 "type": "stream_response",
                 "data": {
                     "is_streaming": is_streaming,
+                    "is_chat_error": error,
                     "response": response,
                 },
             }
             await websocket.send_text(json.dumps(msg))
 
         WITH_SYSTEM_PROMPT = True
-        response_dict = await API.chat(
-            WITH_SYSTEM_PROMPT,
-            session_id,
-            user_message,
-            json.dumps({"sentences": []}),
-            user_message_callback_async,
-            assistant_response_callback_async,
-        )
+        try:
+            response_dict = await API.chat(
+                WITH_SYSTEM_PROMPT,
+                session_id,
+                user_message,
+                json.dumps({"sentences": []}),
+                user_message_callback_async,
+                assistant_response_callback_async,
+            )
+        except Exception as e:
+            logger.error(f"Chat error: {e}")
+            await assistant_response_callback_async(f"Chat error: {e}", True, True)
+            return
         response = response_dict["response"]
         message_id = API.add_assistant_message(
             session_id, response, json.dumps({"sentences": []})

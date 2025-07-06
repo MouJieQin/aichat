@@ -218,6 +218,7 @@ onMounted(async () => {
 
 // 实时更新光标位置
 const updateCursorPosition = () => {
+    is_input_sendable.value = inputVal.value.trim() != ""
     setTimeout(() => {
         if (inputRef.value) {
             const textarea = inputRef.value.$refs.textarea;
@@ -259,7 +260,6 @@ const set_cursor_position = (position: number) => {
 
 
 const handle_input_change = () => {
-    is_input_sendable.value = inputVal.value.trim() != ""
     updateCursorPosition()
 }
 

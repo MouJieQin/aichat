@@ -455,7 +455,9 @@ async def handle_message(websocket: WebSocket, clientID: int, message_text: str)
         message_id = message["data"]["message_id"]
         sentence_id_start = message["data"]["sentence_id_start"]
         sentence_id_end = message["data"]["sentence_id_end"]
-        voice_name = message["data"]["voice_name"]
+        ai_config = API.get_session_ai_config(session_id)
+        voice_name = ai_config["tts_voice"]
+        speech_rate = ai_config["speech_rate"]
         sentences = API.get_sentences(message_id)
         if sentences is None:
             logger.warning("message_id:{} not found any sentences".format(message_id))
@@ -469,6 +471,7 @@ async def handle_message(websocket: WebSocket, clientID: int, message_text: str)
                 sentence_id_end,
                 sentences,
                 voice_name,
+                speech_rate,
             ),
             daemon=True,
         ).start()

@@ -213,8 +213,13 @@ class OpenAIChatAPI:
             max_messages=ai_config.get("max_messages", 10),
         )
 
-        # 添加当前用户消息
-        prompt_messages.append({"role": "user", "content": user_message})
+        # 再次添加格式控制消息
+        prompt_messages.append(
+            {
+                "role": "user",
+                "content": "请注意回复格式要严格遵循系统设置的纯json格式。",
+            }
+        )
 
         logger.info(f"@@@@@prompt_messages:{prompt_messages}")
 

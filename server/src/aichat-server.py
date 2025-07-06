@@ -164,6 +164,43 @@ async def handle_spa_message(websocket: WebSocket, message_text: str):
             },
         }
         await websocket.send_text(json.dumps(message))
+    elif type == "copy_session":
+        session_id = message["data"]["session_id"]
+        new_session_id = API.copy_session(session_id)
+        if new_session_id is None:
+            raise ValueError("Session copy failed")
+        title = API.get_session_title(session_id)
+        config = API.get_session_ai_config(session_id)
+        config["last_active_time"] = time.time()
+        config["suggestions"] = []
+        API.update_session_ai_config(new_session_id, config)
+        msg = {
+            "type": "new_session",
+            "data": {
+                "session_id": new_session_id,
+                "title": title,
+                "config": config,
+            },
+        }
+        await websocket.send_text(json.dumps(msg))
+    elif type == "copy_session_and_message":
+        session_id = message["data"]["session_id"]
+        new_session_id = API.copy_session_and_messages(session_id)
+        if new_session_id is None:
+            raise ValueError("Session copy failed")
+        title = API.get_session_title(session_id)
+        config = API.get_session_ai_config(session_id)
+        config["last_active_time"] = time.time()
+        API.update_session_ai_config(new_session_id, config)
+        msg = {
+            "type": "new_session",
+            "data": {
+                "session_id": new_session_id,
+                "title": title,
+                "config": config,
+            },
+        }
+        await websocket.send_text(json.dumps(msg))
     elif type == "update_session_title":
         session_id = message["data"]["session_id"]
         title = message["data"]["title"]
@@ -208,7 +245,6 @@ async def handle_spa_message(websocket: WebSocket, message_text: str):
                 "type": "new_session",
                 "data": {
                     "session_id": session_id,
-                    "message_id": message_id,
                     "title": title,
                     "system_prompt": system_prompt,
                     "config": config,

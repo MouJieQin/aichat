@@ -49,7 +49,7 @@
                             </el-icon>
                             <span class="truncate-text" :title="item.title">{{ item.title }}</span>
                             <el-icon v-if="item.config['top']" style="padding-right: 10px;">
-                                <LuPin style="opacity: 0.5;"/>
+                                <LuPin style="opacity: 0.5;" />
                             </el-icon>
 
                             <el-popover placement="top-end" :width="200" trigger="click">
@@ -70,6 +70,25 @@
                                                 <EditPen />
                                             </el-icon>
                                             <span>重命名</span>
+                                        </div>
+                                    </el-menu-item>
+
+                                    <el-menu-item index="copy_session" @click="copy_session(get_session_id(item.path))">
+                                        <div>
+                                            <el-icon>
+                                                <DocumentCopy />
+                                            </el-icon>
+                                            <span>复制会话</span>
+                                        </div>
+                                    </el-menu-item>
+
+                                    <el-menu-item index="copy_session_and_message"
+                                        @click="copy_session_and_message(get_session_id(item.path))">
+                                        <div>
+                                            <el-icon>
+                                                <DocumentCopy />
+                                            </el-icon>
+                                            <span>复制会话和消息</span>
                                         </div>
                                     </el-menu-item>
 
@@ -125,7 +144,7 @@
 <script lang="ts" setup>
 import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { Location, Plus, Expand, Fold, Menu, ChatDotSquare, Clock, More, Delete, EditPen } from '@element-plus/icons-vue'
+import { Location, Plus, Expand, Fold, DocumentCopy, ChatDotSquare, Clock, More, Delete, EditPen } from '@element-plus/icons-vue'
 import { LuPin, LuPinOff } from 'vue-icons-plus/lu'
 import { useWebSocket, WebSocketService } from '@/common/websocket-client'
 import { processMarkdown, SentenceInfo } from '@/common/markdown-processor'
@@ -198,6 +217,26 @@ const create_new_session = () => {
     const message = {
         type: 'create_session',
         data: {
+        },
+    }
+    currentWebSocket.send(message)
+}
+
+const copy_session = (session_id: number) => {
+    const message = {
+        type: 'copy_session',
+        data: {
+            session_id: session_id,
+        },
+    }
+    currentWebSocket.send(message)
+}
+
+const copy_session_and_message = (session_id: number) => {
+    const message = {
+        type: 'copy_session_and_message',
+        data: {
+            session_id: session_id,
         },
     }
     currentWebSocket.send(message)

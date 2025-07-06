@@ -58,12 +58,54 @@ class ChatDatabase:
         cursor.execute("DELETE FROM messages WHERE session_id = ?", (session_id,))
         self.conn.commit()
 
+    def copy_session(self, session_id: int) -> Optional[int]:
+        create_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        cursor = self.conn.cursor()
+        cursor.execute(
+            "INSERT INTO sessions (title, create_time, ai_config) "
+            "SELECT title, ?, ai_config FROM sessions WHERE id = ?",
+            (create_time, session_id),
+        )
+        new_session_id = cursor.lastrowid
+        self.conn.commit()
+        return new_session_id
+
+    def copy_session_system_message(self, src_session_id: int, dst_session_id: int):
+        cursor = self.conn.cursor()
+        cursor.execute(
+            "INSERT INTO messages (session_id, role, raw_text, parsed_text, timestamp) "
+            "SELECT ?, role, raw_text, parsed_text, timestamp FROM messages WHERE session_id = ? AND role = 'system'",
+            (dst_session_id, src_session_id),
+        )
+        self.conn.commit()
+
+    def copy_session_and_messages(self, session_id: int) -> Optional[int]:
+        new_session_id = self.copy_session(session_id)
+        if new_session_id is None:
+            return None
+        cursor = self.conn.cursor()
+        cursor.execute(
+            "INSERT INTO messages (session_id, role, raw_text, parsed_text, timestamp) "
+            "SELECT ?, role, raw_text, parsed_text, timestamp FROM messages WHERE session_id = ?",
+            (new_session_id, session_id),
+        )
+        self.conn.commit()
+        return new_session_id
+
     def update_session_title(self, session_id: int, title: str):
         cursor = self.conn.cursor()
         cursor.execute(
             "UPDATE sessions SET title = ? WHERE id = ?", (title, session_id)
         )
         self.conn.commit()
+
+    def get_session_title(self, session_id: int) -> Optional[str]:
+        cursor = self.conn.cursor()
+        cursor.execute("SELECT title FROM sessions WHERE id = ?", (session_id,))
+        row = cursor.fetchone()
+        if row is None:
+            return None
+        return row[0]
 
     def add_message(
         self, session_id: int, role: str, raw_text: str, parsed_text: str

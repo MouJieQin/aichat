@@ -5,6 +5,7 @@ from datetime import datetime
 from typing import List, Dict, Any, Optional, Callable
 from libs.chat_database import ChatDatabase
 from libs.log_config import logger
+import time
 
 
 class OpenAIChatAPI:
@@ -385,8 +386,20 @@ class OpenAIChatAPI:
             raise ValueError("System prompt creation failed")
         return (session_id, message_id)
 
+    def copy_session(self, session_id: int) -> Optional[int]:
+        new_session_id = self.db.copy_session(session_id)
+        if new_session_id:
+            self.db.copy_session_system_message(session_id, new_session_id)
+        return new_session_id
+
+    def copy_session_and_messages(self, session_id: int) -> Optional[int]:
+        return self.db.copy_session_and_messages(session_id)
+
     def get_all_session_id_title_config(self) -> List[Any]:
         return self.db.get_all_session_id_title_config()
+
+    def get_session_title(self, session_id: int) -> Optional[str]:
+        return self.db.get_session_title(session_id)
 
     def get_session_messages(self, session_id: int, limit=100) -> Optional[list[dict]]:
         messages = self.db.get_session_messages(session_id, limit)
@@ -423,6 +436,16 @@ class OpenAIChatAPI:
     def update_session_auto_gen_title(self, session_id: int, auto_gen_title: bool):
         self.update_session_ai_config_by_key(
             session_id, "auto_gen_title", auto_gen_title
+        )
+
+    def update_session_suggestions(self, session_id: int, suggestions: list[str]):
+        self.update_session_ai_config_by_key(session_id, "suggestions", suggestions)
+
+    def update_session_last_active_time(
+        self, session_id: int, last_active_time: float = time.time()
+    ):
+        self.update_session_ai_config_by_key(
+            session_id, "last_active_time", last_active_time
         )
 
     def delete_session(self, session_id: int):

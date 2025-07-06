@@ -135,6 +135,21 @@
             </template>
         </el-dialog>
 
+        <el-dialog v-model="delete_dialog_visible" width="500" align-center>
+            <span style="font-size: 24px;">
+                <el-icon>
+                    <WarningFilled style="color: #FF4949;" />
+                </el-icon>
+                请先取消置顶！</span>
+            <template #footer>
+                <div class="dialog-footer">
+                    <el-button type="primary" @click="delete_dialog_visible = false">
+                        Confirm
+                    </el-button>
+                </div>
+            </template>
+        </el-dialog>
+
         <div class="main-content">
             <router-view />
         </div>
@@ -144,7 +159,7 @@
 <script lang="ts" setup>
 import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { Location, Plus, Expand, Fold, DocumentCopy, ChatDotSquare, Clock, More, Delete, EditPen } from '@element-plus/icons-vue'
+import { Location, Plus, Expand, WarningFilled, Fold, DocumentCopy, ChatDotSquare, Clock, More, Delete, EditPen } from '@element-plus/icons-vue'
 import { LuPin, LuPinOff } from 'vue-icons-plus/lu'
 import { useWebSocket, WebSocketService } from '@/common/websocket-client'
 import { processMarkdown, SentenceInfo } from '@/common/markdown-processor'
@@ -154,6 +169,7 @@ const route = useRoute()
 const router = useRouter()
 const chat_popover_show = ref(false)
 const rename_dialog_visible = ref(false)
+const delete_dialog_visible = ref(false)
 const rename_session_name = ref('')
 const rename_session = ref({ session_id: -1, title: '' })
 let historyItems = ref<any[]>([])
@@ -260,6 +276,11 @@ const update_session_title = () => {
 }
 
 const delete_session = (session_id: number) => {
+    const is_topped = historyItems.value.find((item) => item.path == `/history/${session_id}`).config.top
+    if (is_topped) {
+        delete_dialog_visible.value = true
+        return
+    }
     const message = {
         type: 'delete_session',
         data: {

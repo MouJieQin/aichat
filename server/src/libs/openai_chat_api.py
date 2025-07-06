@@ -175,7 +175,7 @@ class OpenAIChatAPI:
         logger.info("----- 系统分析请求 -----")
         completion = self.system_client.chat.completions.create(
             model=self.system_model,
-            messages=prompt_messages,
+            messages=prompt_messages, #type: ignore
             temperature=self.system_temperature,
         )
 
@@ -228,9 +228,9 @@ class OpenAIChatAPI:
         )
 
         logger.info("----- 流式请求 -----")
-        response_stream = client.chat.completions.create(
+        response_stream = client.chat.completions.create(  # type: ignore
             model=ai_config.get("model", "gpt-3.5-turbo"),
-            messages=prompt_messages,
+            messages=prompt_messages, # type: ignore
             temperature=ai_config.get("temperature", 0.7),
             max_tokens=ai_config.get("max_tokens", 800),
             stream=True,

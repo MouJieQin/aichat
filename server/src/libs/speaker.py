@@ -1,120 +1,20 @@
 import os
 
-# Set the environment variable before importing pygame
+# 设置环境变量以隐藏Pygame支持提示
 os.environ["PYGAME_HIDE_SUPPORT_PROMPT"] = "1"
-import pygame
-from pygame import mixer
-from collections import deque
-import threading
 import asyncio
-from typing import Dict, Callable, Awaitable, Optional
+import threading
+import shutil
+from collections import deque
+from typing import Dict, Callable, Awaitable, Optional, List
 from libs.log_config import logger
 import azure.cognitiveservices.speech as speechsdk
-import time
-import shutil
-
-
-class PygameAudioOutputStream(speechsdk.audio.PushAudioOutputStreamCallback):
-    """
-    A custom audio output stream that passes speech data to Pygame.
-    """
-
-    def __init__(self, audio_channel: pygame.mixer.Channel):
-        super().__init__()
-        # Memory stream handle: buffer to accumulate audio data
-        self._audio_buffer = bytearray()
-        # Queue to store Pygame sound objects
-        self.audio_queue = deque()
-        # Pygame clock object for timing control
-        self.clock = pygame.time.Clock()
-        # Pygame audio channel for playback
-        self.audio_channel = audio_channel
-        # Size of each audio chunk to process
-        self.CHUNK_SIZE = 192000
-
-    def write(self, audio_buffer: memoryview) -> int:
-        """
-        Implement the write method to add audio data to the Pygame audio queue.
-
-        Args:
-            audio_buffer (memoryview): A memory view of the audio data to be written.
-
-        Returns:
-            int: The length of the audio buffer written.
-        """
-        audio_data = bytes(audio_buffer)
-        self._audio_buffer.extend(audio_data)
-
-        # Process the buffer when it accumulates enough data
-        while len(self._audio_buffer) >= self.CHUNK_SIZE:
-            self._process_audio_chunk()
-
-        return len(audio_buffer)
-
-    def _process_audio_chunk(self):
-        """
-        Process an audio chunk from the buffer, create a Pygame sound object,
-        and add it to the playback queue or play it immediately.
-        """
-        try:
-            # Extract a chunk from the buffer
-            chunk = self._audio_buffer[: self.CHUNK_SIZE]
-            self._audio_buffer = self._audio_buffer[self.CHUNK_SIZE :]
-
-            # Create a Pygame sound object
-            sound = self._create_sound_from_chunk(chunk)
-
-            if not self.audio_channel.get_busy():
-                # Play the sound immediately if the channel is idle
-                self.audio_channel.play(sound)
-            else:
-                # Queue the sound if the channel is busy
-                self.audio_queue.append(sound)
-        except Exception as e:
-            logger.exception(f"Error creating sound chunk: {e}")
-
-    def _create_sound_from_chunk(self, chunk: bytes) -> pygame.mixer.Sound:
-        """
-        Create a Pygame sound object from an audio chunk.
-
-        Args:
-            chunk (bytes): A byte array representing an audio chunk.
-
-        Returns:
-            pygame.mixer.Sound: A Pygame sound object created from the chunk.
-        """
-        return pygame.sndarray.make_sound(
-            pygame.sndarray.array(pygame.mixer.Sound(buffer=chunk))
-        )
-
-    def close(self) -> None:
-        """关闭流时的清理工作"""
-        self._audio_data = bytearray()
-        logger.info("Audio stream closed")
-
-    def handel_tail(self):
-        if self._audio_buffer:
-            try:
-                sound = pygame.sndarray.make_sound(
-                    pygame.sndarray.array(pygame.mixer.Sound(buffer=self._audio_buffer))
-                )
-                self._audio_buffer = bytearray()  # 清空缓冲区
-                if self.audio_channel.get_busy():
-                    self.audio_queue.append(sound)
-                else:
-                    self.audio_channel.play(sound)  # 直接播放
-                while self.audio_channel.get_busy():
-                    if not self.audio_channel.get_queue() and len(self.audio_queue) > 0:
-                        self.audio_channel.queue(self.audio_queue.popleft())
-                    time.sleep(0.1)
-            except Exception as e:
-                logger.exception(f"Error processing remaining audio: {e}")
+import pygame
+from pygame import mixer
 
 
 class SingletonMeta(type):
-    """
-    Metaclass for implementing the Singleton pattern.
-    """
+    """单例模式的元类"""
 
     _instances = {}
 
@@ -125,360 +25,284 @@ class SingletonMeta(type):
 
 
 class Speaker(metaclass=SingletonMeta):
-    def __init__(self, configure: Dict):
+    """语音合成和播放服务"""
 
-        # Ensure initialization only happens once
+    def __init__(self, config: Dict):
+        """初始化语音合成器，支持延迟初始化"""
         if not hasattr(self, "_initialized"):
-            if configure is None:
-                raise ValueError("config must be provided on first initialization")
-            self.configure = configure
-            self._init()
+            if config is None:
+                raise ValueError("首次初始化需要提供配置")
+            self.config = config
+            self._initialize()
             self._initialized = True
 
-    def _init(self):
-        self.audio_files = {
-            "start_record": "./voices/BubbleAppear.aiff.wav",
-            "end_record": "./voices/BubbleDisappear.aiff.wav",
-            "send_message": "./voices/SentMessage.aiff.wav",
-            "receive_response": "./voices/Blow.aiff.wav",
-        }
-        self.azure_config = self.configure["azure"]
-        self.azure_key = self.azure_config["key"]
-        self.azure_region = self.azure_config["region"]
-        self.speaker_config = self.configure["speaker"]
-        # Cache loaded audio files
-        self._init_mixer()
-        self._init_speech_synthesizer()
-        self._create_audio_queue_lock = threading.Lock()
+    def _initialize(self) -> None:
+        """初始化语音合成器的内部状态"""
+        self.azure_config = self.config["azure"]
+        self.speaker_config = self.config["speaker"]
+        self._init_audio_system()
+        self._audio_generation_lock = threading.Lock()
 
-    def _init_mixer(self):
-        """Initialize the Pygame mixer."""
-        device_name = self.speaker_config["ai_assistant"]["device_name"]
-        pygame.mixer.init(
-            frequency=16000, size=-16, channels=1, buffer=4096, devicename=device_name
-        )
+    def _init_audio_system(self) -> None:
+        """初始化Pygame音频系统"""
+        pygame.mixer.init(frequency=16000, size=-16, channels=1, buffer=4096)
         self.clock = pygame.time.Clock()
-        self.audio_channel_assistant_synthesizer = pygame.mixer.Channel(0)
-        self.audio_channel_system_prompt = pygame.mixer.Channel(1)
+        self.assistant_channel = pygame.mixer.Channel(0)
+        self.system_prompt_channel = pygame.mixer.Channel(1)
         self.audio_queue = deque()
 
-    def close(self):
-        """Close the Pygame mixer."""
+    def close(self) -> None:
+        """关闭音频系统"""
         pygame.mixer.quit()
 
-    def stop_playback(self):
-        """Stop assistant playback channels."""
-        self.audio_channel_assistant_synthesizer.stop()
-
-    def _init_speech_synthesizer(self, voice_name: str = "zh-CN-XiaochenNeural"):
-        """Initialize the speech synthesizer."""
-        speech_config = speechsdk.SpeechConfig(
-            subscription=self.azure_key, region=self.azure_region
-        )
-
-        self.output_stream = PygameAudioOutputStream(
-            self.audio_channel_assistant_synthesizer
-        )
-        audio_output_config = speechsdk.audio.AudioOutputConfig(
-            stream=speechsdk.audio.PushAudioOutputStream(self.output_stream)
-        )
-        # audio_output_config.
-        speech_config.speech_synthesis_voice_name = voice_name
-        self.real_time_speech_synthesizer = speechsdk.SpeechSynthesizer(
-            speech_config=speech_config, audio_config=audio_output_config
-        )
-
-    def _handle_tts_result(
-        self,
-        tts_result_future: speechsdk.ResultFuture,
-        text_to_speak: str,
-        file_name: Optional[str] = None,
-    ) -> bool:
-        """Handle the result of text-to-speech synthesis."""
-        if not tts_result_future:
-            return False
-        speech_synthesis_result = tts_result_future.get()
-        if (
-            speech_synthesis_result.reason  # type: ignore
-            == speechsdk.ResultReason.SynthesizingAudioCompleted
-        ):
-            logger.info(f"\nSpeech synthesized for text [{text_to_speak}]")
-            thread = threading.Thread(target=self.output_stream.handel_tail)
-            thread.daemon = True
-            thread.start()
-            if file_name:
-                audio_data_stream = speechsdk.AudioDataStream(speech_synthesis_result)
-                audio_data_stream.save_to_wav_file(file_name)
-                return True
-            return True
-        elif speech_synthesis_result.reason == speechsdk.ResultReason.Canceled:  # type: ignore
-            cancellation_details = speech_synthesis_result.cancellation_details  # type: ignore
-            logger.info(f"\nSpeech synthesis canceled: {cancellation_details.reason}")
-            if cancellation_details.reason == speechsdk.CancellationReason.Error:
-                if cancellation_details.error_details:
-                    logger.error(
-                        f"\nError details: {cancellation_details.error_details}"
-                    )
-                    logger.warning(
-                        "\nDid you set the speech resource key and region values?"
-                    )
-        else:
-            logger.error(
-                f"\nspeech_synthesis_result.reason: {speech_synthesis_result.reason}"  # type: ignore
-            )
-        return False
-
-    def _get_volume_based_on_time(self):
-        """Get the volume based on the current time."""
-        current_time = time.localtime()
-        hour = current_time.tm_hour
-        if hour < 8 or hour >= 23:
-            return 0.3
-        elif 8 <= hour < 12:
-            return 0.8
-        elif 12 <= hour < 16 or 21 <= hour < 23:
-            return 0.5
-        else:
-            return 0.8
-
-    def _set_volume_imple(self, channel, volume: float, diff_allowed: float = 0.1):
-        """Set the volume of a channel if it differs by more than the specified amount."""
-        cur_volume = channel.get_volume()
-        if abs(cur_volume - volume) > diff_allowed:
-            channel.set_volume(volume)
-
-    def _set_volume_based_on_time(self):
-        """Set the volume based on the current time."""
-        volume = self._get_volume_based_on_time()
-        self._set_volume_imple(self.audio_channel_assistant_synthesizer, volume)
-        self._set_volume_imple(self.audio_channel_system_prompt, 1)
-
-    def _get_audio_dir(self, session_id: str, message_id: str) -> str:
-        """Get the audio directory path for a given message."""
-        return f"{self.speaker_config['audio_dir']}/{session_id}/{message_id}"
-
-    def _get_audio_file(
-        self, session_id: str, message_id: str, sentence_id: str
+    def _get_audio_path(
+        self, session_id: int, message_id: int, sentence_id: int
     ) -> str:
-        """Get the audio file path for a given sentence."""
-        return f"{self._get_audio_dir(session_id, message_id)}/{sentence_id}.wav"
+        """获取音频文件的完整路径"""
+        dir_path = os.path.join(
+            self.speaker_config["audio_dir"], str(session_id), str(message_id)
+        )
+        return os.path.join(dir_path, f"{sentence_id}.wav")
 
-    def _create_audio_dir(self, session_id: str, message_id: str):
-        """Create the audio directory."""
-        audio_dir = self._get_audio_dir(session_id, message_id)
-        if not os.path.exists(audio_dir):
-            os.makedirs(audio_dir)
+    def _create_audio_directory(self, session_id: int, message_id: int) -> None:
+        """创建存储音频文件的目录"""
+        dir_path = os.path.join(
+            self.speaker_config["audio_dir"], str(session_id), str(message_id)
+        )
+        os.makedirs(dir_path, exist_ok=True)
 
-    def remove_audio_dir(self, session_id: str, message_id: str):
-        """Remove the audio directory."""
-        audio_dir = self._get_audio_dir(session_id, message_id)
-        if os.path.exists(audio_dir):
-            shutil.rmtree(audio_dir)
+    def remove_audio_directory(self, session_id: int, message_id: int) -> None:
+        """删除存储音频文件的目录"""
+        dir_path = os.path.join(
+            self.speaker_config["audio_dir"], str(session_id), str(message_id)
+        )
+        if os.path.exists(dir_path):
+            shutil.rmtree(dir_path)
 
     def _create_speech_synthesizer(
-        self, voice_name: str, audio_file: str
+        self, voice_name: str, output_file: str
     ) -> speechsdk.SpeechSynthesizer:
-        """Initialize the speech synthesizer."""
+        """创建Azure语音合成器实例"""
         speech_config = speechsdk.SpeechConfig(
-            subscription=self.azure_key, region=self.azure_region
+            subscription=self.azure_config["key"], region=self.azure_config["region"]
         )
         speech_config.speech_synthesis_voice_name = voice_name
-        audio_output_config = speechsdk.audio.AudioOutputConfig(filename=audio_file)
+        audio_config = speechsdk.audio.AudioOutputConfig(filename=output_file)
         return speechsdk.SpeechSynthesizer(
-            speech_config=speech_config, audio_config=audio_output_config
+            speech_config=speech_config, audio_config=audio_config
         )
 
-    def _synthesize(
+    def _synthesize_speech(
         self,
         synthesizer: speechsdk.SpeechSynthesizer,
-        sentence: str,
+        text: str,
         voice_name: str,
-        speech_rate: float,
-    ):
-        """Synthesize the sentence."""
+        speech_rate: float = 1.0,
+    ) -> None:
+        """执行语音合成，支持语速调整"""
         if speech_rate == 1.0:
-            synthesizer.speak_text(sentence)
+            synthesizer.speak_text(text)
         else:
             ssml = f"""<speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis" xml:lang="en-US">
                     <voice name="{voice_name}">
-
                         <prosody rate="{int((speech_rate-1)*100)}%">
-                            {sentence}
+                            {text}
                         </prosody>
                     </voice>
                 </speak>"""
-            logger.info(f"ssml:{ssml}")
+            logger.info(f"SSML: {ssml}")
             synthesizer.speak_ssml(ssml)
 
-    def _create_audio_sound(
+    def _generate_audio_file(
         self,
-        session_id: str,
-        message_id: str,
-        sentence_id: str,
-        sentence: str,
+        session_id: int,
+        message_id: int,
+        sentence_id: int,
+        text: str,
         voice_name: str,
         speech_rate: float,
     ) -> mixer.Sound:
-        """Create the audio sound."""
+        """生成音频文件并返回Pygame Sound对象"""
+        with self._audio_generation_lock:
+            audio_path = self._get_audio_path(session_id, message_id, sentence_id)
 
-        audio_file = self._get_audio_file(session_id, message_id, sentence_id)
-        if not os.path.isfile(audio_file):
-            self._create_audio_dir(session_id, message_id)
-            synthesizer = self._create_speech_synthesizer(voice_name, audio_file)
-            self._synthesize(synthesizer, sentence, voice_name, speech_rate)
-        sound = mixer.Sound(audio_file)
-        return sound
+            if not os.path.isfile(audio_path):
+                self._create_audio_directory(session_id, message_id)
+                synthesizer = self._create_speech_synthesizer(voice_name, audio_path)
+                self._synthesize_speech(synthesizer, text, voice_name, speech_rate)
 
-    def _create_audio_queue(
+            return mixer.Sound(audio_path)
+
+    def pregenerate_audio_files(
         self,
-        session_id: str,
-        message_id: str,
-        sentence_id_start: str,
-        sentence_id_end: str,
-        sentences: list[Dict],
+        session_id: int,
+        message_id: int,
+        sentences: List[Dict],
         voice_name: str,
         speech_rate: float,
-    ):
-        """Create the audio queue."""
-        with self._create_audio_queue_lock:
-            for sentence_id in range(int(sentence_id_start), int(sentence_id_end) + 1):
-                sound = self._create_audio_sound(
+    ) -> None:
+        """预生成一系列音频文件"""
+        for sentence in sentences:
+            sentence_id = sentence.get("sentenceId", -1)
+            text = sentence.get("text", "")
+            if sentence_id != -1 and text:
+                sound = self._generate_audio_file(
                     session_id,
                     message_id,
-                    str(sentence_id),
-                    sentences[sentence_id]["text"],
+                    sentence_id,
+                    text,
                     voice_name,
                     speech_rate,
                 )
-                self.audio_queue.append(sound)
-            print(f"@:len(self.audio_queue):{len(self.audio_queue)}")
+                self.audio_queue.append((sentence_id, sound))
 
-    def generate_audio_files(
-        self,
-        session_id: str,
-        message_id: str,
-        sentence_id_start: str,
-        sentence_id_end: str,
-        sentences: list[Dict],
-        voice_name: str,
-        speech_rate: float,
-    ):
-        """Generate the audio files."""
-        with self._create_audio_queue_lock:
-            for sentence_id in range(int(sentence_id_start), int(sentence_id_end) + 1):
-                self._create_audio_sound(
-                    session_id,
-                    message_id,
-                    str(sentence_id),
-                    sentences[sentence_id]["text"],
-                    voice_name,
-                    speech_rate,
-                )
+    def pause_playback(self) -> None:
+        """暂停语音播放"""
+        self.assistant_channel.pause()
 
-    def pause(self):
-        self.audio_channel_assistant_synthesizer.pause()
+    def resume_playback(self) -> None:
+        """恢复语音播放"""
+        self.assistant_channel.unpause()
 
-    def unpause(self):
-        self.audio_channel_assistant_synthesizer.unpause()
+    def is_playing(self) -> bool:
+        """检查是否正在播放语音"""
+        return self.assistant_channel.get_busy()
 
-    def is_busy(self):
-        return self.audio_channel_assistant_synthesizer.get_busy()
-
-    def stop(self):
-        self.audio_channel_assistant_synthesizer.stop()
-
-    async def _play_response_core(
-        self,
-        session_id: str,
-        message_id: str,
-        sentence_id_start: str,
-        sentence_id_end: str,
-        sentences: list[Dict],
-        play_sentence_callback: Callable[[int], Awaitable[None]],
-        voice_name: str,
-        speech_rate: float,
-    ):
-        """Play the response core."""
-        self.audio_channel_assistant_synthesizer.stop()
+    def stop_playback(self) -> None:
+        """停止语音播放"""
         self.audio_queue.clear()
-        threading.Thread(
-            target=self._create_audio_queue,
-            args=(
-                session_id,
-                message_id,
-                sentence_id_start,
-                sentence_id_end,
-                sentences,
-                voice_name,
-                speech_rate,
-            ),
-            daemon=True,
-        ).start()
-        while len(self.audio_queue) == 0:
-            await asyncio.sleep(0.1)
-        sentence_id_playing = int(sentence_id_start)
-        self.audio_channel_assistant_synthesizer.play(self.audio_queue.popleft())
-        await play_sentence_callback(sentence_id_playing)
-        had_queue = False
-        while self.audio_channel_assistant_synthesizer.get_busy():
-            if self.audio_channel_assistant_synthesizer.get_queue():
-                had_queue = True
-            else:
-                if len(self.audio_queue) == 0:
-                    if had_queue:
-                        had_queue = False
-                        sentence_id_playing += 1
-                        await play_sentence_callback(sentence_id_playing)
-                else:
-                    self.audio_channel_assistant_synthesizer.queue(
-                        self.audio_queue.popleft()
-                    )
-                    if had_queue:
-                        sentence_id_playing += 1
-                        await play_sentence_callback(sentence_id_playing)
-            await asyncio.sleep(0.5)
-        await play_sentence_callback(-1)  # 播放结束
+        self.assistant_channel.stop()
 
     async def play_sentence(
         self,
-        session_id: str,
-        message_id: str,
-        sentence_id: str,
-        sentences: list[Dict],
-        play_sentence_callback: Callable[[int], Awaitable[None]],
+        session_id: int,
+        message_id: int,
+        sentence_id: int,
+        sentences: List[Dict],
+        callback: Callable[[int], Awaitable[None]],
         voice_name: str,
         speech_rate: float,
-    ):
-        """Play a sentence in real-time."""
-        await self._play_response_core(
+    ) -> None:
+        """播放单个句子"""
+        sentence_text = next(
+            (s["text"] for s in sentences if s.get("sentenceId") == sentence_id),
+            "",
+        )
+        if not sentence_text:
+            logger.warning(f"未找到句子ID {sentence_id} 的文本")
+            return
+
+        await self._play_audio(
             session_id,
             message_id,
             sentence_id,
-            sentence_id,
-            sentences,
-            play_sentence_callback,
+            sentence_text,
+            callback,
             voice_name,
             speech_rate,
         )
 
     async def play_sentences(
         self,
-        session_id: str,
-        message_id: str,
-        sentence_id_start: str,
-        sentences: list[Dict],
-        play_sentence_callback: Callable[[int], Awaitable[None]],
+        session_id: int,
+        message_id: int,
+        start_id: int,
+        sentences: List[Dict],
+        callback: Callable[[int], Awaitable[None]],
         voice_name: str,
         speech_rate: float,
-    ):
-        """Play a sentence in real-time."""
-        await self._play_response_core(
+    ) -> None:
+        """连续播放多个句子"""
+        self.stop_playback()
+
+        # 生成并排队所有音频
+        threading.Thread(
+            target=self.pregenerate_audio_files,
+            args=(
+                session_id,
+                message_id,
+                sentences[start_id:],
+                voice_name,
+                speech_rate,
+            ),
+            daemon=True,
+        ).start()
+
+        while len(self.audio_queue) == 0:
+            await asyncio.sleep(0.1)
+        current_id, current_sound = self.audio_queue.popleft()
+        sentence_id_playing = current_id
+        self.assistant_channel.play(current_sound)
+        await callback(current_id)
+        had_queue = False
+        while self.assistant_channel.get_busy():
+            if self.assistant_channel.get_queue():
+                had_queue = True
+            else:
+                if len(self.audio_queue) == 0:
+                    if had_queue:
+                        had_queue = False
+                        sentence_id_playing += 1
+                        await callback(sentence_id_playing)
+                else:
+                    current_id, current_sound = self.audio_queue.popleft()
+                    self.assistant_channel.queue(current_sound)
+                    if had_queue:
+                        sentence_id_playing += 1
+                        await callback(sentence_id_playing)
+            await asyncio.sleep(0.1)
+        await callback(-1)  # 播放结束
+
+        # # 等待第一个音频生成
+        # while not self.audio_queue:
+        #     await asyncio.sleep(0.1)
+
+        # # 开始播放第一个音频
+        # current_id, current_sound = self.audio_queue.popleft()
+        # self.assistant_channel.play(current_sound)
+        # await callback(int(current_id))
+
+        # # 监听播放状态并排队下一个音频
+        # while self.is_playing() or self.audio_queue:
+        #     if not self.is_playing() and self.audio_queue:
+        #         next_id, next_sound = self.audio_queue.popleft()
+        #         self.assistant_channel.play(next_sound)
+        #         await callback(int(next_id))
+        #     await asyncio.sleep(0.1)
+
+        # # 所有音频播放完毕
+        # await callback(-1)
+
+    async def _play_audio(
+        self,
+        session_id: int,
+        message_id: int,
+        sentence_id: int,
+        text: str,
+        callback: Callable[[int], Awaitable[None]],
+        voice_name: str,
+        speech_rate: float,
+    ) -> None:
+        """内部方法：播放单个音频文件"""
+        self.stop_playback()
+
+        # 生成音频文件
+        sound = await asyncio.to_thread(
+            self._generate_audio_file,
             session_id,
             message_id,
-            sentence_id_start,
-            str(len(sentences) - 1),
-            sentences,
-            play_sentence_callback,
+            sentence_id,
+            text,
             voice_name,
             speech_rate,
         )
+
+        # 播放音频
+        self.assistant_channel.play(sound)
+        await callback(int(sentence_id))
+
+        # 等待播放完成
+        while self.is_playing():
+            await asyncio.sleep(0.1)
+
+        await callback(-1)

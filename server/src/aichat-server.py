@@ -290,7 +290,7 @@ class MessageHandler:
         title = message["data"]["title"]
 
         await SessionManager.update_title(session_id, title)
-        api.update_session_ai_config_by_key(session_id, "auto_gen_title", False)
+        api.update_session_property(session_id, "auto_gen_title", False)
         await SessionManager.send_session_config(session_id)
 
     @staticmethod
@@ -524,7 +524,7 @@ class MessageHandler:
         raw_text = message["data"]["raw_text"]
         sentences = message["data"]["sentences"]
 
-        speaker.remove_audio_dir(session_id, message_id)
+        speaker.remove_audio_directory(session_id, message_id)
         parsed_text = {"sentences": sentences}
 
         api.update_message(
@@ -545,7 +545,7 @@ class MessageHandler:
         websocket: WebSocket, session_id: int, message: dict
     ):
         message_id = message["data"]["message_id"]
-        speaker.remove_audio_dir(session_id, message_id)
+        speaker.remove_audio_directory(session_id, message_id)
 
     @staticmethod
     async def _handle_delete_message(
@@ -554,7 +554,7 @@ class MessageHandler:
         message_id = message["data"]["message_id"]
 
         api.delete_message(message_id)
-        speaker.remove_audio_dir(session_id, message_id)
+        speaker.remove_audio_directory(session_id, message_id)
 
         msg = {
             "type": "delete_message",
@@ -608,13 +608,11 @@ class MessageHandler:
             return
 
         threading.Thread(
-            target=speaker.generate_audio_files,
+            target=speaker.pregenerate_audio_files,
             args=(
                 session_id,
                 message_id,
-                sentence_id_start,
-                sentence_id_end,
-                sentences,
+                sentences[sentence_id_start : sentence_id_end + 1],
                 voice_name,
                 speech_rate,
             ),
@@ -650,7 +648,7 @@ class MessageHandler:
             try:
                 await websocket.send_text(json.dumps(msg))
             except Exception as e:
-                speaker.stop()
+                speaker.stop_playback()
                 logger.error(f"播放回调错误: {e}")
 
         await play_sentence_callback(-2)
@@ -658,7 +656,7 @@ class MessageHandler:
         def play_sentence():
             asyncio.run(
                 speaker.play_sentence(
-                    str(session_id),
+                    session_id,
                     message_id,
                     sentence_id,
                     sentences,
@@ -698,12 +696,16 @@ class MessageHandler:
 
     @staticmethod
     async def _handle_pause(websocket: WebSocket, session_id: int, message: dict):
-        speaker.pause()
+        speaker.pause_playback()
+
+    @staticmethod
+    async def _handle_unpause(websocket: WebSocket, session_id: int, message: dict):
+        speaker.resume_playback()
 
     @staticmethod
     async def _handle_play(websocket: WebSocket, session_id: int, message: dict):
-        if speaker.is_busy():
-            speaker.unpause()
+        if speaker.is_playing():
+            speaker.resume_playback()
         else:
             message_id = message["data"]["message_id"]
 
@@ -726,7 +728,7 @@ class MessageHandler:
 
     @staticmethod
     async def _handle_stop(websocket: WebSocket, session_id: int, message: dict):
-        speaker.stop()
+        speaker.stop_playback()
 
     @staticmethod
     async def _play_sentences_impl(
@@ -749,7 +751,7 @@ class MessageHandler:
             try:
                 await websocket.send_text(json.dumps(msg))
             except Exception as e:
-                speaker.stop()
+                speaker.stop_playback()
                 logger.error(f"播放回调错误: {e}")
 
         await play_sentence_callback(-2)
@@ -757,9 +759,9 @@ class MessageHandler:
         def play_sentences():
             asyncio.run(
                 speaker.play_sentences(
-                    str(session_id),
-                    str(message_id),
-                    str(sentence_id_start),
+                    session_id,
+                    message_id,
+                    sentence_id_start,
                     sentences,
                     play_sentence_callback,
                     voice_name,

@@ -132,7 +132,6 @@ import { loadJsonFile } from '@/common/json-loader'
 import { processMarkdown, SentenceInfo } from '@/common/markdown-processor'
 import MessageBubble from '@/components/MessageBubble.vue'
 import debounce from 'lodash/debounce'
-import { set } from 'lodash'
 
 interface Message {
     message_id: number;
@@ -646,18 +645,18 @@ const loadHistoryData = async () => {
                     break
                 case 'session_messages':
                     chatMessages.value = []
-                    const messages = message.data
+                    const messages = message.data.messages
                     messages.forEach((msg: any) => {
-                        const message_id = msg[0]
-                        const raw_message = msg[2]
+                        const message_id = msg.id
+                        const raw_message = msg.raw_text
                         const result = processMarkdown(raw_message, message_id)
                         chatMessages.value.push({
                             message_id: message_id,
                             raw_text: raw_message,
                             processed_html: result.html,
                             sentences: result.sentences,
-                            time: msg[4],
-                            role: msg[1],
+                            time: msg.timestamp,
+                            role: msg.role,
                             is_playing: false,
                         })
                     })

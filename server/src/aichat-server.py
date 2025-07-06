@@ -1,39 +1,40 @@
 #!/usr/bin/env python3
 # _*_coding:utf-8_*_
+import json
+import os
+import time
+import threading
+import asyncio
+import signal
+from typing import Dict, Optional, Callable, Awaitable, List
+from pathlib import Path
+
 from fastapi import (
     FastAPI,
     HTTPException,
-    Path,
-    Request,
     WebSocket,
     WebSocketDisconnect,
+    Request,
+    Path as APIPath,
 )
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.responses import FileResponse
 from pydantic import BaseModel
-from typing import Callable, Awaitable, Dict, Optional
 import uvicorn
-import plistlib
 import netifaces
-import json
-import os
-from pathlib import Path
+import plistlib
 from pathvalidate import is_valid_filename, sanitize_filename
-import asyncio
 import appdirs
 from send2trash import send2trash
-import signal
-import time
-import threading
+
 from libs.speaker import Speaker
 from libs.openai_chat_api import OpenAIChatAPI
 from libs.chat_database import ChatDatabase
 from libs.recognizer import Recognizer
 from libs.log_config import logger
 
-os.chdir(os.path.dirname(__file__))
-
-app = FastAPI()
+# 配置应用
+app = FastAPI(title="AI Chat Server", description="WebSocket-based AI chat server")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -42,117 +43,188 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-configure_file = Path("./configure.json")
-with open(configure_file, "r") as f:
-    configure = json.load(f)
-AI_CONFIG = configure["ai_assistant"]
+# 加载配置
+config_file = Path("./configure.json")
+with open(config_file, "r") as f:
+    CONFIG = json.load(f)
+
+AI_CONFIG = CONFIG["ai_assistant"]
 AI_CONFIG_DEFAULT = AI_CONFIG["default"]
 DEFAULT_AI_CONFIG = AI_CONFIG[AI_CONFIG_DEFAULT["ai_config_name"]]
-DB = ChatDatabase()
-API = OpenAIChatAPI(AI_CONFIG, DB)
-speaker = Speaker(configure)
-recognizer = Recognizer(configure)
-spa_websockes: Dict[int, WebSocket] = {}
-session_websockes: Dict[int, Dict[int, WebSocket]] = {}
+
+# 初始化服务
+db = ChatDatabase()
+api = OpenAIChatAPI(AI_CONFIG, db)
+speaker = Speaker(CONFIG)
+recognizer = Recognizer(CONFIG)
+
+# WebSocket 连接管理
+spa_websockets: Dict[int, WebSocket] = {}
+session_websockets: Dict[int, Dict[int, WebSocket]] = {}
 
 
-def update_session_ai_config():
-    sessions = API.get_all_session_id_title_config()
-    # API.delete_session(35)
-    for session in sessions:
-        session_id = session[0]
-        config = json.loads(session[2])
+class SessionManager:
+    """会话管理器，负责会话的创建、删除、配置更新等操作"""
 
-        if "top" not in config:
-            config["top"] = False
-        if "speech_rate" not in config:
-            config["speech_rate"] = 1.0
-        if "auto_play" not in config:
-            config["auto_play"] = False
-        if "tts_voice" not in config:
-            config["tts_voice"] = "zh-CN-XiaochenNeural"
-        if "auto_gen_title" not in config:
-            config["auto_gen_title"] = True
-        if "suggestions" not in config:
-            config["suggestions"] = []
-        if "last_active_time" not in config:
-            config["last_active_time"] = time.time()
-        API.update_session_ai_config(session_id, config)
+    @staticmethod
+    def initialize_sessions():
+        """初始化会话配置"""
+        sessions = api.get_all_session_id_title_config()
+        for session in sessions:
+            session_id = session["id"]
+            config = json.loads(session["ai_config"])
+
+            # 更新缺失的配置项
+            for key, default_value in [
+                ("top", False),
+                ("speech_rate", 1.0),
+                ("auto_play", False),
+                ("tts_voice", "zh-CN-XiaochenNeural"),
+                ("auto_gen_title", True),
+                ("suggestions", []),
+                ("last_active_time", time.time()),
+            ]:
+                if key not in config:
+                    config[key] = default_value
+
+            api.update_session_ai_config(session_id, config)
+
+    @staticmethod
+    async def broadcast_spa(message: str):
+        """向所有SPA WebSocket连接广播消息"""
+        invalid_keys = []
+        for key, websocket in spa_websockets.items():
+            try:
+                await websocket.send_text(message)
+            except Exception as e:
+                logger.error(f"SPA广播错误: {e}")
+                invalid_keys.append(key)
+
+        for key in invalid_keys:
+            del spa_websockets[key]
+
+    @staticmethod
+    async def broadcast_session(session_id: int, message: str):
+        """向特定会话的所有WebSocket连接广播消息"""
+        session_id = int(session_id)
+        if session_id not in session_websockets:
+            return
+
+        invalid_keys = []
+        for key, websocket in session_websockets[session_id].items():
+            try:
+                await websocket.send_text(message)
+            except Exception as e:
+                logger.error(f"会话广播错误: {e}")
+                invalid_keys.append(key)
+
+        # 移除无效连接
+        for key in invalid_keys:
+            del session_websockets[session_id][key]
+
+    @staticmethod
+    async def update_title(session_id: int, title: str):
+        """更新会话标题并广播"""
+        api.update_session_title(session_id, title)
+        msg = {
+            "type": "update_session_title",
+            "data": {
+                "session_id": session_id,
+                "title": title,
+            },
+        }
+        await SessionManager.broadcast_spa(json.dumps(msg))
+
+    @staticmethod
+    async def send_all_sessions():
+        """发送所有会话信息到SPA"""
+        sessions = api.get_all_session_id_title_config()
+        msg = {
+            "type": "all_sessions",
+            "data": {
+                "sessions": sessions,
+            },
+        }
+        await SessionManager.broadcast_spa(json.dumps(msg))
+
+    @staticmethod
+    async def send_session_messages(websocket: WebSocket, session_id: int):
+        """发送会话消息到指定WebSocket"""
+        messages = api.get_session_messages(session_id, limit=-1)
+        msg = {
+            "type": "session_messages",
+            "data": {"messages": messages},
+        }
+        await websocket.send_text(json.dumps(msg))
+
+    @staticmethod
+    async def send_session_config(
+        session_id: int, websocket: Optional[WebSocket] = None
+    ):
+        """发送会话配置到指定WebSocket或广播"""
+        ai_config = api.get_session_ai_config(session_id)
+        msg = {
+            "type": "session_ai_config",
+            "data": {
+                "ai_config": ai_config,
+            },
+        }
+
+        if websocket:
+            await websocket.send_text(json.dumps(msg))
+        else:
+            await SessionManager.broadcast_session(session_id, json.dumps(msg))
 
 
-update_session_ai_config()
+class MessageHandler:
+    """消息处理器，处理不同类型的WebSocket消息"""
 
-
-async def broadcast_spa_websockes(msg: str):
-    invalide_keys = []
-    for key, websocket in spa_websockes.items():
+    @staticmethod
+    async def handle_spa_message(websocket: WebSocket, message_text: str):
+        """处理SPA WebSocket消息"""
         try:
-            await websocket.send_text(msg)
+            message = json.loads(message_text)
+            message_type = message["type"]
+
+            handlers = {
+                "get_all_sessions": MessageHandler._handle_get_all_sessions,
+                "create_session": MessageHandler._handle_create_session,
+                "copy_session": MessageHandler._handle_copy_session,
+                "copy_session_and_message": MessageHandler._handle_copy_session_and_message,
+                "update_session_title": MessageHandler._handle_update_session_title,
+                "delete_session": MessageHandler._handle_delete_session,
+                "update_session_top": MessageHandler._handle_update_session_top,
+                "parsed_response": MessageHandler._handle_parsed_response,
+            }
+
+            if message_type in handlers:
+                await handlers[message_type](websocket, message)
+            else:
+                logger.warning(f"未知的SPA消息类型: {message_type}")
+
         except Exception as e:
-            logger.error(f"broadcast_spa_websockes error: {e}")
-            invalide_keys.append(key)
-    for key in invalide_keys:
-        del spa_websockes[key]
+            logger.error(f"处理SPA消息时出错: {e}")
 
+    @staticmethod
+    async def _handle_get_all_sessions(websocket: WebSocket, message: dict):
+        await SessionManager.send_all_sessions()
 
-async def broadcast_session_websockes(session_id: int, msg: str):
-    # 确保 session_id 是整数类型
-    session_id = int(session_id)
-    if session_id not in session_websockes:
-        return
-    invalid_keys = []
-    for key, websocket in session_websockes[session_id].items():
-        try:
-            await websocket.send_text(msg)
-        except Exception as e:
-            invalid_keys.append(key)
-    # 移除无效的 WebSocket 连接
-    for key in invalid_keys:
-        del session_websockes[session_id][key]
-
-
-async def update_session_title(session_id: int, title: str):
-    API.update_session_title(session_id, title)
-    msg = {
-        "type": "update_session_title",
-        "data": {
-            "session_id": session_id,
-            "title": title,
-        },
-    }
-    await broadcast_spa_websockes(json.dumps(msg))
-
-
-async def send_all_sessions():
-    sessions = API.get_all_session_id_title_config()
-    msg = {
-        "type": "all_sessions",
-        "data": {
-            "sessions": sessions,
-        },
-    }
-    await broadcast_spa_websockes(json.dumps(msg))
-
-
-async def handle_spa_message(websocket: WebSocket, message_text: str):
-    message = json.loads(message_text)
-    type = message["type"]
-    if type == "get_all_sessions":
-        await send_all_sessions()
-    elif type == "create_session":
+    @staticmethod
+    async def _handle_create_session(websocket: WebSocket, message: dict):
         system_prompt = AI_CONFIG_DEFAULT["system_prompt"]
         parsed_system_prompt = json.dumps({"sentences": []})
-        system_prompt = AI_CONFIG_DEFAULT["system_prompt"]
         title = AI_CONFIG_DEFAULT["chat_title"]
 
         config = json.loads(json.dumps(DEFAULT_AI_CONFIG))
         config["top"] = False
         config["last_active_time"] = time.time()
         config["suggestions"] = []
-        session_id, message_id = API.create_new_session(
+
+        session_id, message_id = api.create_new_session(
             title, config, system_prompt, parsed_system_prompt
         )
-        message = {
+
+        response = {
             "type": "parse_request",
             "data": {
                 "type": "create_session",
@@ -163,17 +235,22 @@ async def handle_spa_message(websocket: WebSocket, message_text: str):
                 },
             },
         }
-        await websocket.send_text(json.dumps(message))
-    elif type == "copy_session":
+        await websocket.send_text(json.dumps(response))
+
+    @staticmethod
+    async def _handle_copy_session(websocket: WebSocket, message: dict):
         session_id = message["data"]["session_id"]
-        new_session_id = API.copy_session(session_id)
+        new_session_id = api.copy_session(session_id)
+
         if new_session_id is None:
-            raise ValueError("Session copy failed")
-        title = API.get_session_title(session_id)
-        config = API.get_session_ai_config(session_id)
+            raise ValueError("会话复制失败")
+
+        title = api.get_session_title(session_id)
+        config = api.get_session_ai_config(session_id)
         config["last_active_time"] = time.time()
         config["suggestions"] = []
-        API.update_session_ai_config(new_session_id, config)
+        api.update_session_ai_config(new_session_id, config)
+
         msg = {
             "type": "new_session",
             "data": {
@@ -183,15 +260,20 @@ async def handle_spa_message(websocket: WebSocket, message_text: str):
             },
         }
         await websocket.send_text(json.dumps(msg))
-    elif type == "copy_session_and_message":
+
+    @staticmethod
+    async def _handle_copy_session_and_message(websocket: WebSocket, message: dict):
         session_id = message["data"]["session_id"]
-        new_session_id = API.copy_session_and_messages(session_id)
+        new_session_id = api.copy_session_and_messages(session_id)
+
         if new_session_id is None:
-            raise ValueError("Session copy failed")
-        title = API.get_session_title(session_id)
-        config = API.get_session_ai_config(session_id)
+            raise ValueError("会话复制失败")
+
+        title = api.get_session_title(session_id)
+        config = api.get_session_ai_config(session_id)
         config["last_active_time"] = time.time()
-        API.update_session_ai_config(new_session_id, config)
+        api.update_session_ai_config(new_session_id, config)
+
         msg = {
             "type": "new_session",
             "data": {
@@ -201,15 +283,21 @@ async def handle_spa_message(websocket: WebSocket, message_text: str):
             },
         }
         await websocket.send_text(json.dumps(msg))
-    elif type == "update_session_title":
+
+    @staticmethod
+    async def _handle_update_session_title(websocket: WebSocket, message: dict):
         session_id = message["data"]["session_id"]
         title = message["data"]["title"]
-        await update_session_title(session_id, title)
-        API.update_session_ai_config_by_key(session_id, "auto_gen_title", False)
-        await send_session_ai_config(session_id)
-    elif type == "delete_session":
+
+        await SessionManager.update_title(session_id, title)
+        api.update_session_ai_config_by_key(session_id, "auto_gen_title", False)
+        await SessionManager.send_session_config(session_id)
+
+    @staticmethod
+    async def _handle_delete_session(websocket: WebSocket, message: dict):
         session_id = message["data"]["session_id"]
-        API.delete_session(session_id)
+        api.delete_session(session_id)
+
         msg = {
             "type": "delete_session",
             "data": {
@@ -217,10 +305,14 @@ async def handle_spa_message(websocket: WebSocket, message_text: str):
             },
         }
         await websocket.send_text(json.dumps(msg))
-    elif type == "update_session_top":
+
+    @staticmethod
+    async def _handle_update_session_top(websocket: WebSocket, message: dict):
         session_id = message["data"]["session_id"]
         top = message["data"]["top"]
-        API.update_session_top(session_id, top)
+
+        api.update_session_top(session_id, top)
+
         msg = {
             "type": "update_session_top",
             "data": {
@@ -228,19 +320,24 @@ async def handle_spa_message(websocket: WebSocket, message_text: str):
                 "top": top,
             },
         }
-        await broadcast_spa_websockes(json.dumps(msg))
-    elif type == "parsed_response":
+        await SessionManager.broadcast_spa(json.dumps(msg))
+
+    @staticmethod
+    async def _handle_parsed_response(websocket: WebSocket, message: dict):
         parsed_type = message["data"]["type"]
+
         if parsed_type == "create_session":
             parsed_data = message["data"]["data"]
             message_id = parsed_data["message_id"]
             session_id = parsed_data["session_id"]
-            config = API.get_session_ai_config(session_id)
+            config = api.get_session_ai_config(session_id)
 
             title = AI_CONFIG_DEFAULT["chat_title"]
             system_prompt = AI_CONFIG_DEFAULT["system_prompt"]
             parsed_text = {"sentences": parsed_data["sentences"]}
-            API.update_message(message_id, parsed_text=json.dumps(parsed_text))
+
+            api.update_message(message_id, parsed_text=json.dumps(parsed_text))
+
             msg = {
                 "type": "new_session",
                 "data": {
@@ -252,98 +349,50 @@ async def handle_spa_message(websocket: WebSocket, message_text: str):
             }
             await websocket.send_text(json.dumps(msg))
 
-
-@app.websocket("/ws/aichat/spa")
-async def websocketEndpointSpa(websocket: WebSocket):
-    await websocket.accept()
-    time_id = int(time.time() * 1000)
-    spa_websockes[time_id] = websocket
-    await send_all_sessions()
-
-    async def receive():
-        while True:
-            try:
-                data = await websocket.receive_text()
-                print(data)
-                await handle_spa_message(websocket, data)
-            except WebSocketDisconnect:
-                logger.info(f"websocket spa disconnected.")
-                break
-
-    tasks_list = [
-        asyncio.create_task(receive()),
-    ]
-    try:
-        await asyncio.gather(*tasks_list)
-    except WebSocketDisconnect:
-        logger.info(f"websocket spa disconnected.")
-    except Exception as e:
-        logger.error(f"websocket spa error: {e}")
-    finally:
-        del spa_websockes[time_id]
-
-
-def _create_play_sentence_callback(
-    websocket: WebSocket, message_id: int
-) -> Callable[[int], Awaitable[None]]:
-    async def play_sentence_callback(sentence_id: int):
-        msg = {
-            "type": "the_sentence_playing",
-            "data": {
-                "message_id": message_id,
-                "sentence_id": sentence_id,
-            },
-        }
-        print("the_sentence_playing:", msg)
+    @staticmethod
+    async def handle_session_message(
+        websocket: WebSocket, client_id: int, message_text: str
+    ):
+        """处理会话WebSocket消息"""
         try:
-            await websocket.send_text(json.dumps(msg))
+            session_id = int(client_id)
+            message = json.loads(message_text)
+            message_type = message["type"]
+
+            if message_type != "parsed_response":
+                logger.info(f"接收消息: {message}")
+
+            handlers = {
+                "user_input": MessageHandler._handle_user_input,
+                "parsed_response": MessageHandler._handle_session_parsed_response,
+                "update_session_ai_config": MessageHandler._handle_update_session_config,
+                "update_message": MessageHandler._handle_update_message,
+                "delete_audio_files": MessageHandler._handle_delete_audio_files,
+                "delete_message": MessageHandler._handle_delete_message,
+                "start_speech_recognize": MessageHandler._handle_start_speech_recognize,
+                "stop_speech_recognize": MessageHandler._handle_stop_speech_recognize,
+                "generate_audio_files": MessageHandler._handle_generate_audio_files,
+                "play_the_sentence": MessageHandler._handle_play_the_sentence,
+                "play_sentences": MessageHandler._handle_play_sentences,
+                "pause": MessageHandler._handle_pause,
+                "play": MessageHandler._handle_play,
+                "stop": MessageHandler._handle_stop,
+            }
+
+            if message_type in handlers:
+                await handlers[message_type](websocket, session_id, message)
+            else:
+                logger.warning(f"未知的会话消息类型: {message_type}")
+
         except Exception as e:
-            speaker.stop()
-            logger.error(f"_create_play_sentence_callback error: {e}")
+            logger.error(f"处理会话消息时出错: {e}")
 
-    return play_sentence_callback
-
-
-async def _play_sentences(
-    websocket: WebSocket,
-    clientID: int,
-    message_id: int,
-    sentence_id_start: int,
-    sentences: list,
-    voice_name: str,
-    speech_rate: float,
-):
-    play_sentence_callback = _create_play_sentence_callback(websocket, message_id)
-    await play_sentence_callback(-2)
-
-    def play_sentences():
-        asyncio.run(
-            speaker.play_sentences(
-                str(clientID),
-                str(message_id),
-                str(sentence_id_start),
-                sentences,
-                play_sentence_callback,
-                voice_name,
-                speech_rate,
-            )
-        )
-
-    threading.Thread(target=play_sentences, daemon=True).start()
-
-
-async def handle_message(websocket: WebSocket, clientID: int, message_text: str):
-    session_id = int(clientID)
-    message = json.loads(message_text)
-    type = message["type"]
-    if type != "parsed_response":
-        logger.info(f"receive message:{message}")
-    if type == "user_input":
+    @staticmethod
+    async def _handle_user_input(websocket: WebSocket, session_id: int, message: dict):
         user_message = message["data"]["user_message"]
-        session_id = message["data"]["session_id"]
         auto_gen_title = message["data"]["auto_gen_title"]
 
-        async def user_message_callback_async(message_id: int):
+        async def user_message_callback(message_id: int):
             msg = {
                 "type": "parse_request",
                 "data": {
@@ -356,7 +405,7 @@ async def handle_message(websocket: WebSocket, clientID: int, message_text: str)
             }
             await websocket.send_text(json.dumps(msg))
 
-        async def assistant_response_callback_async(
+        async def assistant_response_callback(
             response: str, is_streaming: bool, error: bool = False
         ):
             msg = {
@@ -370,23 +419,26 @@ async def handle_message(websocket: WebSocket, clientID: int, message_text: str)
             await websocket.send_text(json.dumps(msg))
 
         WITH_SYSTEM_PROMPT = True
+
         try:
-            response_dict = await API.chat(
+            response_dict = await api.chat(
                 WITH_SYSTEM_PROMPT,
                 session_id,
                 user_message,
                 json.dumps({"sentences": []}),
-                user_message_callback_async,
-                assistant_response_callback_async,
+                user_message_callback,
+                assistant_response_callback,
             )
         except Exception as e:
-            logger.error(f"Chat error: {e}")
-            await assistant_response_callback_async(f"Chat error: {e}", True, True)
+            logger.error(f"聊天错误: {e}")
+            await assistant_response_callback(f"聊天错误: {e}", True, True)
             return
+
         response = response_dict["response"]
-        message_id = API.add_assistant_message(
+        message_id = api.add_assistant_message(
             session_id, response, json.dumps({"sentences": []})
         )
+
         msg = {
             "type": "parse_request",
             "data": {
@@ -404,19 +456,21 @@ async def handle_message(websocket: WebSocket, clientID: int, message_text: str)
             if WITH_SYSTEM_PROMPT:
                 system_info = response_dict
             else:
-                # SQLite objects created in a thread can only be used in that same thread.
-                system_prompt_content = API.get_session_system_message(session_id)
-                system_ai_response = API.system_chat(
+                system_prompt_content = api.get_session_system_message(session_id)
+                system_ai_response = api.system_chat(
                     system_prompt_content, user_message, response
                 )
                 if system_ai_response is None:
                     return
                 system_info = json.loads(system_ai_response)
+
             title = system_info["title"]
             suggestions = system_info["suggestions"]
-            logger.info("title:%s, suggestions:%s", title, suggestions)
+            logger.info("标题:%s, 建议:%s", title, suggestions)
+
             if auto_gen_title:
-                await update_session_title(session_id, title)
+                await SessionManager.update_title(session_id, title)
+
             msg = {
                 "type": "session_suggestions",
                 "data": {
@@ -426,43 +480,56 @@ async def handle_message(websocket: WebSocket, clientID: int, message_text: str)
             }
             await websocket.send_text(json.dumps(msg))
 
-            config = API.get_session_ai_config(session_id)
+            config = api.get_session_ai_config(session_id)
             config["last_active_time"] = time.time()
             config["suggestions"] = suggestions
-            API.update_session_ai_config(session_id, config)
-            await send_all_sessions()
+            api.update_session_ai_config(session_id, config)
+            await SessionManager.send_all_sessions()
 
         await system_handle()
 
-    elif type == "parsed_response":
+    @staticmethod
+    async def _handle_session_parsed_response(
+        websocket: WebSocket, session_id: int, message: dict
+    ):
         parsed_type = message["data"]["type"]
+
         if parsed_type == "user_message":
             message_id = message["data"]["data"]["message_id"]
             sentences = message["data"]["data"]["sentences"]
-            API.update_message(
+            api.update_message(
                 message_id, json.dumps({"sentences": sentences}, ensure_ascii=False)
             )
         elif parsed_type == "ai_response":
             message_id = message["data"]["data"]["message_id"]
             sentences = message["data"]["data"]["sentences"]
-            API.update_message(
+            api.update_message(
                 message_id, json.dumps({"sentences": sentences}, ensure_ascii=False)
             )
-    elif type == "update_session_ai_config":
-        session_id = message["data"]["session_id"]
+
+    @staticmethod
+    async def _handle_update_session_config(
+        websocket: WebSocket, session_id: int, message: dict
+    ):
         ai_config = message["data"]["ai_config"]
-        API.update_session_ai_config(session_id, ai_config)
-        await send_session_ai_config(session_id)
-    elif type == "update_message":
-        session_id = message["data"]["session_id"]
+        api.update_session_ai_config(session_id, ai_config)
+        await SessionManager.send_session_config(session_id)
+
+    @staticmethod
+    async def _handle_update_message(
+        websocket: WebSocket, session_id: int, message: dict
+    ):
         message_id = message["data"]["message_id"]
         raw_text = message["data"]["raw_text"]
         sentences = message["data"]["sentences"]
+
         speaker.remove_audio_dir(session_id, message_id)
         parsed_text = {"sentences": sentences}
-        API.update_message(
+
+        api.update_message(
             message_id, raw_text=raw_text, parsed_text=json.dumps(parsed_text)
         )
+
         msg = {
             "type": "update_message",
             "data": {
@@ -471,15 +538,23 @@ async def handle_message(websocket: WebSocket, clientID: int, message_text: str)
             },
         }
         await websocket.send_text(json.dumps(msg))
-    elif type == "delete_audio_files":
+
+    @staticmethod
+    async def _handle_delete_audio_files(
+        websocket: WebSocket, session_id: int, message: dict
+    ):
         message_id = message["data"]["message_id"]
-        session_id = message["data"]["session_id"]
         speaker.remove_audio_dir(session_id, message_id)
-    elif type == "delete_message":
+
+    @staticmethod
+    async def _handle_delete_message(
+        websocket: WebSocket, session_id: int, message: dict
+    ):
         message_id = message["data"]["message_id"]
-        session_id = message["data"]["session_id"]
-        API.delete_message(message_id)
+
+        api.delete_message(message_id)
         speaker.remove_audio_dir(session_id, message_id)
+
         msg = {
             "type": "delete_message",
             "data": {
@@ -487,25 +562,40 @@ async def handle_message(websocket: WebSocket, clientID: int, message_text: str)
             },
         }
         await websocket.send_text(json.dumps(msg))
-    elif type == "start_speech_recognize":
+
+    @staticmethod
+    async def _handle_start_speech_recognize(
+        websocket: WebSocket, session_id: int, message: dict
+    ):
         language = message["data"]["language"]
         input_text = message["data"]["input_text"]
         cursor_position = message["data"]["cursor_position"]
+
         recognizer.start_recognizer(websocket, language, input_text, cursor_position)
-    elif type == "stop_speech_recognize":
+
+    @staticmethod
+    async def _handle_stop_speech_recognize(
+        websocket: WebSocket, session_id: int, message: dict
+    ):
         recognizer.stop_recognizer_sync()
-    elif type == "generate_audio_files":
-        session_id = message["data"]["session_id"]
+
+    @staticmethod
+    async def _handle_generate_audio_files(
+        websocket: WebSocket, session_id: int, message: dict
+    ):
         message_id = message["data"]["message_id"]
         sentence_id_start = message["data"]["sentence_id_start"]
         sentence_id_end = message["data"]["sentence_id_end"]
-        ai_config = API.get_session_ai_config(session_id)
+
+        ai_config = api.get_session_ai_config(session_id)
         voice_name = ai_config["tts_voice"]
         speech_rate = ai_config["speech_rate"]
-        sentences = API.get_sentences(message_id)
+
+        sentences = api.get_sentences(message_id)
         if sentences is None:
-            logger.warning("message_id:{} not found any sentences".format(message_id))
+            logger.warning(f"消息ID:{message_id} 未找到句子")
             return
+
         threading.Thread(
             target=speaker.generate_audio_files,
             args=(
@@ -520,25 +610,44 @@ async def handle_message(websocket: WebSocket, clientID: int, message_text: str)
             daemon=True,
         ).start()
 
-    elif type == "play_the_sentence":
+    @staticmethod
+    async def _handle_play_the_sentence(
+        websocket: WebSocket, session_id: int, message: dict
+    ):
         message_id = message["data"]["message_id"]
         sentence_id = message["data"]["sentence_id"]
-        ai_config = API.get_session_ai_config(session_id)
+
+        ai_config = api.get_session_ai_config(session_id)
         voice_name = ai_config["tts_voice"]
         speech_rate = ai_config["speech_rate"]
-        sentences = API.get_sentences(message_id)
-        if sentences is None:
-            logger.warning("message_id:{} not found any sentences".format(message_id))
-            return
-        logger.info("play_the_sentence:{}".format(sentences[sentence_id]["text"]))
 
-        play_sentence_callback = _create_play_sentence_callback(websocket, message_id)
+        sentences = api.get_sentences(message_id)
+        if sentences is None:
+            logger.warning(f"消息ID:{message_id} 未找到句子")
+            return
+
+        logger.info(f"播放句子:{sentences[sentence_id]['text']}")
+
+        async def play_sentence_callback(sentence_id: int):
+            msg = {
+                "type": "the_sentence_playing",
+                "data": {
+                    "message_id": message_id,
+                    "sentence_id": sentence_id,
+                },
+            }
+            try:
+                await websocket.send_text(json.dumps(msg))
+            except Exception as e:
+                speaker.stop()
+                logger.error(f"播放回调错误: {e}")
+
         await play_sentence_callback(-2)
 
         def play_sentence():
             asyncio.run(
                 speaker.play_sentence(
-                    str(clientID),
+                    str(session_id),
                     message_id,
                     sentence_id,
                     sentences,
@@ -549,120 +658,178 @@ async def handle_message(websocket: WebSocket, clientID: int, message_text: str)
             )
 
         threading.Thread(target=play_sentence, daemon=True).start()
-    elif type == "play_sentences":
+
+    @staticmethod
+    async def _handle_play_sentences(
+        websocket: WebSocket, session_id: int, message: dict
+    ):
         message_id = message["data"]["message_id"]
         sentence_id_start = message["data"]["sentence_id"]
-        sentences = API.get_sentences(message_id)
-        ai_config = API.get_session_ai_config(session_id)
+
+        ai_config = api.get_session_ai_config(session_id)
         voice_name = ai_config["tts_voice"]
         speech_rate = ai_config["speech_rate"]
+
+        sentences = api.get_sentences(message_id)
         if sentences is None:
-            logger.warning("message_id:{} not found any sentences".format(message_id))
+            logger.warning(f"消息ID:{message_id} 未找到句子")
             return
-        await _play_sentences(
+
+        await MessageHandler._play_sentences_impl(
             websocket,
-            clientID,
+            session_id,
             message_id,
             sentence_id_start,
             sentences,
             voice_name,
             speech_rate,
         )
-    elif type == "pause":
+
+    @staticmethod
+    async def _handle_pause(websocket: WebSocket, session_id: int, message: dict):
         speaker.pause()
-    elif type == "play":
+
+    @staticmethod
+    async def _handle_play(websocket: WebSocket, session_id: int, message: dict):
         if speaker.is_busy():
             speaker.unpause()
         else:
             message_id = message["data"]["message_id"]
-            ai_config = API.get_session_ai_config(session_id)
+
+            ai_config = api.get_session_ai_config(session_id)
             voice_name = ai_config["tts_voice"]
             speech_rate = ai_config["speech_rate"]
             sentence_id_start = 0
-            sentences = API.get_sentences(message_id)
+
+            sentences = api.get_sentences(message_id)
             if sentences is not None:
-                await _play_sentences(
+                await MessageHandler._play_sentences_impl(
                     websocket,
-                    clientID,
+                    session_id,
                     message_id,
                     sentence_id_start,
                     sentences,
                     voice_name,
                     speech_rate,
                 )
-    elif type == "stop":
+
+    @staticmethod
+    async def _handle_stop(websocket: WebSocket, session_id: int, message: dict):
         speaker.stop()
 
+    @staticmethod
+    async def _play_sentences_impl(
+        websocket: WebSocket,
+        session_id: int,
+        message_id: int,
+        sentence_id_start: int,
+        sentences: list,
+        voice_name: str,
+        speech_rate: float,
+    ):
+        async def play_sentence_callback(sentence_id: int):
+            msg = {
+                "type": "the_sentence_playing",
+                "data": {
+                    "message_id": message_id,
+                    "sentence_id": sentence_id,
+                },
+            }
+            try:
+                await websocket.send_text(json.dumps(msg))
+            except Exception as e:
+                speaker.stop()
+                logger.error(f"播放回调错误: {e}")
 
-async def send_session_messages(websocket: WebSocket, session_id: int):
-    messages = API.get_session_messages(session_id, limit=100)
-    msg = {
-        "type": "session_messages",
-        "data": messages,
-    }
-    await websocket.send_text(json.dumps(msg))
+        await play_sentence_callback(-2)
+
+        def play_sentences():
+            asyncio.run(
+                speaker.play_sentences(
+                    str(session_id),
+                    str(message_id),
+                    str(sentence_id_start),
+                    sentences,
+                    play_sentence_callback,
+                    voice_name,
+                    speech_rate,
+                )
+            )
+
+        threading.Thread(target=play_sentences, daemon=True).start()
 
 
-async def send_session_ai_config(
-    session_id: int, websocket: Optional[WebSocket] = None
-):
-    ai_config = API.get_session_ai_config(session_id)
-    msg = {
-        "type": "session_ai_config",
-        "data": {
-            "ai_config": ai_config,
-        },
-    }
-    if websocket is None:
-        await broadcast_session_websockes(session_id, json.dumps(msg))
-    else:
-        await websocket.send_text(json.dumps(msg))
+# WebSocket 端点
+@app.websocket("/ws/aichat/spa")
+async def spa_websocket_endpoint(websocket: WebSocket):
+    """SPA WebSocket端点"""
+    await websocket.accept()
+    connection_id = int(time.time() * 1000)
+    spa_websockets[connection_id] = websocket
+
+    try:
+        await SessionManager.send_all_sessions()
+
+        while True:
+            data = await websocket.receive_text()
+            await MessageHandler.handle_spa_message(websocket, data)
+
+    except WebSocketDisconnect:
+        logger.info(f"SPA WebSocket断开连接")
+    except Exception as e:
+        logger.error(f"SPA WebSocket错误: {e}")
+    finally:
+        if connection_id in spa_websockets:
+            del spa_websockets[connection_id]
 
 
 @app.websocket("/ws/aichat/{clientID}")
-async def websocketEndpointAIchatSession(websocket: WebSocket, clientID: int):
+async def session_websocket_endpoint(websocket: WebSocket, clientID: int):
+    """会话WebSocket端点"""
     await websocket.accept()
+
     session_id = int(clientID)
-    if not API.is_session_exist(session_id):
+    if not api.is_session_exist(session_id):
         msg = {"type": "error_session_not_exist", "data": {"session_id": session_id}}
         await websocket.send_text(json.dumps(msg))
         await websocket.close()
         return
 
-    time_id = int(time.time() * 1000)
-    if session_id not in session_websockes:
-        session_websockes[session_id] = {}
-    session_websockes[session_id][time_id] = websocket
+    connection_id = int(time.time() * 1000)
 
-    await send_session_messages(websocket, session_id)
-    await send_session_ai_config(session_id, websocket)
+    if session_id not in session_websockets:
+        session_websockets[session_id] = {}
 
-    async def receive():
-        while True:
-            try:
-                data = await websocket.receive_text()
-                await handle_message(websocket, clientID, data)
-            except WebSocketDisconnect:
-                logger.info(f"websocket {clientID} disconnected.")
-                break
+    session_websockets[session_id][connection_id] = websocket
 
-    tasks_list = [
-        asyncio.create_task(receive()),
-    ]
     try:
-        await asyncio.gather(*tasks_list)
+        await SessionManager.send_session_messages(websocket, session_id)
+        await SessionManager.send_session_config(session_id, websocket)
+
+        while True:
+            data = await websocket.receive_text()
+            await MessageHandler.handle_session_message(websocket, clientID, data)
+
     except WebSocketDisconnect:
-        print(f"websocket {clientID} disconnected.")
+        logger.info(f"会话WebSocket {clientID} 断开连接")
     except Exception as e:
-        logger.error(f"websocket {clientID} error: {e}")
+        logger.error(f"会话WebSocket {clientID} 错误: {e}")
     finally:
-        del session_websockes[session_id][time_id]
+        if (
+            session_id in session_websockets
+            and connection_id in session_websockets[session_id]
+        ):
+            del session_websockets[session_id][connection_id]
 
 
+# 启动应用
 if __name__ == "__main__":
+    # 初始化会话
+    SessionManager.initialize_sessions()
+
+    # 启动服务器
     uvicorn.run(
         app="aichat-server:app",
-        # host="0.0.0.0",
         host="localhost",
         port=4999,
         reload=False,

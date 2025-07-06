@@ -304,9 +304,9 @@ const websocket_connect = async () => {
                     console.log(message.data.sessions)
                     for (const session of message.data.sessions) {
                         historyItems.value.push({
-                            path: `/history/${session[0]}`,
-                            title: session[1],
-                            config: JSON.parse(session[2]),
+                            path: `/history/${session["id"]}`,
+                            title: session["title"],
+                            config: JSON.parse(session["ai_config"]),
                         })
                     }
                     sort_history_items()

@@ -28,8 +28,9 @@
         <div class="fixed-input-area">
             <div class="input-container">
                 <el-input id="input-box" class="input-box" v-model="inputVal" ref="inputRef" type="textarea"
-                    placeholder="输入对话内容（Shift + Enter 发送）" @input="handle_input_change" @click="updateCursorPosition"
-                    :autosize="{ minRows: 2, maxRows: 9 }" @keydown="handleKeyDown">
+                    placeholder="输入对话内容（Shift + Enter 发送）" @input="handle_input_change"
+                    @click="updateCursorPosition(false)" :autosize="{ minRows: 2, maxRows: 9 }"
+                    @keydown="handleKeyDown">
                 </el-input>
                 <div class="button-group">
                     <el-button :icon="MoreFilled" :type="''" text @click="handle_more_click" style="font-size: 24px;" />
@@ -218,7 +219,7 @@ onMounted(async () => {
 })
 
 // 实时更新光标位置
-const updateCursorPosition = () => {
+const updateCursorPosition = (is_input_change_event: boolean = false) => {
     is_input_sendable.value = inputVal.value.trim() != ""
     setTimeout(() => {
         if (inputRef.value) {
@@ -226,6 +227,17 @@ const updateCursorPosition = () => {
             if (textarea) {
                 cursor_position.value = textarea.selectionStart;
                 console.log('cursor_position.value:', cursor_position.value)
+                console.log('is_input_change_event:', is_input_change_event)
+                if (!is_input_change_event && is_speech_recognizing.value) {
+                    const msg = {
+                        "type": "update_cursor_position",
+                        "data": {
+                            "original_text": inputVal.value,
+                            "cursor_position": cursor_position.value,
+                        },
+                    }
+                    currentWebSocket?.send(msg)
+                }
             }
         }
     }, 100);
@@ -261,7 +273,7 @@ const set_cursor_position = (position: number) => {
 
 
 const handle_input_change = () => {
-    updateCursorPosition()
+    updateCursorPosition(true)
 }
 
 const handle_speech_recognize = () => {
@@ -799,11 +811,16 @@ const handleSentenceClick = (e: MouseEvent) => {
 
 // 处理输入框按键事件
 const handleKeyDown = (e: KeyboardEvent) => {
-    if (is_speech_recognizing.value) {
-        stop_speech_recognize()
-    }
+    // if (is_speech_recognizing.value) {
+    //     stop_speech_recognize()
+    // }
     if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Tab'].includes(e.key)) {
-        updateCursorPosition()
+        updateCursorPosition(false)
+    }
+    // 检查 Alt/Option 键和 Command 键是否同时按下
+    if (e.altKey && e.metaKey) {
+        e.preventDefault()
+        handle_speech_recognize()
     }
     if (e.key === 'Enter' && e.shiftKey) {
         e.preventDefault()

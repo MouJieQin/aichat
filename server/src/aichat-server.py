@@ -370,6 +370,7 @@ class MessageHandler:
                 "delete_audio_files": MessageHandler._handle_delete_audio_files,
                 "delete_message": MessageHandler._handle_delete_message,
                 "start_speech_recognize": MessageHandler._handle_start_speech_recognize,
+                "update_cursor_position": MessageHandler._handle_update_cursor_position,
                 "stop_speech_recognize": MessageHandler._handle_stop_speech_recognize,
                 "generate_audio_files": MessageHandler._handle_generate_audio_files,
                 "play_the_sentence": MessageHandler._handle_play_the_sentence,
@@ -571,13 +572,23 @@ class MessageHandler:
         input_text = message["data"]["input_text"]
         cursor_position = message["data"]["cursor_position"]
 
-        recognizer.start_recognizer(websocket, language, input_text, cursor_position)
+        await recognizer.start_recognition(
+            websocket, language, input_text, cursor_position
+        )
+
+    @staticmethod
+    async def _handle_update_cursor_position(
+        websocket: WebSocket, session_id: int, message: dict
+    ):
+        original_text = message["data"]["original_text"]
+        cursor_position = message["data"]["cursor_position"]
+        recognizer.reset_text_state(original_text, cursor_position)
 
     @staticmethod
     async def _handle_stop_speech_recognize(
         websocket: WebSocket, session_id: int, message: dict
     ):
-        recognizer.stop_recognizer_sync()
+        await recognizer.stop_recognition()
 
     @staticmethod
     async def _handle_generate_audio_files(

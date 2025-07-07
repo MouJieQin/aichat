@@ -125,7 +125,7 @@
 <script lang="ts" setup>
 import { ref, onMounted, watch, watchEffect, computed, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import MarkdownIt from 'markdown-it'
+import MarkdownIt from 'markdown-it' // @ts-nocheck
 import { Right, MoreFilled, CopyDocument, VideoPlay, VideoPause, Delete, More, Edit, Microphone, Promotion } from '@element-plus/icons-vue'
 import type { DrawerProps } from 'element-plus'
 import { useWebSocket, WebSocketService } from '@/common/websocket-client'
@@ -167,7 +167,7 @@ const tts_voices = ref<{ [key: string]: any[] }>({})
 const languages = ref<string[]>([])
 const drawer_visible = ref(false)
 const drawer_direction = ref<DrawerProps['direction']>('ttb')
-const historyId = ref('')
+const chatId = ref('')
 const loading = ref(false)
 const streaming = ref(false)
 const is_chat_error = ref(false)
@@ -188,9 +188,9 @@ const currentPlayingSentence = ref({ message_id: -1, sentence_id: -1 })
 
 // 监听路由参数变化，加载新的历史对话
 watch(() => route.params.id, (newId) => {
-    if (newId !== historyId.value) {
+    if (newId !== chatId.value) {
         console.log('newId:', newId)
-        loadHistoryData()
+        loadchatData()
     }
     console.log('@newId:', newId)
 })
@@ -210,7 +210,7 @@ watchEffect(() => {
 });
 
 onMounted(async () => {
-    loadHistoryData()
+    loadchatData()
     tts_voices.value = await loadJsonFile('/tts_voices.json')
     languages.value = Object.keys(tts_voices.value)
     const textarea = document.querySelector('#input-box') as HTMLTextAreaElement;
@@ -223,7 +223,7 @@ const updateCursorPosition = (is_input_change_event: boolean = false) => {
     is_input_sendable.value = inputVal.value.trim() != ""
     setTimeout(() => {
         if (inputRef.value) {
-            const textarea = inputRef.value.$refs.textarea;
+            const textarea = inputRef.value.$refs.textarea; // @ts-ignore
             if (textarea) {
                 cursor_position.value = textarea.selectionStart;
                 console.log('cursor_position.value:', cursor_position.value)
@@ -249,7 +249,7 @@ const updateCursorPosition = (is_input_change_event: boolean = false) => {
 const set_cursor_position = (position: number) => {
     nextTick(() => {
         if (inputRef.value) {
-            const textarea = inputRef.value.$refs.textarea;
+            const textarea = inputRef.value.$refs.textarea; // @ts-ignore
 
             if (textarea) {
                 // 限制位置范围
@@ -496,9 +496,9 @@ const scrollToBottom = () => {
 const scrollToBottomDebounced = debounce(scrollToBottom, 200)
 
 // 加载历史对话数据
-const loadHistoryData = async () => {
+const loadchatData = async () => {
     try {
-        historyId.value = route.params.id as string
+        chatId.value = route.params.id as string
         loading.value = true
 
         // 关闭当前WebSocket连接（如果有）
@@ -511,7 +511,7 @@ const loadHistoryData = async () => {
         session_suggestions.value = []
 
         // 初始化WebSocket连接
-        const wsUrl = `ws://localhost:4999/ws/aichat/${historyId.value}`
+        const wsUrl = `ws://localhost:4999/ws/aichat/${chatId.value}`
         console.log('Connecting to:', wsUrl)
 
         currentWebSocket = useWebSocket(wsUrl)

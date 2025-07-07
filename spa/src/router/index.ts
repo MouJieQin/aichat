@@ -3,12 +3,13 @@ import { createRouter, createWebHistory, RouteRecordRaw } from 'vue-router'
 // 懒加载组件
 const Home = () => import('@/views/Home.vue')
 const Page1 = () => import('@/views/Page1.vue')
-const History = () => import('@/views/History.vue')
+const Chat = () => import('@/views/Chat.vue')
 
 const routes: RouteRecordRaw[] = [
     {
         path: '/',
-        component: () => import('@/layouts/SidebarLayout.vue'),
+        // component: () => import('@/layouts/SidebarLayout.vue'),
+        component: () => import('@/views/ChatLayout.vue'),
         children: [
             {
                 path: '',
@@ -21,9 +22,9 @@ const routes: RouteRecordRaw[] = [
                 component: Page1
             },
             {
-                path: 'history/:id',
-                name: 'History',
-                component: History
+                path: 'chat/:id',
+                name: 'Chat',
+                component: Chat
             }
         ]
     },

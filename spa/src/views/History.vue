@@ -780,9 +780,10 @@ const stop = () => {
 // 句子点击处理
 const handleSentenceClick = (e: MouseEvent) => {
     const isOptionPressed = e.altKey
-    const isCommandPressed = e.metaKey // macOS 上的 Command 键
+    // const isCommandPressed = e.metaKey // macOS 上的 Command 键
+    const isCtrlPressed = e.ctrlKey
 
-    if (isOptionPressed || isCommandPressed) {
+    if (isOptionPressed || isCtrlPressed) {
         const target = e.target as HTMLElement
         const contentElement = target.closest('.content')
 
@@ -797,7 +798,7 @@ const handleSentenceClick = (e: MouseEvent) => {
             if (sentence) {
                 console.log('点击的句子:', sentence)
             }
-            const type = isCommandPressed ? 'play_the_sentence' : 'play_sentences'
+            const type = isCtrlPressed ? 'play_the_sentence' : 'play_sentences'
             const message = {
                 type: type,
                 data: {

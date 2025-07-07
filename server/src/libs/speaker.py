@@ -142,6 +142,7 @@ class Speaker(metaclass=SingletonMeta):
         speech_rate: float,
     ) -> None:
         """预生成一系列音频文件"""
+        self.audio_queue.clear()
         for sentence in sentences:
             sentence_id = sentence.get("sentenceId", -1)
             text = sentence.get("text", "")
@@ -252,26 +253,6 @@ class Speaker(metaclass=SingletonMeta):
                         await callback(sentence_id_playing)
             await asyncio.sleep(0.1)
         await callback(-1)  # 播放结束
-
-        # # 等待第一个音频生成
-        # while not self.audio_queue:
-        #     await asyncio.sleep(0.1)
-
-        # # 开始播放第一个音频
-        # current_id, current_sound = self.audio_queue.popleft()
-        # self.assistant_channel.play(current_sound)
-        # await callback(int(current_id))
-
-        # # 监听播放状态并排队下一个音频
-        # while self.is_playing() or self.audio_queue:
-        #     if not self.is_playing() and self.audio_queue:
-        #         next_id, next_sound = self.audio_queue.popleft()
-        #         self.assistant_channel.play(next_sound)
-        #         await callback(int(next_id))
-        #     await asyncio.sleep(0.1)
-
-        # # 所有音频播放完毕
-        # await callback(-1)
 
     async def _play_audio(
         self,

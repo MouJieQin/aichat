@@ -185,6 +185,8 @@ class MessageHandler:
         try:
             message = json.loads(message_text)
             message_type = message["type"]
+            if message_type != "parsed_response":
+                logger.info(f"接收消息: {message}")
 
             handlers = {
                 "get_all_sessions": MessageHandler._handle_get_all_sessions,

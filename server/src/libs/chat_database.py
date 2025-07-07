@@ -9,14 +9,18 @@ class ChatDatabase:
     def __init__(self, db_path: str = "chat_history.db"):
         self.conn = sqlite3.connect(db_path)
         self.conn.row_factory = sqlite3.Row  # 使用字典形式返回结果
-        self._create_tables()
         self._setup_foreign_keys()
+        self._create_tables()
 
     def _setup_foreign_keys(self) -> None:
-        """启用外键约束"""
-        cursor = self.conn.cursor()
-        cursor.execute("PRAGMA foreign_keys = ON")
-        self.conn.commit()
+        """确保外键约束启用"""
+        with self.conn:
+            self.conn.execute("PRAGMA foreign_keys = ON")
+            # 验证约束是否启用
+            cursor = self.conn.cursor()
+            cursor.execute("PRAGMA foreign_keys")
+            if cursor.fetchone()[0] != 1:
+                raise RuntimeError("无法启用外键约束")
 
     def _create_tables(self) -> None:
         """创建会话和消息表"""

@@ -5,3 +5,5 @@ server/src/data/
 server/src/logs/
 server/src/configure.json
 **/*.db
+**/*.sql
+**/*.bk

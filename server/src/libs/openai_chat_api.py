@@ -40,7 +40,7 @@ class OpenAIChatAPI:
 
         return f"""
         用户设置：{user_system_prompt}
-        你的回复使用的语言种类要参考上下文对话内容，并且严格按照以下格式进行回复（请严格保持此纯json格式，不要添加额外文本）：
+        你的回复使用的语言种类要参考上下文对话内容(本条消息使用了中文，但不作为上下文语种参考依据)，并且严格按照以下格式进行回复（请严格保持此纯json格式，不要添加额外文本）：
         {{
             "response": "针对用户问题的详细回答",
             "title": "问题的简短标题",
@@ -110,8 +110,8 @@ class OpenAIChatAPI:
         # 恢复正确顺序
         messages_to_send = messages_to_send[::-1]
 
-        # return prompt_messages + messages_to_send
-        return messages_to_send + prompt_messages
+        return prompt_messages + messages_to_send
+        # return messages_to_send + prompt_messages
 
     def _create_system_chat_system_prompt(self) -> str:
         """创建用于系统聊天的系统提示词"""
@@ -214,12 +214,12 @@ class OpenAIChatAPI:
         )
 
         # 添加格式控制消息
-        # prompt_messages.append(
-        #     {
-        #         "role": "system",
-        #         "content": "请注意回复格式要严格遵循系统设置的纯json格式，并且使用的语言种类要参考上下文对话内容。",
-        #     }
-        # )
+        prompt_messages.append(
+            {
+                "role": "system",
+                "content": "请注意回复格式要严格遵循系统设置的纯json格式，并且使用的语言种类要参考上下文对话内容。",
+            }
+        )
 
         logger.info(f"@@@@@提示消息:{prompt_messages}")
 

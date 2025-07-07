@@ -229,6 +229,7 @@ const updateCursorPosition = (is_input_change_event: boolean = false) => {
                 console.log('cursor_position.value:', cursor_position.value)
                 console.log('is_input_change_event:', is_input_change_event)
                 if (!is_input_change_event && is_speech_recognizing.value) {
+                    // if (is_speech_recognizing.value) {
                     const msg = {
                         "type": "update_cursor_position",
                         "data": {
@@ -349,7 +350,9 @@ const update_session_ai_config = () => {
 
 const update_message = (message_id: number, raw_text: string) => {
     if (message_id === max_user_message_id.value) {
-        delete_message(max_assistant_message_id.value)
+        if (max_assistant_message_id.value > max_user_message_id.value) {
+            delete_message(max_assistant_message_id.value)
+        }
         delete_message(max_user_message_id.value)
         // make sure the message is deleted before sending the new message
         setTimeout(() => {

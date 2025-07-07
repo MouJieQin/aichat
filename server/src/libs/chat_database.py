@@ -2,6 +2,7 @@ import sqlite3
 import json
 from typing import Optional, List, Dict, Any, Tuple
 from datetime import datetime
+from libs.log_config import logger
 
 
 class ChatDatabase:
@@ -22,16 +23,19 @@ class ChatDatabase:
         with self.conn:
             cursor = self.conn.cursor()
             # 创建会话表
-            cursor.execute("""
+            cursor.execute(
+                """
                 CREATE TABLE IF NOT EXISTS sessions (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     title TEXT,
                     create_time TEXT,
                     ai_config TEXT
                 )
-            """)
+            """
+            )
             # 创建消息表
-            cursor.execute("""
+            cursor.execute(
+                """
                 CREATE TABLE IF NOT EXISTS messages (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     session_id INTEGER,
@@ -41,9 +45,12 @@ class ChatDatabase:
                     timestamp TEXT,
                     FOREIGN KEY (session_id) REFERENCES sessions (id) ON DELETE CASCADE
                 )
-            """)
+            """
+            )
             # 创建索引
-            cursor.execute("CREATE INDEX IF NOT EXISTS idx_messages_session_time ON messages (session_id, timestamp);")
+            cursor.execute(
+                "CREATE INDEX IF NOT EXISTS idx_messages_session_time ON messages (session_id, timestamp);"
+            )
 
     def create_session(self, title: str, ai_config: dict) -> Optional[int]:
         """创建新会话并返回会话ID"""
@@ -66,14 +73,16 @@ class ChatDatabase:
         with self.conn:
             cursor = self.conn.cursor()
             # 获取源会话信息
-            cursor.execute("SELECT title, ai_config FROM sessions WHERE id = ?", (session_id,))
+            cursor.execute(
+                "SELECT title, ai_config FROM sessions WHERE id = ?", (session_id,)
+            )
             row = cursor.fetchone()
             if not row:
                 return None
-                
+
             title, ai_config = row["title"], row["ai_config"]
             create_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            
+
             # 创建新会话
             cursor.execute(
                 "INSERT INTO sessions (title, create_time, ai_config) VALUES (?, ?, ?)",
@@ -81,7 +90,9 @@ class ChatDatabase:
             )
             return cursor.lastrowid
 
-    def copy_session_system_message(self, src_session_id: int, dst_session_id: int) -> None:
+    def copy_session_system_message(
+        self, src_session_id: int, dst_session_id: int
+    ) -> None:
         """复制源会话的系统消息到目标会话"""
         with self.conn:
             self.conn.execute(
@@ -99,7 +110,7 @@ class ChatDatabase:
         new_session_id = self.copy_session(session_id)
         if new_session_id is None:
             return None
-            
+
         with self.conn:
             self.conn.execute(
                 """
@@ -115,7 +126,9 @@ class ChatDatabase:
     def update_session_title(self, session_id: int, title: str) -> None:
         """更新会话标题"""
         with self.conn:
-            self.conn.execute("UPDATE sessions SET title = ? WHERE id = ?", (title, session_id))
+            self.conn.execute(
+                "UPDATE sessions SET title = ? WHERE id = ?", (title, session_id)
+            )
 
     def get_session_title(self, session_id: int) -> Optional[str]:
         """获取会话标题"""
@@ -140,26 +153,31 @@ class ChatDatabase:
             )
             return cursor.lastrowid
 
-    def update_message(self, message_id: int, parsed_text: Optional[str] = None, raw_text: Optional[str] = None) -> None:
+    def update_message(
+        self,
+        message_id: int,
+        parsed_text: Optional[str] = None,
+        raw_text: Optional[str] = None,
+    ) -> None:
         """更新消息内容"""
         if parsed_text is None and raw_text is None:
             return
-            
+
         update_fields = []
         params = []
-        
+
         if raw_text is not None:
             update_fields.append("raw_text = ?")
             params.append(raw_text)
-            
+
         if parsed_text is not None:
             update_fields.append("parsed_text = ?")
             params.append(parsed_text)
-            
+
         params.append(message_id)
-        
+
         query = f"UPDATE messages SET {', '.join(update_fields)} WHERE id = ?"
-        
+
         with self.conn:
             self.conn.execute(query, params)
 
@@ -168,7 +186,9 @@ class ChatDatabase:
         with self.conn:
             self.conn.execute("DELETE FROM messages WHERE id = ?", (message_id,))
 
-    def get_session_messages(self, session_id: int, limit: int = -1) -> List[Dict[str, Any]]:
+    def get_session_messages(
+        self, session_id: int, limit: int = -1
+    ) -> List[Dict[str, Any]]:
         """获取会话的消息列表"""
         cursor = self.conn.cursor()
         query = """
@@ -182,10 +202,10 @@ class ChatDatabase:
             cursor.execute(query, (session_id, limit))
         else:
             cursor.execute(query, (session_id,))
-            
+
         return [dict(row) for row in cursor.fetchall()]
 
-    def get_session_system_messages(self, session_id: int) -> Optional[Dict[str, Any]]:
+    def get_session_system_message(self, session_id: int) -> Optional[str]:
         """获取会话的系统消息"""
         cursor = self.conn.cursor()
         cursor.execute(
@@ -197,7 +217,8 @@ class ChatDatabase:
             """,
             (session_id,),
         )
-        return dict(cursor.fetchone()) if cursor.rowcount > 0 else None
+        row = cursor.fetchone()
+        return row["raw_text"] if row else None
 
     def get_session_ai_config(self, session_id: int) -> Optional[Dict[str, Any]]:
         """获取会话的AI配置"""
@@ -257,4 +278,4 @@ def get_db_message_count(db: ChatDatabase) -> int:
     """获取数据库中的消息总数"""
     cursor = db.conn.cursor()
     cursor.execute("SELECT COUNT(*) FROM messages")
-    return cursor.fetchone()[0]    
+    return cursor.fetchone()[0]

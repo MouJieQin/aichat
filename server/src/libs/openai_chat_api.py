@@ -83,6 +83,7 @@ class OpenAIChatAPI:
         # 如果没有系统消息，添加默认系统提示
         if not has_system_prompt:
             system_prompt = self.get_session_system_message(session_id)
+            logger.error(f"system_prompt: {system_prompt}")
             system_messages.append(
                 {
                     "role": "system",
@@ -91,7 +92,6 @@ class OpenAIChatAPI:
                     ),
                 }
             )
-
         # 构建最终提示消息，考虑token限制
         prompt_messages = system_messages
         used_tokens = sum(len(msg["content"]) // 4 for msg in prompt_messages)
@@ -110,7 +110,8 @@ class OpenAIChatAPI:
         # 恢复正确顺序
         messages_to_send = messages_to_send[::-1]
 
-        return prompt_messages + messages_to_send
+        # return prompt_messages + messages_to_send
+        return messages_to_send + prompt_messages
 
     def _create_system_chat_system_prompt(self) -> str:
         """创建用于系统聊天的系统提示词"""
@@ -175,7 +176,7 @@ class OpenAIChatAPI:
         logger.info("----- 系统分析请求 -----")
         completion = self.system_client.chat.completions.create(
             model=self.system_model,
-            messages=prompt_messages, #type: ignore
+            messages=prompt_messages,  # type: ignore
             temperature=self.system_temperature,
         )
 
@@ -213,12 +214,12 @@ class OpenAIChatAPI:
         )
 
         # 添加格式控制消息
-        prompt_messages.append(
-            {
-                "role": "system",
-                "content": "请注意回复格式要严格遵循系统设置的纯json格式，并且使用的语言种类要参考上下文对话内容。",
-            }
-        )
+        # prompt_messages.append(
+        #     {
+        #         "role": "system",
+        #         "content": "请注意回复格式要严格遵循系统设置的纯json格式，并且使用的语言种类要参考上下文对话内容。",
+        #     }
+        # )
 
         logger.info(f"@@@@@提示消息:{prompt_messages}")
 
@@ -230,7 +231,7 @@ class OpenAIChatAPI:
         logger.info("----- 流式请求 -----")
         response_stream = client.chat.completions.create(  # type: ignore
             model=ai_config.get("model", "gpt-3.5-turbo"),
-            messages=prompt_messages, # type: ignore
+            messages=prompt_messages,  # type: ignore
             temperature=ai_config.get("temperature", 0.7),
             max_tokens=ai_config.get("max_tokens", 800),
             stream=True,
@@ -412,8 +413,7 @@ class OpenAIChatAPI:
 
     def get_session_system_message(self, session_id: int) -> Optional[str]:
         """获取会话系统消息"""
-        system_messages = self.db.get_session_system_messages(session_id)
-        return system_messages["raw_text"] if system_messages else None
+        return self.db.get_session_system_message(session_id)
 
     def add_assistant_message(
         self, session_id: int, raw_response: str, parsed_text: str

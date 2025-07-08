@@ -180,6 +180,7 @@ const sentences = ref<SentenceInfo[]>([])
 const inputVal = ref('')
 const is_input_sendable = ref(false)
 const is_speech_recognizing = ref(false)
+const is_stt_changing_input_box = ref(false)
 const inputRef = ref(null);
 const cursor_position = ref(0);
 const text_area_height = ref(0)
@@ -232,7 +233,7 @@ const updateCursorPosition = (is_input_change_event: boolean = false) => {
                 cursor_position.value = textarea.selectionStart;
                 console.log('cursor_position.value:', cursor_position.value)
                 console.log('is_input_change_event:', is_input_change_event)
-                if (!is_input_change_event && is_speech_recognizing.value) {
+                if (!is_stt_changing_input_box.value && is_speech_recognizing.value) {
                     // if (is_speech_recognizing.value) {
                     const msg = {
                         "type": "update_cursor_position",
@@ -617,9 +618,12 @@ const loadchatData = async () => {
                         const stt_text = message.data.stt_text
                         const cursor_position = message.data.cursor_position
                         console.log("stt_text:", stt_text)
+                        is_stt_changing_input_box.value = true
                         inputVal.value = stt_text
-                        handle_input_change()
                         set_cursor_position(cursor_position)
+                        is_stt_changing_input_box.value = false
+                        update_input_sendable()
+                        // handle_input_change()
                     }
                     break
                 case 'stop_speech_recognize':

@@ -366,7 +366,9 @@ class MessageHandler:
 
             handlers = {
                 "user_input": MessageHandler._handle_user_input,
-                "parsed_response": MessageHandler._handle_session_parsed_response,
+                "parsed_user_message": MessageHandler._handle_parsed_user_message,
+                "parsed_ai_response": MessageHandler._handle_parsed_ai_response,
+                "parsed_response": MessageHandler._handle_session_parsed_response, ###########################
                 "update_session_ai_config": MessageHandler._handle_update_session_config,
                 "update_message": MessageHandler._handle_update_message,
                 "delete_audio_files": MessageHandler._handle_delete_audio_files,
@@ -393,7 +395,6 @@ class MessageHandler:
     @staticmethod
     async def _handle_user_input(websocket: WebSocket, session_id: int, message: dict):
         user_message = message["data"]["user_message"]
-        auto_gen_title = message["data"]["auto_gen_title"]
 
         async def user_message_callback(message_id: int):
             msg = {
@@ -471,6 +472,8 @@ class MessageHandler:
             suggestions = system_info["suggestions"]
             logger.info("标题:%s, 建议:%s", title, suggestions)
 
+            config = api.get_session_ai_config(session_id)
+            auto_gen_title = config["auto_gen_title"]
             if auto_gen_title:
                 await SessionManager.update_title(session_id, title)
 
@@ -483,13 +486,32 @@ class MessageHandler:
             }
             await websocket.send_text(json.dumps(msg))
 
-            config = api.get_session_ai_config(session_id)
             config["last_active_time"] = time.time()
             config["suggestions"] = suggestions
             api.update_session_ai_config(session_id, config)
             await SessionManager.send_all_sessions()
 
         await system_handle()
+
+    @staticmethod
+    async def _handle_parsed_user_message(
+        websocket: WebSocket, session_id: int, message: dict
+    ):
+        message_id = message["data"]["message_id"]
+        sentences = message["data"]["sentences"]
+        api.update_message(
+            message_id, json.dumps({"sentences": sentences}, ensure_ascii=False)
+        )
+
+    @staticmethod
+    async def _handle_parsed_ai_response(
+        websocket: WebSocket, session_id: int, message: dict
+    ):
+        message_id = message["data"]["message_id"]
+        sentences = message["data"]["sentences"]
+        api.update_message(
+            message_id, json.dumps({"sentences": sentences}, ensure_ascii=False)
+        )
 
     @staticmethod
     async def _handle_session_parsed_response(

@@ -1,20 +1,7 @@
 // markdown-processor.ts
 import MarkdownIt from 'markdown-it';
 import { split } from 'sentence-splitter';
-
-// 句子信息接口
-export interface SentenceInfo {
-    text: string;
-    messageId: number;
-    sentenceId: number;
-    isHeading?: boolean;
-}
-
-// 处理结果接口
-export interface ProcessResult {
-    html: string;
-    sentences: SentenceInfo[];
-}
+import type { SentenceInfo, ProcessResult } from '@/common/type-interface';
 
 // 主处理函数
 export function processMarkdown(markdownContent: string, message_id: number): ProcessResult {
@@ -56,7 +43,7 @@ export function processMarkdown(markdownContent: string, message_id: number): Pr
 
                     // 在原位置插入新节点
                     parent?.insertBefore(span, children[nodeIndex + i + 1] || null);
-                    
+
                     // 添加空格字符，保留原始空格
                     if (i < nodes.length - 1) {
                         // 检测原始文本中句子后的空格

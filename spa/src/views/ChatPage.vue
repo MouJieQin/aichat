@@ -1,0 +1,298 @@
+<template>
+    <div class="page-content">
+        <!-- 聊天消息区域 -->
+        <div>
+            <!-- 只有当 webSocket 不为 null 时才渲染 ChatMessages 组件 -->
+            <ChatMessages v-if="webSocket" :websocket="webSocket" :messages="chatMessages"
+                @send-message="sendMessage" />
+            <!-- 可以添加一个加载状态提示 -->
+            <div v-else class="loading">加载中...</div>
+        </div>
+        <!-- <ChatMessages :websocket="webSocket" :messages="chatMessages" @send-message="sendMessage" /> -->
+
+        <!-- 流式响应展示 -->
+        <!-- <MessageStream :streaming="streaming" :error="isChatError" :content="streamResponse" /> -->
+
+        <!-- 建议消息列表 -->
+        <!-- <SuggestionsList :suggestions="sessionSuggestions" @send="sendMessage" /> -->
+
+        <!-- 输入区域 -->
+        <!-- <ChatInput :value="inputVal" :can-send="isInputSendable" :is-recognizing="isSpeechRecognizing"
+            @input="handleInputChange" @send="handleSend" @toggle-recognize="toggleSpeechRecognize"
+            @open-config="openAIConfig" /> -->
+
+        <!-- AI配置抽屉 -->
+        <!-- <AIConfigDrawer v-model="drawerVisible" :config="sessionAiConfig" @update-config="updateSessionAiConfig" /> -->
+    </div>
+</template>
+
+<script lang="ts" setup>
+import { ref, watch, onMounted, onBeforeUnmount } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import ChatMessages from '@/components/chat/ChatMessages.vue'
+import MessageStream from '@/components/chat/MessageStream.vue'
+import SuggestionsList from '@/components/chat/SuggestionsList.vue'
+import ChatInput from '@/components/chat/ChatInput.vue'
+import AIConfigDrawer from '@/components/chat/AIConfigDrawer.vue'
+import { ChatWebSocketService, useChatWebSocket } from '@/common/chat-websocket-client'
+import { processMarkdown } from '@/common/markdown-processor'
+import { formatTimeNow, highlightPlayingSentence, scrollToBottom, mapLanguageCode } from '@/common/utils'
+import { Message, AIConfig } from '@/common/type-interface'
+
+// 路由与状态
+const route = useRoute()
+const router = useRouter()
+const chatId = ref(-1)
+const drawerVisible = ref(false)
+
+// 聊天数据状态
+const chatMessages = ref<Message[]>([])
+const sessionSuggestions = ref<string[]>([])
+const streaming = ref(false)
+const isChatError = ref(false)
+const streamResponse = ref('')
+const sessionAiConfig = ref<AIConfig | null>(null)
+
+// // 消息ID跟踪
+// const maxUserMessageId = ref(-1)
+// const maxAssistantMessageId = ref(-1)
+
+// 输入状态
+const inputVal = ref('')
+const isInputSendable = ref(false)
+const isSpeechRecognizing = ref(false)
+const cursorPosition = ref(0)
+
+// WebSocket连接
+// let webSocket: ChatWebSocketService | null = null
+const webSocket = ref<ChatWebSocketService | null>(null)
+
+// 初始化
+onMounted(() => {
+    watchRouteChange()
+})
+
+onBeforeUnmount(() => {
+    webSocket?.value?.close()
+})
+
+// 监听路由变化
+const watchRouteChange = () => {
+    watch(() => route.params.id, (newId) => {
+        const newChatId = newId ? Number(newId) : -1
+        if (newChatId !== chatId.value) {
+            chatId.value = newChatId
+            setupWebSocket()
+        }
+    }, { immediate: true })
+}
+
+// 初始化WebSocket
+const setupWebSocket = () => {
+    webSocket.value = useChatWebSocket(chatId.value)
+    if (webSocket.value) {
+        webSocket.value.handleMessage = (message: any) => {
+            handleWebSocketMessage(message)
+        }
+    }
+}
+
+// 处理WebSocket消息
+const handleWebSocketMessage = (message: any) => {
+    switch (message.type) {
+        case 'session_messages':
+            handleSessionMessages(message.data.messages)
+            break
+        case 'parse_request':
+            handleParseRequest(message.data)
+            break
+        case 'stream_response':
+            handleStreamResponse(message.data)
+            break
+        case 'session_suggestions':
+            sessionSuggestions.value = message.data.suggestions
+            break
+        case 'session_ai_config':
+            sessionAiConfig.value = message.data.ai_config
+            break
+        case 'the_sentence_playing':
+            updatePlayingSentence(message.data)
+            break
+        case 'update_message':
+            updateMessageContent(message.data)
+            break
+        case 'delete_message':
+            removeMessage(message.data.message_id)
+            break
+        case 'speech_recognizing':
+            handleSpeechRecognizing(message.data)
+            break
+        case 'stop_speech_recognize':
+            isSpeechRecognizing.value = false
+            break
+        case 'error_session_not_exist':
+            router.push('/')
+            break
+    }
+}
+
+// 处理会话消息
+const handleSessionMessages = (messages: any[]) => {
+    chatMessages.value = messages.map(msg => {
+        const result = processMarkdown(msg.raw_text, msg.id)
+        return {
+            message_id: msg.id,
+            raw_text: msg.raw_text,
+            processed_html: result.html,
+            sentences: result.sentences,
+            time: msg.timestamp,
+            role: msg.role,
+            is_playing: false
+        }
+    })
+}
+
+// 处理解析请求
+const handleParseRequest = (data: any) => {
+    if (data.type === 'user_message') {
+        addUserMessage(data.data)
+    } else if (data.type === 'ai_response') {
+        addAssistantMessage(data.data)
+    }
+}
+
+// 添加用户消息
+const addUserMessage = (data: any) => {
+    const result = processMarkdown(data.user_message, data.message_id)
+    chatMessages.value.push({
+        message_id: data.message_id,
+        raw_text: data.user_message,
+        processed_html: result.html,
+        sentences: result.sentences,
+        time: formatTimeNow(),
+        role: 'user',
+        is_playing: false
+    })
+    webSocket?.value?.sendParsedUserMessage(data.message_id, result.sentences)
+}
+
+// 添加助手消息
+const addAssistantMessage = (data: any) => {
+    const result = processMarkdown(data.response, data.message_id)
+    chatMessages.value.push({
+        message_id: data.message_id,
+        raw_text: data.response,
+        processed_html: result.html,
+        sentences: result.sentences,
+        time: formatTimeNow(),
+        role: 'assistant',
+        is_playing: false
+    })
+    data.sentences = result.sentences
+    webSocket?.value?.sendParsedAiResponse(data.message_id, result.sentences)
+
+    // 自动播放
+    if (sessionAiConfig.value?.auto_play) {
+        setTimeout(() => {
+            webSocket?.value?.sendGenerateAudioFiles(data.message_id, 0, 0)
+            webSocket?.value?.sendPlayMessage(data.message_id);
+        }, 1000)
+    }
+}
+
+// 处理流式响应
+const handleStreamResponse = (data: any) => {
+    streaming.value = data.is_streaming
+    isChatError.value = data.is_chat_error
+    streamResponse.value = data.response
+}
+
+// 更新正在播放的句子
+const updatePlayingSentence = (data: any) => {
+    highlightPlayingSentence(data.message_id, data.sentence_id)
+}
+
+// 更新消息内容
+const updateMessageContent = (data: any) => {
+    const message_id = data.message_id
+    const raw_text = data.raw_text
+    const message = chatMessages.value.find(msg => msg.message_id === message_id)
+    console.log("update_message:", message_id, raw_text)
+    if (message) {
+        const result = processMarkdown(raw_text, message_id)
+        message.raw_text = raw_text
+        message.sentences = result.sentences
+        message.processed_html = result.html
+    }
+}
+
+// 删除消息
+const removeMessage = (data: any) => {
+    const message_id = data.message_id
+    const index = chatMessages.value.findIndex(msg => msg.message_id === message_id)
+    if (index !== -1) {
+        chatMessages.value.splice(index, 1)
+    }
+}
+
+// 输入相关处理
+const handleInputChange = (value: string) => {
+    inputVal.value = value
+    isInputSendable.value = value.trim() !== ''
+}
+
+// 发送消息
+const sendMessage = (text: string) => {
+    if (!text.trim() || !chatId.value) return
+    webSocket?.value?.sendUserInput(chatId.value, text)
+    if (isSpeechRecognizing.value) {
+        webSocket?.value?.sendStopSpeechRecognition()
+    }
+    sessionSuggestions.value = []
+    scrollToBottom()
+}
+
+// 处理发送事件
+const handleSend = () => {
+    if (!isInputSendable.value) return
+    sendMessage(inputVal.value)
+    inputVal.value = ''
+    isInputSendable.value = false
+}
+
+// 语音识别相关
+const toggleSpeechRecognize = () => {
+    if (isSpeechRecognizing.value) {
+        webSocket?.value?.sendStopSpeechRecognition()
+    } else {
+        const lang = mapLanguageCode(sessionAiConfig.value?.language)
+        webSocket?.value?.sendStartSpeechRecognition(inputVal.value, cursorPosition.value, lang)
+    }
+}
+
+// 处理语音识别中消息
+const handleSpeechRecognizing = (data: any) => {
+    isSpeechRecognizing.value = true
+    inputVal.value = data.stt_text
+    isInputSendable.value = data.stt_text.trim() !== ''
+}
+
+// AI配置相关
+const openAIConfig = () => {
+    drawerVisible.value = true
+}
+
+const updateSessionAiConfig = (config: AIConfig) => {
+    webSocket?.value?.sendUpdateSessionConfig(chatId.value, config)
+    drawerVisible.value = false
+}
+
+</script>
+
+<style scoped>
+.page-content {
+    padding: 20px;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+</style>

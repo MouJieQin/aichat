@@ -3,7 +3,7 @@ import { createRouter, createWebHistory, RouteRecordRaw } from 'vue-router'
 // 懒加载组件
 const Home = () => import('@/views/Home.vue')
 const Page1 = () => import('@/views/Page1.vue')
-const Chat = () => import('@/views/Chat.vue')
+const Chat = () => import('@/views/ChatPage.vue')
 
 const routes: RouteRecordRaw[] = [
     {

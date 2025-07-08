@@ -123,15 +123,14 @@ class Speaker(metaclass=SingletonMeta):
         speech_rate: float,
     ) -> mixer.Sound:
         """生成音频文件并返回Pygame Sound对象"""
-        with self._audio_generation_lock:
-            audio_path = self._get_audio_path(session_id, message_id, sentence_id)
+        audio_path = self._get_audio_path(session_id, message_id, sentence_id)
 
-            if not os.path.isfile(audio_path):
-                self._create_audio_directory(session_id, message_id)
-                synthesizer = self._create_speech_synthesizer(voice_name, audio_path)
-                self._synthesize_speech(synthesizer, text, voice_name, speech_rate)
+        if not os.path.isfile(audio_path):
+            self._create_audio_directory(session_id, message_id)
+            synthesizer = self._create_speech_synthesizer(voice_name, audio_path)
+            self._synthesize_speech(synthesizer, text, voice_name, speech_rate)
 
-            return mixer.Sound(audio_path)
+        return mixer.Sound(audio_path)
 
     def pregenerate_audio_files(
         self,
@@ -142,20 +141,21 @@ class Speaker(metaclass=SingletonMeta):
         speech_rate: float,
     ) -> None:
         """预生成一系列音频文件"""
-        self.audio_queue.clear()
-        for sentence in sentences:
-            sentence_id = sentence.get("sentenceId", -1)
-            text = sentence.get("text", "")
-            if sentence_id != -1 and text:
-                sound = self._generate_audio_file(
-                    session_id,
-                    message_id,
-                    sentence_id,
-                    text,
-                    voice_name,
-                    speech_rate,
-                )
-                self.audio_queue.append((sentence_id, sound))
+        with self._audio_generation_lock:
+            self.audio_queue.clear()
+            for sentence in sentences:
+                sentence_id = sentence.get("sentenceId", -1)
+                text = sentence.get("text", "")
+                if sentence_id != -1 and text:
+                    sound = self._generate_audio_file(
+                        session_id,
+                        message_id,
+                        sentence_id,
+                        text,
+                        voice_name,
+                        speech_rate,
+                    )
+                    self.audio_queue.append((sentence_id, sound))
 
     def pause_playback(self) -> None:
         """暂停语音播放"""
@@ -267,17 +267,27 @@ class Speaker(metaclass=SingletonMeta):
         """内部方法：播放单个音频文件"""
         self.stop_playback()
 
+        # # 生成音频文件
+        # sound = await asyncio.to_thread(
+        #     self._generate_audio_file,
+        #     session_id,
+        #     message_id,
+        #     sentence_id,
+        #     text,
+        #     voice_name,
+        #     speech_rate,
+        # )
+
         # 生成音频文件
-        sound = await asyncio.to_thread(
-            self._generate_audio_file,
+        self.pregenerate_audio_files(
             session_id,
             message_id,
-            sentence_id,
-            text,
+            [{"sentenceId": sentence_id, "text": text}],
             voice_name,
             speech_rate,
         )
 
+        _, sound = self.audio_queue.popleft()
         # 播放音频
         self.assistant_channel.play(sound)
         await callback(int(sentence_id))

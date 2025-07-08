@@ -83,7 +83,6 @@ class OpenAIChatAPI:
         # 如果没有系统消息，添加默认系统提示
         if not has_system_prompt:
             system_prompt = self.get_session_system_message(session_id)
-            logger.error(f"system_prompt: {system_prompt}")
             system_messages.append(
                 {
                     "role": "system",

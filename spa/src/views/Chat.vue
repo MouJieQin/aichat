@@ -10,8 +10,8 @@
                     @pause="pause" @stop="stop" @regenerate="regenerate" />
             </div>
             <div v-show="streaming" class="message_assistant">
-                <p v-if="!is_chat_error" v-html="md.render(stream_response)"></p>
-                <p v-else style="color: red;">{{ stream_response }}</p>
+                <p v-show="!is_chat_error" v-html="md.render(stream_response)"></p>
+                <p v-if="is_chat_error" style="color: red;">{{ stream_response }}</p>
             </div>
             <div style="margin-top: 12px;"></div>
             <div class="message_suggestions" v-for="(suggestion, index) in session_suggestions" :key="index">
@@ -218,9 +218,13 @@ onMounted(async () => {
     document.documentElement.style.setProperty('--fixed-input-area-padding-top', textarea.clientHeight + 'px');
 })
 
+const update_input_sendable = () => {
+    is_input_sendable.value = inputVal.value.trim() != ""
+}
+
 // 实时更新光标位置
 const updateCursorPosition = (is_input_change_event: boolean = false) => {
-    is_input_sendable.value = inputVal.value.trim() != ""
+    update_input_sendable()
     setTimeout(() => {
         if (inputRef.value) {
             const textarea = inputRef.value.$refs.textarea; // @ts-ignore
@@ -715,6 +719,7 @@ const send_user_input = () => {
     if (!is_input_sendable.value) return
     send_message(inputVal.value)
     inputVal.value = ''
+    update_input_sendable()
 }
 
 // 发送消息方法
@@ -722,6 +727,9 @@ const send_message = (user_input: string) => {
     session_suggestions.value = []
     if (!session_ai_config.value) {
         return
+    }
+    if (is_speech_recognizing.value) {
+        stop_speech_recognize()
     }
     const message = {
         type: 'user_input',
@@ -780,10 +788,10 @@ const stop = () => {
 // 句子点击处理
 const handleSentenceClick = (e: MouseEvent) => {
     const isOptionPressed = e.altKey
-    // const isCommandPressed = e.metaKey // macOS 上的 Command 键
+    const isCommandPressed = e.metaKey // macOS 上的 Command 键
     const isCtrlPressed = e.ctrlKey
 
-    if (isOptionPressed || isCtrlPressed) {
+    if (isOptionPressed) {
         const target = e.target as HTMLElement
         const contentElement = target.closest('.content')
 
@@ -798,7 +806,7 @@ const handleSentenceClick = (e: MouseEvent) => {
             if (sentence) {
                 console.log('点击的句子:', sentence)
             }
-            const type = isCtrlPressed ? 'play_the_sentence' : 'play_sentences'
+            const type = !isCommandPressed ? 'play_the_sentence' : 'play_sentences'
             const message = {
                 type: type,
                 data: {

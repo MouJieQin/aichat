@@ -42,6 +42,10 @@ export const scrollToBottom = () => {
     scrollContainer.scrollTop = scrollContainer.scrollHeight
 }
 
+export const delayScrollToBottom = (milliseconds: number = 100) => {
+    setTimeout(scrollToBottom, milliseconds)
+}
+
 export const mapLanguageCode = (lang?: string): string => {
     switch (lang) {
         case '日本語': return 'ja-JP'

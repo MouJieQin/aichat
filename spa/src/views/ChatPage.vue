@@ -7,12 +7,11 @@
                 @send-message="sendMessage" />
             <!-- 可以添加一个加载状态提示 -->
             <div v-else class="loading">加载中...</div>
+            <!-- 流式响应展示 -->
+            <MessageStream :streaming="streaming" :error="isChatError" :content="streamResponse" />
             <!-- 建议消息列表 -->
             <SuggestionsList :suggestions="sessionSuggestions" @send="sendMessage" />
         </div>
-
-        <!-- 流式响应展示 -->
-        <!-- <MessageStream :streaming="streaming" :error="isChatError" :content="streamResponse" /> -->
 
         <!-- 输入区域 -->
         <ChatInput v-if="webSocket !== null" :webSocket="webSocket" :language="sessionAiConfig?.language"
@@ -35,7 +34,7 @@ import ChatInput from '@/components/chat/ChatInput.vue'
 import AIConfigDrawer from '@/components/chat/AIConfigDrawer.vue'
 import { ChatWebSocketService, useChatWebSocket } from '@/common/chat-websocket-client'
 import { processMarkdown } from '@/common/markdown-processor'
-import { formatTimeNow, highlightPlayingSentence, scrollToBottom, mapLanguageCode } from '@/common/utils'
+import { formatTimeNow, highlightPlayingSentence, scrollToBottom, delayScrollToBottom } from '@/common/utils'
 import { Message, AIConfig } from '@/common/type-interface'
 
 // 路由与状态
@@ -105,6 +104,7 @@ const handleWebSocketMessage = (message: any) => {
             break
         case 'session_suggestions':
             sessionSuggestions.value = message.data.suggestions
+            delayScrollToBottom()
             break
         case 'session_ai_config':
             sessionAiConfig.value = message.data.ai_config
@@ -145,6 +145,7 @@ const handleSessionMessages = (messages: any[]) => {
             is_playing: false
         }
     })
+    delayScrollToBottom()
 }
 
 // 处理解析请求
@@ -154,6 +155,7 @@ const handleParseRequest = (data: any) => {
     } else if (data.type === 'ai_response') {
         addAssistantMessage(data.data)
     }
+    scrollToBottom()
 }
 
 // 添加用户消息
@@ -200,6 +202,7 @@ const handleStreamResponse = (data: any) => {
     streaming.value = data.is_streaming
     isChatError.value = data.is_chat_error
     streamResponse.value = data.response
+    scrollToBottom()
 }
 
 // 更新正在播放的句子

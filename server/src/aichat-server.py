@@ -361,14 +361,13 @@ class MessageHandler:
             message = json.loads(message_text)
             message_type = message["type"]
 
-            if message_type != "parsed_response":
+            if not message_type.startswith("parsed"):
                 logger.info(f"接收消息: {message}")
 
             handlers = {
                 "user_input": MessageHandler._handle_user_input,
                 "parsed_user_message": MessageHandler._handle_parsed_user_message,
                 "parsed_ai_response": MessageHandler._handle_parsed_ai_response,
-                "parsed_response": MessageHandler._handle_session_parsed_response, ###########################
                 "update_session_ai_config": MessageHandler._handle_update_session_config,
                 "update_message": MessageHandler._handle_update_message,
                 "delete_audio_files": MessageHandler._handle_delete_audio_files,
@@ -512,25 +511,6 @@ class MessageHandler:
         api.update_message(
             message_id, json.dumps({"sentences": sentences}, ensure_ascii=False)
         )
-
-    @staticmethod
-    async def _handle_session_parsed_response(
-        websocket: WebSocket, session_id: int, message: dict
-    ):
-        parsed_type = message["data"]["type"]
-
-        if parsed_type == "user_message":
-            message_id = message["data"]["data"]["message_id"]
-            sentences = message["data"]["data"]["sentences"]
-            api.update_message(
-                message_id, json.dumps({"sentences": sentences}, ensure_ascii=False)
-            )
-        elif parsed_type == "ai_response":
-            message_id = message["data"]["data"]["message_id"]
-            sentences = message["data"]["data"]["sentences"]
-            api.update_message(
-                message_id, json.dumps({"sentences": sentences}, ensure_ascii=False)
-            )
 
     @staticmethod
     async def _handle_update_session_config(

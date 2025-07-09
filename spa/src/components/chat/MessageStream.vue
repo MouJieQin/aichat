@@ -6,7 +6,7 @@
 </template>
 
 <script lang="ts" setup>
-import { defineProps, computed } from 'vue'
+import { defineProps, computed, watch } from 'vue'
 import MarkdownIt from 'markdown-it'
 
 const md = new MarkdownIt()
@@ -30,18 +30,3 @@ const renderedContent = computed(() => {
     return md.render(props.content)
 })
 </script>
-
-<style scoped>
-.message-stream {
-    max-width: clamp(300px, 80vw, 800px);
-    margin: 0 auto 16px;
-    padding: 16px;
-    background-color: #f5f0e6;
-    border-radius: 8px;
-    line-height: 1.6;
-}
-
-.error-message {
-    color: #ff4d4f;
-}
-</style>

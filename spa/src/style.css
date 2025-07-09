@@ -291,6 +291,29 @@ body {
 }
 
 /*  */
+/* 消息流 */
+/*  */
+
+.message-stream {
+    padding: 8px 12px;
+    border-radius: 8px;
+    color: #333333;
+    background-blend-mode: luminosity;
+
+    max-width: clamp(300px, 80vw, 800px);
+    font-size: 16px;
+    line-height: 1.6;
+    padding: 20px;
+    margin: 0 auto;
+    text-align: left;
+    background-color: #f5f0e6;
+}
+
+.error-message {
+    color: #ff4d4f;
+}
+
+/*  */
 /* 建议列表 */
 /*  */
 .suggestions-container {

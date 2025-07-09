@@ -82,13 +82,3 @@ watchEffect(() => {
 })
 
 </script>
-
-<style scoped>
-.chat-messages-container {
-    margin-bottom: 20px;
-}
-
-.chat-message {
-    margin-bottom: 16px;
-}
-</style>

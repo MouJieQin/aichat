@@ -57,6 +57,13 @@ class ChatWebSocketService extends WebSocketService {
         this._send('stop_speech_recognize')
     }
 
+    sendUpdateCursorPosition(originalText: string, cursorPos: number) {
+        this._send('update_cursor_position', {
+            original_text: originalText,
+            cursor_position: cursorPos,
+        })
+    }
+
     // 消息控制
     sendDeleteAudioFiles(messageId: number) {
         this._sendWithMessageId('delete_audio_files', messageId)

@@ -101,7 +101,6 @@ import { ChatWebSocketService } from '@/common/chat-websocket-client'
 const props = defineProps({
     websocket: {
         type: ChatWebSocketService,
-        // type: Object as () => ChatWebSocketService | undefined,
         required: true,
     },
     message: {

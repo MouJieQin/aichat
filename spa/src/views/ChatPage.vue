@@ -1,12 +1,13 @@
 <template>
     <div class="page-content">
         <!-- 聊天消息区域 -->
-        <div>
+        <div class="chat-container">
             <!-- 只有当 webSocket 不为 null 时才渲染 ChatMessages 组件 -->
             <ChatMessages v-if="webSocket" :websocket="webSocket" :messages="chatMessages"
                 @send-message="sendMessage" />
             <!-- 可以添加一个加载状态提示 -->
             <div v-else class="loading">加载中...</div>
+            <SuggestionsList :suggestions="sessionSuggestions" @send="sendMessage" />
         </div>
         <!-- <ChatMessages :websocket="webSocket" :messages="chatMessages" @send-message="sendMessage" /> -->
 
@@ -14,12 +15,11 @@
         <!-- <MessageStream :streaming="streaming" :error="isChatError" :content="streamResponse" /> -->
 
         <!-- 建议消息列表 -->
-        <SuggestionsList :suggestions="sessionSuggestions" @send="sendMessage" />
 
         <!-- 输入区域 -->
-        <!-- <ChatInput :value="inputVal" :can-send="isInputSendable" :is-recognizing="isSpeechRecognizing"
-            @input="handleInputChange" @send="handleSend" @toggle-recognize="toggleSpeechRecognize"
-            @open-config="openAIConfig" /> -->
+        <ChatInput v-if="webSocket" :webSocket="webSocket" :language="sessionAiConfig?.language"
+            :isSpeechRecognizing="isSpeechRecognizing" :sttText="sttText" :sttCursorPosition="sttCursorPosition"
+            @send="sendMessage" @open-config="openAIConfig" />
 
         <!-- AI配置抽屉 -->
         <!-- <AIConfigDrawer v-model="drawerVisible" :config="sessionAiConfig" @update-config="updateSessionAiConfig" /> -->
@@ -53,15 +53,11 @@ const isChatError = ref(false)
 const streamResponse = ref('')
 const sessionAiConfig = ref<AIConfig | null>(null)
 
-// // 消息ID跟踪
-// const maxUserMessageId = ref(-1)
-// const maxAssistantMessageId = ref(-1)
-
 // 输入状态
-const inputVal = ref('')
-const isInputSendable = ref(false)
 const isSpeechRecognizing = ref(false)
-const cursorPosition = ref(0)
+const sttText = ref('')
+const sttCursorPosition = ref(0)
+// const cursorPosition = ref(0)
 
 // WebSocket连接
 const webSocket = ref<ChatWebSocketService | null>(null)
@@ -242,12 +238,6 @@ const removeMessage = (data: any) => {
     }
 }
 
-// 输入相关处理
-const handleInputChange = (value: string) => {
-    inputVal.value = value
-    isInputSendable.value = value.trim() !== ''
-}
-
 // 发送消息
 const sendMessage = (text: string) => {
     if (!text.trim() || !chatId.value) return
@@ -259,29 +249,11 @@ const sendMessage = (text: string) => {
     scrollToBottom()
 }
 
-// 处理发送事件
-const handleSend = () => {
-    if (!isInputSendable.value) return
-    sendMessage(inputVal.value)
-    inputVal.value = ''
-    isInputSendable.value = false
-}
-
-// 语音识别相关
-const toggleSpeechRecognize = () => {
-    if (isSpeechRecognizing.value) {
-        webSocket?.value?.sendStopSpeechRecognition()
-    } else {
-        const lang = mapLanguageCode(sessionAiConfig.value?.language)
-        webSocket?.value?.sendStartSpeechRecognition(inputVal.value, cursorPosition.value, lang)
-    }
-}
-
 // 处理语音识别中消息
 const handleSpeechRecognizing = (data: any) => {
     isSpeechRecognizing.value = true
-    inputVal.value = data.stt_text
-    isInputSendable.value = data.stt_text.trim() !== ''
+    sttText.value = data.stt_text
+    sttCursorPosition.value = data.cursor_position
 }
 
 // AI配置相关

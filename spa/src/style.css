@@ -20,6 +20,7 @@ body {
 
 :root {
     --main-content-left-margin: 300px;
+    --fixed-input-area-padding-top: 100px;
 }
 
 #app {
@@ -117,6 +118,22 @@ body {
     /* 禁用鼠标悬停效果，否则无法激活其它选词工具，如豆包 */
     /* cursor: pointer; */
     user-select: auto;
+}
+
+/*  */
+/* 消息容器 */
+/*  */
+
+.chat-container {
+    margin-bottom: calc(var(--fixed-input-area-padding-top) + 100px);
+}
+
+.chat-messages-container {
+    margin-bottom: 20px;
+}
+
+.chat-message {
+    margin-bottom: 16px;
 }
 
 /*  */
@@ -278,13 +295,33 @@ body {
 }
 
 .suggestion-item {
-    margin-bottom: 8px;
+    margin-bottom: 10px;
 }
 
 .suggestion-btn {
     justify-content: space-between;
     border-radius: 12px !important;
     text-align: left;
+}
+
+/*  */
+/* 固定输入区域 */
+/*  */
+.fixed-input-area {
+    position: fixed;
+    bottom: 0px;
+    padding-top: var(--fixed-input-area-padding-top);
+    z-index: 100;
+    left: calc(var(--main-content-left-margin) + 1px);
+    right: 0;
+    background-color: var(--el-bg-color);
+}
+
+.input-container {
+    max-width: clamp(300px, 80vw, 800px);
+    width: 100%;
+    position: relative;
+    margin: 0 auto;
 }
 
 /* 向上扩展的关键 CSS */
@@ -303,6 +340,37 @@ body {
     box-shadow: var(--el-box-shadow-light);
 }
 
+.input-container .button-group {
+    padding: 5px 5px 20px 5px;
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+}
+
+.input-container .button-group .control-btn {
+    font-size: 20px;
+}
+
+.input-container .button-group .send-btn {
+    font-size: 20px;
+}
+
+/*  */
+/* 上侧抽屉 */
+/*  */
+
 .drawer-header {
     height: 16px;
+}
+
+.form-wrapper {
+    width: 100%;
+    max-width: 40vw;
+    /* 限制表单最大宽度 */
+}
+
+/* 如果需要表单项左对齐排列，可以添加以下样式 */
+.el-form-item {
+    justify-content: flex-start;
+    /* 确保表单项左对齐 */
 }

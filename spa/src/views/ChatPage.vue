@@ -3,27 +3,26 @@
         <!-- 聊天消息区域 -->
         <div class="chat-container">
             <!-- 只有当 webSocket 不为 null 时才渲染 ChatMessages 组件 -->
-            <ChatMessages v-if="webSocket" :websocket="webSocket" :messages="chatMessages"
+            <ChatMessages v-if="webSocket !== null" :websocket="webSocket" :messages="chatMessages"
                 @send-message="sendMessage" />
             <!-- 可以添加一个加载状态提示 -->
             <div v-else class="loading">加载中...</div>
+            <!-- 建议消息列表 -->
             <SuggestionsList :suggestions="sessionSuggestions" @send="sendMessage" />
         </div>
-        <!-- <ChatMessages :websocket="webSocket" :messages="chatMessages" @send-message="sendMessage" /> -->
 
         <!-- 流式响应展示 -->
         <!-- <MessageStream :streaming="streaming" :error="isChatError" :content="streamResponse" /> -->
 
-        <!-- 建议消息列表 -->
-
         <!-- 输入区域 -->
-        <ChatInput v-if="webSocket" :webSocket="webSocket" :language="sessionAiConfig?.language"
+        <ChatInput v-if="webSocket !== null" :webSocket="webSocket" :language="sessionAiConfig?.language"
             :isSpeechRecognizing="isSpeechRecognizing" :sttText="sttText" :sttCursorPosition="sttCursorPosition"
             @send="sendMessage" @open-config="openAIConfig" />
 
-        <!-- AI配置抽屉 -->
-        <!-- <AIConfigDrawer v-model="drawerVisible" :config="sessionAiConfig" @update-config="updateSessionAiConfig" /> -->
     </div>
+    <!-- AI配置抽屉 -->
+    <AIConfigDrawer v-if="sessionAiConfig !== null" v-model="drawerVisible" :config="sessionAiConfig"
+        @update-config="updateSessionAiConfig" />
 </template>
 
 <script lang="ts" setup>
@@ -262,16 +261,8 @@ const openAIConfig = () => {
 }
 
 const updateSessionAiConfig = (config: AIConfig) => {
-    webSocket?.value?.sendUpdateSessionConfig(chatId.value, config)
+    webSocket?.value?.sendUpdateSessionConfig(config)
     drawerVisible.value = false
 }
 
 </script>
-
-<style scoped>
-.page-content {
-    padding: 20px;
-    max-width: 1200px;
-    margin: 0 auto;
-}
-</style>

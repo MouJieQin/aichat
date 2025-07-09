@@ -121,6 +121,16 @@ body {
 }
 
 /*  */
+/* Chat Page */
+/*  */
+
+.page-content {
+    padding: 20px;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+/*  */
 /* 消息容器 */
 /*  */
 
@@ -356,21 +366,26 @@ body {
 }
 
 /*  */
-/* 上侧抽屉 */
+/* 抽屉 */
 /*  */
+
+.config-form {
+    margin-top: 20px;
+}
+
+.el-form-item {
+    /* justify-content: flex-start; */
+    margin-bottom: 16px;
+}
+
+.config-form .el-input {
+    max-width: 600px;
+}
+
+.config-form .el-form-item {
+    max-width: 600px;
+}
 
 .drawer-header {
     height: 16px;
-}
-
-.form-wrapper {
-    width: 100%;
-    max-width: 40vw;
-    /* 限制表单最大宽度 */
-}
-
-/* 如果需要表单项左对齐排列，可以添加以下样式 */
-.el-form-item {
-    justify-content: flex-start;
-    /* 确保表单项左对齐 */
 }

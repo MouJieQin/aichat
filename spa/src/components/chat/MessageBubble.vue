@@ -8,7 +8,7 @@
             </div>
 
             <!-- 编辑模式 -->
-            <div v-if="isEditing" class="edit-container">
+            <div v-if="isEditing" class="edit-input-container">
                 <el-input v-model="editContent" type="textarea" autosize placeholder="编辑消息内容..." />
             </div>
 
@@ -17,7 +17,7 @@
         </div>
 
         <!-- 操作按钮组 -->
-        <div class="controls-container" :class="messageRoleClass">
+        <div class="controls-container" :class="controlRoleClass">
             <!-- 编辑状态按钮组 -->
             <el-button-group v-if="isEditing" class="edit-controls">
                 <el-button :icon="Close" text @click="cancelEdit" tooltip="取消" />
@@ -38,7 +38,6 @@
 
                 <!-- 复制按钮 -->
                 <el-button :icon="copySuccess ? Check : CopyDocument" text @click="handleCopy" tooltip="复制文本" />
-                <!-- <el-button :icon="copySuccess ? 'Check' : 'CopyDocument'" text @click="handleCopy" tooltip="复制文本" /> -->
 
                 <!-- 重新生成按钮 -->
                 <el-button v-if="showRefreshButton" :icon="Refresh" text @click="$emit('regenerate')" tooltip="重新生成" />
@@ -67,6 +66,7 @@
                     </template>
                 </el-dropdown>
             </el-button-group>
+
         </div>
 
         <!-- 删除确认弹窗 -->
@@ -101,6 +101,7 @@ import { ChatWebSocketService } from '@/common/chat-websocket-client'
 const props = defineProps({
     websocket: {
         type: ChatWebSocketService,
+        // type: Object as () => ChatWebSocketService | undefined,
         required: true,
     },
     message: {
@@ -133,6 +134,12 @@ const messageRoleClass = computed(() => ({
     'user-message': props.message.role === 'user',
     'assistant-message': props.message.role === 'assistant',
     'system-message': props.message.role === 'system'
+}))
+
+const controlRoleClass = computed(() => ({
+    'user-controls': props.message.role === 'user',
+    'assistant-controls': props.message.role === 'assistant',
+    'system-controls': props.message.role === 'system'
 }))
 
 // 进入编辑模式
@@ -230,88 +237,3 @@ const handleSentenceClick = (e: MouseEvent) => {
     }
 }
 </script>
-
-<style scoped>
-.message-bubble {
-    position: relative;
-    margin-bottom: 16px;
-}
-
-/* 消息内容样式 */
-.message-content {
-    padding: 12px 16px;
-    border-radius: 8px;
-    line-height: 1.6;
-    transition: all 0.2s;
-}
-
-.user-message {
-    background-color: #d3eafd;
-    margin-left: auto;
-    max-width: clamp(300px, 80vw, 800px);
-}
-
-.assistant-message {
-    background-color: #f5f0e6;
-    margin-right: auto;
-    max-width: clamp(300px, 80vw, 800px);
-}
-
-.system-message {
-    background-color: #e5eaf3;
-    margin: 0 auto;
-    max-width: clamp(300px, 80vw, 800px);
-}
-
-/* 时间显示样式 */
-.message-time {
-    font-size: 12px;
-    color: #666;
-    text-align: right;
-    margin-top: 4px;
-}
-
-/* 编辑模式样式 */
-.edit-container {
-    width: 100%;
-}
-
-/* 控制按钮区域样式 */
-.controls-container {
-    display: flex;
-    gap: 4px;
-    margin-top: 4px;
-    transition: opacity 0.2s;
-}
-
-.user-message .controls-container {
-    justify-content: flex-end;
-    padding-right: 8px;
-}
-
-.assistant-message .controls-container,
-.system-message .controls-container {
-    justify-content: flex-start;
-    padding-left: 8px;
-}
-
-/* 按钮样式优化 */
-.el-button-group {
-    gap: 4px;
-}
-
-.el-button {
-    transition: all 0.15s;
-}
-
-.el-button:hover {
-    background-color: rgba(0, 0, 0, 0.05);
-}
-
-/* 句子高亮样式（播放中） */
-.sentence-playing {
-    background-color: rgba(255, 255, 0, 0.2);
-    border-radius: 4px;
-    padding: 0 2px;
-}
-</style>

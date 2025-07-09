@@ -55,6 +55,27 @@ body {
     transition: margin-left 0.3s;
 }
 
+.el-menu {
+    /* border-right: none !important; */
+    border: none !important;
+}
+
+.el-sub-menu__title {
+    padding-left: 2px !important;
+    border-radius: 10px;
+    margin-right: 20px;
+}
+
+.el-menu-item {
+    border-radius: 10px;
+    padding-left: 2px !important;
+    /* margin-right: 20px; */
+}
+
+.el-button {
+    text-align: left !important;
+}
+
 .custom-menu-item {
     position: relative;
 }
@@ -98,6 +119,128 @@ body {
     user-select: auto;
 }
 
+/*  */
+/* Message bubble */
+/*  */
+.message-bubble {
+    position: relative;
+    margin-bottom: 16px;
+}
+
+/* 消息内容样式 */
+.message-content {
+    padding: 12px 16px;
+    border-radius: 8px;
+    color: #333333;
+    line-height: 1.6;
+    transition: all 0.2s;
+}
+
+.system-message {
+    max-width: clamp(300px, 80vw, 800px);
+    font-size: 16px;
+    background-color: #e5eaf3;
+    text-align: left;
+    margin: 0 auto;
+}
+
+.user-message {
+    max-width: clamp(300px, 80vw, 800px);
+    font-size: 16px;
+    background-color: #d3eafd;
+    text-align: left;
+    margin-left: auto;
+}
+
+.assistant-message {
+    max-width: clamp(300px, 80vw, 800px);
+    font-size: 16px;
+    line-height: 1.6;
+    background-color: #f5f0e6;
+    text-align: left;
+    margin: 0 auto;
+}
+
+/* 基础护眼背景 */
+.fatigue-reducing-bg {
+    background-color: #f5f0e6;
+    /* 米白色 */
+    color: #333333;
+    /* 深灰色文字 */
+    /* 动态亮度调节 */
+    background-blend-mode: luminosity;
+    filter: brightness(90%);
+}
+
+/* 夜间模式 */
+.night-mode {
+    background-color: #222222;
+    /* 深灰色 */
+    color: #e0e0e0;
+    /* 浅灰色文字 */
+    /* 降低对比度至7:1 */
+    mix-blend-mode: difference;
+}
+
+/* 时间显示样式 */
+.message-time {
+    font-size: 12px;
+    color: #666;
+    text-align: right;
+}
+
+.edit-input-container .el-textarea__inner {
+    color: #333333;
+    font-size: 16px;
+    line-height: 1.6;
+    padding: 8px 12px !important;
+}
+
+/* 控制按钮区域样式 */
+.controls-container {
+    max-width: clamp(300px, 80vw, 800px);
+    display: flex;
+    gap: 4px;
+    transition: opacity 0.2s;
+}
+
+.user-controls {
+    justify-content: flex-end;
+    margin-top: 8px;
+    margin-bottom: 8px;
+}
+
+.user-controls .edit-controls {
+    position: absolute;
+    right: 0;
+}
+
+.assistant-controls,
+.system-controls {
+    justify-content: flex-start;
+    margin: 8px auto;
+}
+
+/* 按钮样式优化 */
+.el-button-group {
+    gap: 4px;
+}
+
+.el-button {
+    transition: all 0.15s;
+}
+
+.el-button:hover {
+    background-color: rgba(0, 0, 0, 0.05);
+}
+
+/* 句子高亮样式（播放中） */
+/* .sentence-playing {
+    background-color: rgba(255, 255, 0, 0.2);
+    border-radius: 4px;
+    padding: 0 2px;
+} */
+
 /* Custom selection color for .hover-highlight */
 .hover-highlight::selection {
     background: #409eff;
@@ -119,27 +262,6 @@ body {
     transition: background-color 0.3s ease;
 }
 
-.el-menu {
-    /* border-right: none !important; */
-    border: none !important;
-}
-
-.el-sub-menu__title {
-    padding-left: 2px !important;
-    border-radius: 10px;
-    margin-right: 20px;
-}
-
-.el-menu-item {
-    border-radius: 10px;
-    padding-left: 2px !important;
-    /* margin-right: 20px; */
-}
-
-.el-button {
-    text-align: left !important;
-}
-
 /* 向上扩展的关键 CSS */
 .input-container .el-textarea__inner {
     position: absolute !important;
@@ -154,13 +276,6 @@ body {
     border-radius: 15px;
     border: 1px solid #909399;
     box-shadow: var(--el-box-shadow-light);
-}
-
-.edit-input-container .el-textarea__inner {
-    color: #333333;
-    font-size: 16px;
-    line-height: 1.6;
-    padding: 8px 12px !important;
 }
 
 .drawer-header {

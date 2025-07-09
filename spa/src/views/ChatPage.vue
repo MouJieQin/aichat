@@ -64,7 +64,6 @@ const isSpeechRecognizing = ref(false)
 const cursorPosition = ref(0)
 
 // WebSocket连接
-// let webSocket: ChatWebSocketService | null = null
 const webSocket = ref<ChatWebSocketService | null>(null)
 
 // 初始化
@@ -209,6 +208,13 @@ const handleStreamResponse = (data: any) => {
 
 // 更新正在播放的句子
 const updatePlayingSentence = (data: any) => {
+    const message_id = data.message_id
+    const sentence_id = data.sentence_id
+    const message = chatMessages.value.find(msg => msg.message_id === message_id)
+    if (message) {
+        message.is_playing = sentence_id !== -1
+    }
+    console.log("the_sentence_playing:", message_id, sentence_id)
     highlightPlayingSentence(data.message_id, data.sentence_id)
 }
 

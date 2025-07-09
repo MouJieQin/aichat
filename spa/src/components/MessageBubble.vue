@@ -158,6 +158,7 @@ const handleRegenerate = () => emits('regenerate')
 </script>
 
 <style scoped>
+
 .message-button-group.user {
     max-width: clamp(300px, 80vw, 800px);
     text-align: right;
@@ -206,8 +207,8 @@ const handleRegenerate = () => emits('regenerate')
 
 .message.user {
     max-width: clamp(300px, 80vw, 800px);
-    text-align: left;
     background-color: #d3eafd;
+    text-align: left;
     margin-left: auto;
     margin-right: 30px;
     margin-bottom: 12px;

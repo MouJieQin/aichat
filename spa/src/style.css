@@ -206,6 +206,7 @@ body {
 
 .user-controls {
     justify-content: flex-end;
+    margin-left: auto;
     margin-top: 8px;
     margin-bottom: 8px;
 }
@@ -260,6 +261,30 @@ body {
 .sentence-playing {
     background-color: rgb(102.2, 177.4, 255);
     transition: background-color 0.3s ease;
+}
+
+/*  */
+/* 建议列表 */
+/*  */
+.suggestions-container {
+    padding: 8px 0px;
+    color: #333333;
+    background-blend-mode: luminosity;
+    max-width: clamp(300px, 80vw, 800px);
+    font-size: 16px;
+    line-height: 1.6;
+    margin: 0 auto;
+    text-align: left;
+}
+
+.suggestion-item {
+    margin-bottom: 8px;
+}
+
+.suggestion-btn {
+    justify-content: space-between;
+    border-radius: 12px !important;
+    text-align: left;
 }
 
 /* 向上扩展的关键 CSS */

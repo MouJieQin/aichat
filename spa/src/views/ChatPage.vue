@@ -14,7 +14,7 @@
         <!-- <MessageStream :streaming="streaming" :error="isChatError" :content="streamResponse" /> -->
 
         <!-- 建议消息列表 -->
-        <!-- <SuggestionsList :suggestions="sessionSuggestions" @send="sendMessage" /> -->
+        <SuggestionsList :suggestions="sessionSuggestions" @send="sendMessage" />
 
         <!-- 输入区域 -->
         <!-- <ChatInput :value="inputVal" :can-send="isInputSendable" :is-recognizing="isSpeechRecognizing"
@@ -113,6 +113,7 @@ const handleWebSocketMessage = (message: any) => {
             break
         case 'session_ai_config':
             sessionAiConfig.value = message.data.ai_config
+            sessionSuggestions.value = message.data.ai_config.suggestions
             break
         case 'the_sentence_playing':
             updatePlayingSentence(message.data)
@@ -250,7 +251,7 @@ const handleInputChange = (value: string) => {
 // 发送消息
 const sendMessage = (text: string) => {
     if (!text.trim() || !chatId.value) return
-    webSocket?.value?.sendUserInput(chatId.value, text)
+    webSocket?.value?.sendUserInput(text)
     if (isSpeechRecognizing.value) {
         webSocket?.value?.sendStopSpeechRecognition()
     }

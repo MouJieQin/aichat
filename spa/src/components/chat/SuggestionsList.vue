@@ -24,21 +24,3 @@ const props = defineProps({
 
 const emits = defineEmits(['send'])
 </script>
-
-<style scoped>
-.suggestions-container {
-    max-width: clamp(300px, 80vw, 800px);
-    margin: 0 auto 20px;
-}
-
-.suggestion-item {
-    margin-bottom: 8px;
-}
-
-.suggestion-btn {
-    width: 100%;
-    justify-content: space-between;
-    border-radius: 8px;
-    text-align: left;
-}
-</style>

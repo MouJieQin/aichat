@@ -846,7 +846,7 @@ if __name__ == "__main__":
 
     # 启动服务器
     uvicorn.run(
-        app="aichat-server:app",
+        app="voichai-server:app",
         host="localhost",
         port=4999,
         reload=False,

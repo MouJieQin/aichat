@@ -7,3 +7,6 @@ server/src/configure.json
 **/*.db
 **/*.sql
 **/*.bk
+
+electron/dist_electron
+*.flag

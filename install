@@ -1,0 +1,95 @@
+#!/bin/bash --login
+
+VOICHAI_PATH=$(
+    cd $(dirname "$0")
+    pwd
+)
+cd "$VOICHAI_PATH"
+
+VOICHAI_INSTALL_CLOSE_FLAG_PATH="/tmp/voichai_install_close.flag"
+
+rm $VOICHAI_INSTALL_CLOSE_FLAG_PATH 2>&1 >/dev/null
+
+handleExit() {
+    echo $1 >$VOICHAI_INSTALL_CLOSE_FLAG_PATH
+    exit $1
+}
+
+trap 'handleExit 1' EXIT
+
+if [ -f successfully_installed.flag ]; then
+    echo "Successfully installed before, If you want to reinstall, just remove $VOICHAI_PATH/successfully_installed.flag"
+    handleExit 0
+fi
+
+installIfNotExist() {
+    cmd="$1"
+    if ! which "$cmd"; then
+        export HOMEBREW_NO_AUTO_UPDATE=1
+        if ! brew install "$cmd"; then
+            echo "Error: Cannot install $cmd." 1>&2
+            handleExit 1
+        fi
+    fi
+}
+
+installNpmIfNotExist() {
+    if ! which npm; then
+        installIfNotExist nvm
+        mkdir -p ~/.nvm
+        export NVM_DIR="$HOME/.nvm"
+        [ -s "/usr/local/opt/nvm/nvm.sh" ] && \. "/usr/local/opt/nvm/nvm.sh"                                       # This loads nvm
+        [ -s "/usr/local/opt/nvm/etc/bash_completion.d/nvm" ] && \. "/usr/local/opt/nvm/etc/bash_completion.d/nvm" # This loads nvm bash_completion
+        if ! nvm install stable; then
+            echo "Error: Cannot install node/npm." 1>&2
+            handleExit 1
+        fi
+        ln -s "$(which npm)" /usr/local/bin/npm
+        ln -s "$(which node)" /usr/local/bin/node
+    fi
+}
+
+main() {
+    if ! which 'brew'; then
+        if ! /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install.sh)"; then
+            echo "Error: Cannot install brew" 1>&2
+            handleExit 1
+        fi
+    fi
+
+    # installNpmIfNotExist
+    installIfNotExist "node"
+
+    cd spa
+    if ! npm install; then
+        echo "Error: npm install failed!" 1>&2
+        handleExit 1
+    fi
+    cd -
+
+    if ! which 'python3.9'; then
+        if ! brew install python@3.9; then
+            echo "Error: Cannot install python@3.9" 1>&2
+            handleExit 1
+        fi
+    fi
+
+    cd server/src
+    if ! python3.9 -m pip install -r requirements.txt; then
+        echo "Error: Pythone cannot install all lib in the requirements.txt" 1>&2
+        handleExit 1
+    fi
+    cd -
+
+    echo
+    echo
+    echo
+    echo "Install successfully!"
+    echo "To start voichai by running:"
+    echo "$VOICHAI_PATH/shell/voichai-start"
+
+    touch successfully_installed.flag
+    handleExit 0
+}
+
+main

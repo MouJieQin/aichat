@@ -1,0 +1,33 @@
+#!/bin/bash --login
+
+ps -ef | grep voichai-server.py | grep -v grep | awk '{print $2}' | xargs -I {} kill -2 {}
+ps -ef | grep voichai-client | grep -v grep | awk '{print $2}' | xargs -I {} kill -2 {}
+ps -ef | grep node | grep -i voichai | grep -v grep | awk '{print $2}' | xargs -I {} kill -2 {}
+
+TOTAL=5
+count=0
+while ps -ef | grep voichai-server.py | grep -v grep; do
+    ((count++))
+    if [ $count -ge $TOTAL ]; then
+        ps -ef | grep voichai-server.py | grep -v grep | awk '{print $2}' | xargs -I {} kill -9 {}
+    fi
+    sleep 1
+done
+
+count=0
+while ps -ef | grep voichai-client | grep -v grep; do
+    ((count++))
+    if [ $count -ge $TOTAL ]; then
+        ps -ef | grep voichai-client | grep -v grep | awk '{print $2}' | xargs -I {} kill -9 {}
+    fi
+    sleep 1
+done
+
+count=0
+while ps -ef | grep node | grep -i voichai | grep -v grep; do
+    ((count++))
+    if [ $count -ge $TOTAL ]; then
+        ps -ef | grep node | grep -i voichai | grep -v grep | awk '{print $2}' | xargs -I {} kill -9 {}
+    fi
+    sleep 1
+done

@@ -1,5 +1,5 @@
 **/__pycache__/**
-spa/node_modules/**
+**/node_modules/**
 spa/.vite/**
 server/src/data/
 server/src/logs/
@@ -7,6 +7,8 @@ server/src/configure.json
 **/*.db
 **/*.sql
 **/*.bk
+**/*.log
+**/.DS_Store
 
 electron/dist_electron
 *.flag

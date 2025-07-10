@@ -117,7 +117,7 @@ const handleWebSocketMessage = (message: any) => {
             updateMessageContent(message.data)
             break
         case 'delete_message':
-            removeMessage(message.data.message_id)
+            removeMessage(message.data)
             break
         case 'speech_recognizing':
             handleSpeechRecognizing(message.data)

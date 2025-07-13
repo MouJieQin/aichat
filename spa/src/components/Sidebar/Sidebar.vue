@@ -1,8 +1,10 @@
 <!-- src/components/Sidebar/Sidebar.vue -->
 <template>
+
     <div class="sidebar" @click="handleSidebarClick">
         <el-menu :default-active="activeMenu" :collapse="isCollapse" @open="handleOpen" @close="handleClose"
             class="sidebar-menu">
+
             <el-menu-item index="collapse" @click="toggleCollapse" style="padding-left: 2px;">
                 <el-icon v-show="!isCollapse">
                     <Fold />
@@ -10,7 +12,7 @@
                 <el-icon v-show="isCollapse">
                     <Expand />
                 </el-icon>
-                <span>AI Chat</span>
+                <span>Voichai</span>
             </el-menu-item>
 
             <el-menu-item index="new_chat" @click="createNewSession" style="padding-left: 2px;">

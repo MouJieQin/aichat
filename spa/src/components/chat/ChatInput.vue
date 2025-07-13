@@ -5,9 +5,17 @@
                 placeholder="输入对话内容（Shift + Enter 发送）" :autosize="{ minRows: 2, maxRows: 9 }"
                 @input="updateCursorPosition" @keydown="handleKeyDown" @click="updateCursorPosition" />
             <div class="button-group">
+
                 <el-button :icon="MoreFilled" text @click="$emit('open-config')" class="control-btn" />
-                <el-button :icon="Microphone" :type="props.isSpeechRecognizing ? 'success' : ''" text
-                    @click="toggleSpeechRecognize" class="control-btn" />
+                <!-- 麦克风按钮 -->
+                <div class="microphone-container" :class="{ 'active': props.isSpeechRecognizing }">
+                    <el-button :icon="Microphone" :type="props.isSpeechRecognizing ? 'success' : ''" text 
+                         @click="toggleSpeechRecognize" class="control-btn" />
+
+                    <!-- 语音识别激活时显示加载动画 -->
+                    <puffLoader v-if="props.isSpeechRecognizing" class="puffLoader" />
+                </div>
+
                 <el-button :icon="Promotion" :type="isInputSendable ? 'primary' : 'info'" circle
                     :disabled="!isInputSendable" @click="handleSend" class="send-btn" />
             </div>
@@ -20,7 +28,7 @@ import { ref, watch, onMounted, nextTick } from 'vue'
 import { MoreFilled, Microphone, Promotion } from '@element-plus/icons-vue'
 import { ChatWebSocketService } from '@/common/chat-websocket-client'
 import { mapLanguageCode } from '@/common/utils'
-
+import puffLoader from '@/components/Svgs/puffLoader.vue'
 
 const props = defineProps({
     webSocket: {
@@ -185,3 +193,4 @@ const adjustFixedInputAreaPaddingTop = () => {
     }
 }
 </script>
+

@@ -374,10 +374,29 @@ body {
 }
 
 .input-container .button-group {
-    padding: 5px 5px 20px 5px;
+    padding: 5px 5px 10px 5px;
     display: flex;
     justify-content: flex-end;
     gap: 8px;
+}
+
+.microphone-container {
+    display: inline-block;
+    position: relative;
+}
+
+.microphone-container .control-btn {
+    position: relative;
+    z-index: 10;
+}
+
+.microphone-container .puffLoader {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 5;
+    opacity: 0.5;
 }
 
 .input-container .button-group .control-btn {

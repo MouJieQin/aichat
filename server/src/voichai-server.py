@@ -123,6 +123,18 @@ class SessionManager:
             del session_websockets[session_id][key]
 
     @staticmethod
+    async def broadcast_session_title(session_id: int):
+        """向特定会话的所有WebSocket连接广播标题"""
+        title = api.get_session_title(session_id)
+        msg = {
+            "type": "session_title",
+            "data": {
+                "title": title,
+            },
+        }
+        await SessionManager.broadcast_session(session_id, json.dumps(msg))
+
+    @staticmethod
     async def update_title(session_id: int, title: str):
         """更新会话标题并广播"""
         api.update_session_title(session_id, title)
@@ -134,6 +146,7 @@ class SessionManager:
             },
         }
         await SessionManager.broadcast_spa(json.dumps(msg))
+        await SessionManager.broadcast_session_title(session_id)
 
     @staticmethod
     async def send_all_sessions():
@@ -821,8 +834,9 @@ async def session_websocket_endpoint(websocket: WebSocket, clientID: int):
     session_websockets[session_id][connection_id] = websocket
 
     try:
-        await SessionManager.send_session_messages(websocket, session_id)
+        await SessionManager.broadcast_session_title(session_id)
         await SessionManager.send_session_config(session_id, websocket)
+        await SessionManager.send_session_messages(websocket, session_id)
 
         while True:
             data = await websocket.receive_text()

@@ -196,7 +196,6 @@ const navigateTo = (path: string) => {
 
 // 高亮当前活动项
 const highlightActiveItem = () => {
-    const oldPath = route.path
     const item = document.getElementById(`chat-item-${route.path}`)
     if (item) {
         item.style.color = 'rgb(24, 144, 255)'

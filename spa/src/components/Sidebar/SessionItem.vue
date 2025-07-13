@@ -32,6 +32,7 @@ import SessionContextMenu from '@/components/Sidebar/SessionContextMenu.vue'
 import { ChatDotSquare, More } from '@element-plus/icons-vue'
 import { LuPin } from 'vue-icons-plus/lu'
 import { WebSocketService } from '@/common/websocket-client'
+import { on } from 'events'
 
 const props = defineProps({
     session: {

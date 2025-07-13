@@ -46,6 +46,7 @@ const drawerVisible = ref(false)
 // 聊天数据状态
 const chatMessages = ref<Message[]>([])
 const sessionSuggestions = ref<string[]>([])
+const sessionTitle = ref('')
 const streaming = ref(false)
 const isChatError = ref(false)
 const streamResponse = ref('')
@@ -67,6 +68,7 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
     webSocket?.value?.close()
+    document.title = 'Voichai'
 })
 
 // 监听路由变化
@@ -93,6 +95,10 @@ const setupWebSocket = () => {
 // 处理WebSocket消息
 const handleWebSocketMessage = (message: any) => {
     switch (message.type) {
+        case 'session_title':
+            sessionTitle.value = message.data.title
+            document.title = sessionTitle.value || 'Voichai'
+            break
         case 'session_messages':
             handleSessionMessages(message.data.messages)
             break

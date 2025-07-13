@@ -877,9 +877,9 @@ async def session_websocket_endpoint(websocket: WebSocket, clientID: int):
     session_websockets[session_id][connection_id] = websocket
 
     try:
-        await SessionManager.broadcast_session_title(session_id)
-        await SessionManager.send_session_config(session_id, websocket)
         await SessionManager.send_session_messages(websocket, session_id)
+        await SessionManager.send_session_config(session_id, websocket)
+        await SessionManager.broadcast_session_title(session_id)
 
         while True:
             data = await websocket.receive_text()

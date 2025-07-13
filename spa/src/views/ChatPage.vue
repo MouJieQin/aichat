@@ -144,23 +144,23 @@ const handleWebSocketMessage = (message: any) => {
 
 // 处理会话消息
 const handleSessionMessages = (messages: any[]) => {
+    const receivedTime = new Date().getTime()
     chatMessages.value = messages.map(msg => {
         // const raw_text = msg.raw_text || ''
-        // const result = processMarkdown(msg.raw_text, msg.id)
+        // const result = processMarkdown(raw_text, msg.id)
         const parsedText = msg.parsed_text || ''
-        const paredResult = JSON.parse(parsedText)
-        const html = paredResult.html || ''
-        const sentences = paredResult.sentences || []
+        const result = JSON.parse(parsedText)
         return {
             message_id: msg.id,
             raw_text: msg.raw_text,
-            processed_html: html,
-            sentences: sentences,
+            processed_html: result.html,
+            sentences: result.sentences,
             time: msg.timestamp,
             role: msg.role,
             is_playing: false
         }
     })
+    console.log("Parsed messages time in milliseconds:", new Date().getTime() - receivedTime)
     delayScrollToBottom()
 }
 

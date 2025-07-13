@@ -12,7 +12,7 @@
                 <el-icon v-show="isCollapse">
                     <Expand />
                 </el-icon>
-                <span>Voichai</span>
+                <span style="font-weight: bold;">Voichai</span>
             </el-menu-item>
 
             <el-menu-item index="new_chat" @click="createNewSession" style="padding-left: 2px;">
@@ -179,6 +179,7 @@ const handleSidebarClick = () => {
                 sidebarWidth.value = newSidebarWidth
                 document.documentElement.style.setProperty('--main-content-left-margin', sidebarWidth.value)
             }
+            highlightActiveItem()
         }, 500)
     }
 }
@@ -194,7 +195,16 @@ const navigateTo = (path: string) => {
 }
 
 // 高亮当前活动项
-const highlightActiveItem = (newPath: string, oldPath: string) => {
+const highlightActiveItem = () => {
+    const oldPath = route.path
+    const item = document.getElementById(`chat-item-${route.path}`)
+    if (item) {
+        item.style.color = 'rgb(24, 144, 255)'
+        item.style.fontWeight = 'bold'
+    }
+}
+
+const switchHighlightActiveItem = (newPath: string, oldPath: string) => {
     const newItem = document.getElementById(`chat-item-${newPath}`)
     const oldItem = document.getElementById(`chat-item-${oldPath}`)
 
@@ -215,7 +225,7 @@ const activeMenu = computed(() => {
 })
 
 // 监听路由变化
-watch(activeMenu, highlightActiveItem)
+watch(activeMenu, switchHighlightActiveItem)
 
 // 菜单项数据
 const navigatorItems = ref([

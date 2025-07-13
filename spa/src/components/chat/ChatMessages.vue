@@ -10,7 +10,7 @@
 
 <script lang="ts" setup>
 import { ref, defineProps, defineEmits, watchEffect } from 'vue'
-import MessageBubble from '@/components/chat/MessageBubble.vue'
+import MessageBubble from '@/components/Chat/MessageBubble.vue'
 import { processMarkdown } from '@/common/markdown-processor'
 import { ChatWebSocketService } from '@/common/chat-websocket-client'
 import { Message } from '@/common/type-interface'
@@ -53,7 +53,7 @@ const handleRegenerate = () => {
 const handleUpdateMessage = (messageId: number, rawText: string) => {
     if (messageId !== maxUserMessageId.value) {
         const result = processMarkdown(rawText, messageId)
-        props.websocket.sendUpdateMessage(messageId, rawText, result.sentences)
+        props.websocket.sendUpdateMessage(messageId, rawText, result.html, result.sentences)
     } else {
         if (maxAssistantMessageId.value > maxUserMessageId.value) {
             deleteMessage(maxAssistantMessageId.value)

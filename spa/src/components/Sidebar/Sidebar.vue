@@ -54,6 +54,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { Plus, Expand, Fold, Location, Clock } from '@element-plus/icons-vue'
 import SessionList from '@/components/Sidebar/SessionList.vue'
 import { useWebSocket } from '@/common/websocket-client'
+import { processMarkdown } from '@/common/markdown-processor'
 
 const route = useRoute()
 const router = useRouter()
@@ -70,6 +71,9 @@ webSocket.handleMessage = (message: any) => {
 // 处理WebSocket消息
 const handleWebSocketMessage = (message: any) => {
     switch (message.type) {
+        case 'parse_markdown':
+            parseMarkdown(message.data)
+            break
         case 'all_sessions':
             loadSessions(message.data.sessions)
             break
@@ -86,6 +90,20 @@ const handleWebSocketMessage = (message: any) => {
             addNewSession(message.data)
             break
     }
+}
+
+const parseMarkdown = (sessionData: any) => {
+    const messageId = sessionData.message_id
+    const raw_text = sessionData.raw_text
+    const result = processMarkdown(raw_text, messageId)
+    webSocket.send({
+        type: 'parse_markdown',
+        data: {
+            html: result.html,
+            sentences: result.sentences,
+            ...sessionData
+        }
+    })
 }
 
 // 加载会话数据

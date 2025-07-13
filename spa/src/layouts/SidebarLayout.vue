@@ -360,15 +360,13 @@ const websocket_connect = async () => {
                             const system_prompt = message.data.data.system_prompt
                             const result = processMarkdown(system_prompt, message_id)
                             const msg = {
-                                type: 'parsed_response',
+                                type: 'parsed_create_session',
                                 data: {
-                                    type: "create_session",
-                                    data: {
-                                        message_id: message_id,
-                                        session_id: session_id,
-                                        title: title,
-                                        sentences: result.sentences,
-                                    }
+                                    message_id: message_id,
+                                    session_id: session_id,
+                                    title: title,
+                                    sentences: result.sentences,
+                                    html: result.html,
                                 },
                             }
                             currentWebSocket.send(msg)

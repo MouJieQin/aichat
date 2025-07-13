@@ -71,9 +71,9 @@ onBeforeUnmount(() => {
 })
 
 router.beforeEach((to, from, next) => {
-  // 关闭 WebSocket
-  webSocket.value?.close()
-  next()
+    // 关闭 WebSocket
+    webSocket.value?.close()
+    next()
 })
 
 // 监听路由变化
@@ -145,12 +145,17 @@ const handleWebSocketMessage = (message: any) => {
 // 处理会话消息
 const handleSessionMessages = (messages: any[]) => {
     chatMessages.value = messages.map(msg => {
-        const result = processMarkdown(msg.raw_text, msg.id)
+        // const raw_text = msg.raw_text || ''
+        // const result = processMarkdown(msg.raw_text, msg.id)
+        const parsedText = msg.parsed_text || ''
+        const paredResult = JSON.parse(parsedText)
+        const html = paredResult.html || ''
+        const sentences = paredResult.sentences || []
         return {
             message_id: msg.id,
             raw_text: msg.raw_text,
-            processed_html: result.html,
-            sentences: result.sentences,
+            processed_html: html,
+            sentences: sentences,
             time: msg.timestamp,
             role: msg.role,
             is_playing: false
@@ -181,7 +186,7 @@ const addUserMessage = (data: any) => {
         role: 'user',
         is_playing: false
     })
-    webSocket?.value?.sendParsedUserMessage(data.message_id, result.sentences)
+    webSocket?.value?.sendParsedUserMessage(data.message_id, result.html, result.sentences)
 }
 
 // 添加助手消息
@@ -197,7 +202,7 @@ const addAssistantMessage = (data: any) => {
         is_playing: false
     })
     data.sentences = result.sentences
-    webSocket?.value?.sendParsedAiResponse(data.message_id, result.sentences)
+    webSocket?.value?.sendParsedAiResponse(data.message_id, result.html, result.sentences)
 
     // 自动播放
     if (sessionAiConfig.value?.auto_play) {

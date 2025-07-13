@@ -69,25 +69,26 @@ class SessionManager:
     @staticmethod
     def initialize_sessions():
         """初始化会话配置"""
-        sessions = api.get_all_session_id_title_config()
-        for session in sessions:
-            session_id = session["id"]
-            config = json.loads(session["ai_config"])
+        pass
+        # sessions = api.get_all_session_id_title_config()
+        # for session in sessions:
+        #     session_id = session["id"]
+        #     config = json.loads(session["ai_config"])
 
-            # 更新缺失的配置项
-            for key, default_value in [
-                ("top", False),
-                ("speech_rate", 1.0),
-                ("auto_play", False),
-                ("tts_voice", "zh-CN-XiaochenNeural"),
-                ("auto_gen_title", True),
-                ("suggestions", []),
-                ("last_active_time", time.time()),
-            ]:
-                if key not in config:
-                    config[key] = default_value
+        # 更新缺失的配置项
+        # for key, default_value in [
+        #     ("top", False),
+        #     ("speech_rate", 1.0),
+        #     ("auto_play", False),
+        #     ("tts_voice", "zh-CN-XiaochenNeural"),
+        #     ("auto_gen_title", True),
+        #     ("suggestions", []),
+        #     ("last_active_time", time.time()),
+        # ]:
+        #     if key not in config:
+        #         config[key] = default_value
 
-            api.update_session_ai_config(session_id, config)
+        # api.update_session_ai_config(session_id, config)
 
     @staticmethod
     async def broadcast_spa(message: str):
@@ -198,9 +199,8 @@ class MessageHandler:
         try:
             message = json.loads(message_text)
             message_type = message["type"]
-            if message_type != "parsed_response":
+            if message_type.startswith("parsed_"):
                 logger.info(f"接收消息: {message}")
-
             handlers = {
                 "get_all_sessions": MessageHandler._handle_get_all_sessions,
                 "create_session": MessageHandler._handle_create_session,
@@ -209,7 +209,7 @@ class MessageHandler:
                 "update_session_title": MessageHandler._handle_update_session_title,
                 "delete_session": MessageHandler._handle_delete_session,
                 "update_session_top": MessageHandler._handle_update_session_top,
-                "parsed_response": MessageHandler._handle_parsed_response,
+                "parsed_create_session": MessageHandler._handle_parsed_create_session,
             }
 
             if message_type in handlers:
@@ -227,7 +227,7 @@ class MessageHandler:
     @staticmethod
     async def _handle_create_session(websocket: WebSocket, message: dict):
         system_prompt = AI_CONFIG_DEFAULT["system_prompt"]
-        parsed_system_prompt = json.dumps({"sentences": []})
+        parsed_system_prompt = json.dumps({"sentences": [], "html": ""})
         title = AI_CONFIG_DEFAULT["chat_title"]
 
         config = json.loads(json.dumps(DEFAULT_AI_CONFIG))
@@ -338,31 +338,31 @@ class MessageHandler:
         await SessionManager.broadcast_spa(json.dumps(msg))
 
     @staticmethod
-    async def _handle_parsed_response(websocket: WebSocket, message: dict):
-        parsed_type = message["data"]["type"]
+    async def _handle_parsed_create_session(websocket: WebSocket, message: dict):
+        data = message["data"]
+        message_id = data["message_id"]
+        session_id = data["session_id"]
+        config = api.get_session_ai_config(session_id)
 
-        if parsed_type == "create_session":
-            parsed_data = message["data"]["data"]
-            message_id = parsed_data["message_id"]
-            session_id = parsed_data["session_id"]
-            config = api.get_session_ai_config(session_id)
+        title = AI_CONFIG_DEFAULT["chat_title"]
+        system_prompt = AI_CONFIG_DEFAULT["system_prompt"]
+        parsed_text = {
+            "sentences": data["sentences"],
+            "html": data["html"],
+        }
 
-            title = AI_CONFIG_DEFAULT["chat_title"]
-            system_prompt = AI_CONFIG_DEFAULT["system_prompt"]
-            parsed_text = {"sentences": parsed_data["sentences"]}
+        api.update_message(message_id, parsed_text=json.dumps(parsed_text))
 
-            api.update_message(message_id, parsed_text=json.dumps(parsed_text))
-
-            msg = {
-                "type": "new_session",
-                "data": {
-                    "session_id": session_id,
-                    "title": title,
-                    "system_prompt": system_prompt,
-                    "config": config,
-                },
-            }
-            await websocket.send_text(json.dumps(msg))
+        msg = {
+            "type": "new_session",
+            "data": {
+                "session_id": session_id,
+                "title": title,
+                "system_prompt": system_prompt,
+                "config": config,
+            },
+        }
+        await websocket.send_text(json.dumps(msg))
 
     @staticmethod
     async def handle_session_message(
@@ -441,7 +441,7 @@ class MessageHandler:
                 WITH_SYSTEM_PROMPT,
                 session_id,
                 user_message,
-                json.dumps({"sentences": []}),
+                json.dumps({"sentences": [], "html": ""}),
                 user_message_callback,
                 assistant_response_callback,
             )
@@ -452,7 +452,7 @@ class MessageHandler:
 
         response = response_dict["response"]
         message_id = api.add_assistant_message(
-            session_id, response, json.dumps({"sentences": []})
+            session_id, response, json.dumps({"sentences": [], "html": ""})
         )
 
         msg = {
@@ -512,8 +512,10 @@ class MessageHandler:
     ):
         message_id = message["data"]["message_id"]
         sentences = message["data"]["sentences"]
+        html = message["data"]["html"]
         api.update_message(
-            message_id, json.dumps({"sentences": sentences}, ensure_ascii=False)
+            message_id,
+            json.dumps({"sentences": sentences, "html": html}, ensure_ascii=False),
         )
 
     @staticmethod
@@ -522,8 +524,10 @@ class MessageHandler:
     ):
         message_id = message["data"]["message_id"]
         sentences = message["data"]["sentences"]
+        html = message["data"]["html"]
         api.update_message(
-            message_id, json.dumps({"sentences": sentences}, ensure_ascii=False)
+            message_id,
+            json.dumps({"sentences": sentences, "html": html}, ensure_ascii=False),
         )
 
     @staticmethod
@@ -541,9 +545,10 @@ class MessageHandler:
         message_id = message["data"]["message_id"]
         raw_text = message["data"]["raw_text"]
         sentences = message["data"]["sentences"]
+        html = message["data"]["html"]
 
         speaker.remove_audio_directory(session_id, message_id)
-        parsed_text = {"sentences": sentences}
+        parsed_text = {"sentences": sentences, "html": html}
 
         api.update_message(
             message_id, raw_text=raw_text, parsed_text=json.dumps(parsed_text)
@@ -790,6 +795,43 @@ class MessageHandler:
         threading.Thread(target=play_sentences, daemon=True).start()
 
 
+async def update_parsed_text(websocket: WebSocket):  # # # not useful in runtime
+    """更新消息的解析文本"""
+    sessions = api.get_all_session_id_title_config()
+    messages = {}
+    for session in sessions:
+        session_id = session["id"]
+        messages[session_id] = api.get_session_messages(session_id, limit=-1)
+
+    for session_id in messages or {}:
+        for message in messages[session_id]:
+            if "parsed_text" in message:
+                parsed_text = json.loads(message["parsed_text"])
+                if "html" not in parsed_text:
+                    msg = {
+                        "type": "parse_markdown",
+                        "data": {
+                            "session_id": session_id,
+                            "message_id": message["id"],
+                            "raw_text": message["raw_text"],
+                        },
+                    }
+                    await websocket.send_text(json.dumps(msg))
+                    data = await websocket.receive_text()
+                    res = json.loads(data)
+                    if res["type"] == "parse_markdown":
+                        message_id = res["data"]["message_id"]
+                        html = res["data"]["html"]
+                        sentences = res["data"]["sentences"]
+                        api.update_message(
+                            message_id,
+                            parsed_text=json.dumps(
+                                {"html": html, "sentences": sentences},
+                                ensure_ascii=False,
+                            ),
+                        )
+
+
 # WebSocket 端点
 @app.websocket("/ws/aichat/spa")
 async def spa_websocket_endpoint(websocket: WebSocket):
@@ -798,6 +840,7 @@ async def spa_websocket_endpoint(websocket: WebSocket):
     connection_id = int(time.time() * 1000)
     spa_websockets[connection_id] = websocket
 
+    # await update_parsed_text(websocket)
     try:
         await SessionManager.send_all_sessions()
 

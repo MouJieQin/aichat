@@ -32,14 +32,16 @@ class ChatWebSocketService extends WebSocketService {
     }
 
     // 发送解析响应
-    sendParsedUserMessage(messageId: number, sentences: any[]) {
+    sendParsedUserMessage(messageId: number, html: string, sentences: any[]) {
         this._sendWithMessageId('parsed_user_message', messageId, {
+            html: html,
             sentences: sentences
         })
     }
 
-    sendParsedAiResponse(messageId: number, sentences: any[]) {
+    sendParsedAiResponse(messageId: number, html: string, sentences: any[]) {
         this._sendWithMessageId('parsed_ai_response', messageId, {
+            html: html,
             sentences: sentences
         })
     }
@@ -69,9 +71,10 @@ class ChatWebSocketService extends WebSocketService {
         this._sendWithMessageId('delete_audio_files', messageId)
     }
 
-    sendUpdateMessage(messageId: number, rawText: string, sentences: any[]) {
+    sendUpdateMessage(messageId: number, rawText: string, html: string, sentences: any[]) {
         this._sendWithMessageId('update_message', messageId, {
             raw_text: rawText,
+            html: html,
             sentences: sentences,
         })
     }

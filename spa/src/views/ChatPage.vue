@@ -67,8 +67,13 @@ onMounted(() => {
 })
 
 onBeforeUnmount(() => {
-    webSocket?.value?.close()
     document.title = 'Voichai'
+})
+
+router.beforeEach((to, from, next) => {
+  // 关闭 WebSocket
+  webSocket.value?.close()
+  next()
 })
 
 // 监听路由变化

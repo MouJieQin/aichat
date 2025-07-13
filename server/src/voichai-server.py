@@ -488,6 +488,7 @@ class MessageHandler:
             config["last_active_time"] = time.time()
             config["suggestions"] = suggestions
             api.update_session_ai_config(session_id, config)
+            await SessionManager.send_session_config(session_id)
             await SessionManager.send_all_sessions()
 
         await system_handle()

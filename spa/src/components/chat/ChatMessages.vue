@@ -1,6 +1,7 @@
 <template>
     <div class="chat-messages-container">
-        <div class="chat-message" v-for="message in messages" :key="message.message_id">
+        <div class="chat-message" v-for="message in visibleMessages" :key="message.message_id">
+            <div v-if="loading" class="loading-indicator">加载中...</div>
             <MessageBubble :websocket="websocket" :message="message"
                 :showRefreshButton="message.message_id === maxAssistantMessageId" @regenerate="handleRegenerate"
                 @update-message="handleUpdateMessage" />
@@ -9,15 +10,24 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, watchEffect } from 'vue'
+import { ref, watchEffect, onMounted, watch, onUnmounted } from 'vue'
+import { useRoute } from 'vue-router'
 import MessageBubble from '@/components/Chat/MessageBubble.vue'
 import { processMarkdown } from '@/common/markdown-processor'
 import { ChatWebSocketService } from '@/common/chat-websocket-client'
 import { Message } from '@/common/type-interface'
+import { delayScrollToBottom } from '@/common/utils'
 
 // 消息ID跟踪
 const maxUserMessageId = ref(-1)
 const maxAssistantMessageId = ref(-1)
+
+const route = useRoute()
+const visibleMessages = ref<any[]>([])
+const loading = ref(false)
+const hasMoreMessages = ref(true)
+const pageSize = ref(20) // 每页显示的消息数量
+const currentPage = ref(1)
 
 const props = defineProps({
     websocket: {
@@ -36,6 +46,68 @@ const props = defineProps({
 const emits = defineEmits<{
     (e: 'send-message', text: string): void
 }>()
+
+const initVisibleMessages = () => {
+    visibleMessages.value = []
+    currentPage.value = 1
+    loading.value = false
+    hasMoreMessages.value = true
+    loadMoreMessages()
+    delayScrollToBottom()
+}
+
+watch(() => route.params.id, () => {
+    if (visibleMessages.value.length > 0) {
+        initVisibleMessages()
+    }
+}, { immediate: true })
+
+// 计算当前可见的消息
+const updateVisibleMessages = () => {
+    const startIndex = - ((currentPage.value - 1) * pageSize.value)
+    const endIndex = props.messages.length
+
+    visibleMessages.value = props.messages.slice(startIndex, endIndex)
+    hasMoreMessages.value = startIndex >= - props.messages.length
+}
+
+// 加载更多消息
+const loadMoreMessages = async () => {
+    if (loading.value || !hasMoreMessages.value) return
+    loading.value = true
+    currentPage.value++
+    updateVisibleMessages()
+    loading.value = false
+}
+
+onMounted(() => {
+    // 添加滚动事件监听器
+    loadMoreMessages()
+    delayScrollToBottom()
+    window.addEventListener('scroll', handleScroll)
+})
+
+onUnmounted(() => {
+    // 移除滚动事件监听器，防止内存泄漏
+    window.removeEventListener('scroll', handleScroll)
+})
+
+// 监听消息变化，更新可见消息
+watch(
+    () => props.messages, () => {
+        updateVisibleMessages()
+    })
+
+// 滚动事件处理
+const handleScroll = () => {
+    console.log('滚动事件触发:', window.scrollY)
+    if (window.scrollY <= 500 && hasMoreMessages.value) {
+        console.log('滚动条已到达顶部!')
+        // 当滚动到顶部一定距离时加载更多
+        loadMoreMessages()
+    }
+}
+
 
 const handleRegenerate = () => {
     const message = props.messages.find(msg => msg.message_id === maxUserMessageId.value)

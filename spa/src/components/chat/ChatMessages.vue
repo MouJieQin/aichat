@@ -47,18 +47,18 @@ const emits = defineEmits<{
     (e: 'send-message', text: string): void
 }>()
 
-const initVisibleMessages = () => {
+const initVisibleMessages = async () => {
     visibleMessages.value = []
     currentPage.value = 1
     loading.value = false
     hasMoreMessages.value = true
-    loadMoreMessages()
+    await loadMoreMessages()
     delayScrollToBottom()
 }
 
-watch(() => route.params.id, () => {
+watch(() => route.params.id, async () => {
     if (visibleMessages.value.length > 0) {
-        initVisibleMessages()
+        await initVisibleMessages()
     }
 }, { immediate: true })
 
@@ -80,9 +80,9 @@ const loadMoreMessages = async () => {
     loading.value = false
 }
 
-onMounted(() => {
+onMounted(async () => {
     // 添加滚动事件监听器
-    loadMoreMessages()
+    await loadMoreMessages()
     delayScrollToBottom()
     window.addEventListener('scroll', handleScroll)
 })
@@ -92,17 +92,9 @@ onUnmounted(() => {
     window.removeEventListener('scroll', handleScroll)
 })
 
-// 监听消息变化，更新可见消息
-watch(
-    () => props.messages, () => {
-        updateVisibleMessages()
-    })
-
 // 滚动事件处理
 const handleScroll = () => {
-    console.log('滚动事件触发:', window.scrollY)
     if (window.scrollY <= 500 && hasMoreMessages.value) {
-        console.log('滚动条已到达顶部!')
         // 当滚动到顶部一定距离时加载更多
         loadMoreMessages()
     }
@@ -149,6 +141,8 @@ const getMaxMessageId = (role: string) => {
 }
 
 watchEffect(() => {
+    console.log('Messages updateded.')
+    updateVisibleMessages()
     maxUserMessageId.value = getMaxMessageId('user')
     maxAssistantMessageId.value = getMaxMessageId('assistant')
 })

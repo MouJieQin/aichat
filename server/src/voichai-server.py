@@ -269,7 +269,7 @@ class MessageHandler:
                 "update_session_title": MessageHandler._handle_update_session_title,
                 "delete_session": MessageHandler._handle_delete_session,
                 "update_session_top": MessageHandler._handle_update_session_top,
-                "parsed_create_session": MessageHandler._handle_parsed_create_session,
+                "parse_create_session": MessageHandler._handle_parsed_create_session,
             }
 
             if message_type in handlers:
@@ -300,14 +300,11 @@ class MessageHandler:
         )
 
         response = {
-            "type": "parse_request",
+            "type": "parse_create_session",
             "data": {
-                "type": "create_session",
-                "data": {
-                    "session_id": session_id,
-                    "message_id": message_id,
-                    "system_prompt": system_prompt,
-                },
+                "session_id": session_id,
+                "message_id": message_id,
+                "raw_text": system_prompt,
             },
         }
         await websocket.send_text(json.dumps(response))

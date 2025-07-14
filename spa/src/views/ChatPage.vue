@@ -146,10 +146,11 @@ const handleWebSocketMessage = (message: any) => {
 const handleSessionMessages = (messages: any[]) => {
     const receivedTime = new Date().getTime()
     chatMessages.value = messages.map(msg => {
-        const raw_text = msg.raw_text || ''
-        const result = processMarkdown(raw_text, msg.id)
-        //const parsedText = msg.parsed_text || ''
-        //const result = JSON.parse(parsedText)
+        const parsedText = msg.parsed_text || ''
+        let result = JSON.parse(parsedText)
+        // if (!result || !result.html || !result.sentences) {
+        //     result = processMarkdown(msg.raw_text, msg.id)
+        // }
         return {
             message_id: msg.id,
             raw_text: msg.raw_text,

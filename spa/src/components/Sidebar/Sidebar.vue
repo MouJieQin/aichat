@@ -72,7 +72,10 @@ webSocket.handleMessage = (message: any) => {
 const handleWebSocketMessage = (message: any) => {
     switch (message.type) {
         case 'parse_markdown':
-            parseMarkdown(message.data)
+            parseMarkdown(message)
+            break
+        case 'parse_create_session':
+            parseMarkdown(message)
             break
         case 'all_sessions':
             loadSessions(message.data.sessions)
@@ -92,16 +95,16 @@ const handleWebSocketMessage = (message: any) => {
     }
 }
 
-const parseMarkdown = (sessionData: any) => {
-    const messageId = sessionData.message_id
-    const raw_text = sessionData.raw_text
+const parseMarkdown = (message: any) => {
+    const messageId = message.data.message_id
+    const raw_text = message.data.raw_text
     const result = processMarkdown(raw_text, messageId)
     webSocket.send({
-        type: 'parse_markdown',
+        type: message.type,
         data: {
             html: result.html,
             sentences: result.sentences,
-            ...sessionData
+            ...message.data
         }
     })
 }

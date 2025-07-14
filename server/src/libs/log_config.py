@@ -63,6 +63,9 @@ def setup_logger():
     logger = logging.getLogger()
     import os
 
+    if not os.path.exists("logs"):
+        os.makedirs("logs")
+
     log_level = os.getenv("LOG_LEVEL", "INFO")
     if log_level in ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]:
         logger.setLevel(getattr(logging, log_level))
@@ -72,6 +75,7 @@ def setup_logger():
     # Create a TimedRotatingFileHandler that rotates log files daily
     file_handler = TimedRotatingFileHandler(
         # The path to the log file
+        # The log file name
         filename="logs/run.log",
         # Rotate the log file daily
         when="D",

@@ -6,7 +6,6 @@
 </template>
 
 <script lang="ts" setup>
-import { defineProps, defineEmits } from 'vue'
 import SessionItem from '@/components/Sidebar/SessionItem.vue'
 import { WebSocketService } from '@/common/websocket-client'
 

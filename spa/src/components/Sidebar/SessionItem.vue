@@ -27,7 +27,6 @@
 
 <script lang="ts" setup>
 import { ref } from 'vue'
-import { defineProps, defineEmits } from 'vue'
 import SessionContextMenu from '@/components/Sidebar/SessionContextMenu.vue'
 import { ChatDotSquare, More } from '@element-plus/icons-vue'
 import { LuPin } from 'vue-icons-plus/lu'

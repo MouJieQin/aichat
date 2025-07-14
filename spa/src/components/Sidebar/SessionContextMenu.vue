@@ -68,7 +68,7 @@
 </template>
 
 <script lang="ts" setup>
-import { defineProps, defineEmits, ref, watch } from 'vue'
+import { ref } from 'vue'
 import { Delete, EditPen, DocumentCopy, WarningFilled } from '@element-plus/icons-vue'
 import { LuPin, LuPinOff } from 'vue-icons-plus/lu'
 import { WebSocketService } from '@/common/websocket-client'

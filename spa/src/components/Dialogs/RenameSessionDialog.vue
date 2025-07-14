@@ -15,7 +15,7 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, defineProps, defineEmits, watch } from 'vue'
+import { ref, watch } from 'vue'
 import { WebSocketService } from '@/common/websocket-client'
 
 const props = defineProps({

@@ -6,7 +6,7 @@
 </template>
 
 <script lang="ts" setup>
-import { defineProps, computed, watch } from 'vue'
+import {computed } from 'vue'
 import MarkdownIt from 'markdown-it'
 
 const md = new MarkdownIt()

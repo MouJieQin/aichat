@@ -12,7 +12,6 @@
 </template>
 
 <script lang="ts" setup>
-import { defineProps, defineEmits } from 'vue'
 import { Right } from '@element-plus/icons-vue'
 
 const props = defineProps({

@@ -67,7 +67,7 @@
 </template>
 
 <script lang="ts" setup>
-import { defineProps, defineEmits, ref, computed, watch } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { loadJsonFile } from '@/common/json-loader'
 import { AIConfig } from '@/common/type-interface'
 

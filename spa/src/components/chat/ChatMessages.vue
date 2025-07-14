@@ -9,7 +9,7 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, defineProps, defineEmits, watchEffect } from 'vue'
+import { ref, watchEffect } from 'vue'
 import MessageBubble from '@/components/Chat/MessageBubble.vue'
 import { processMarkdown } from '@/common/markdown-processor'
 import { ChatWebSocketService } from '@/common/chat-websocket-client'

@@ -82,7 +82,6 @@
 
 <script lang="ts" setup>
 import { ref, computed } from 'vue'
-import { defineProps, defineEmits } from 'vue'
 import {
     Edit,
     CopyDocument,

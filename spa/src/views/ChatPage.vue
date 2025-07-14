@@ -16,7 +16,7 @@
         <!-- 输入区域 -->
         <ChatInput v-if="webSocket !== null" :webSocket="webSocket" :language="sessionAiConfig?.language"
             :isSpeechRecognizing="isSpeechRecognizing" :sttText="sttText" :sttCursorPosition="sttCursorPosition"
-            @send="sendMessage" @open-config="openAIConfig" />
+            :isStreaming="streaming" @send="sendMessage" @open-config="openAIConfig" />
 
     </div>
     <!-- AI配置抽屉 -->

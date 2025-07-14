@@ -46,6 +46,11 @@ class ChatWebSocketService extends WebSocketService {
         })
     }
 
+    // 停止回应
+    sendStopResponse() {
+        this._send('stop_response')
+    }
+
     // 语音识别控制
     sendStartSpeechRecognition(text: string, cursorPos: number, lang: string) {
         this._send('start_speech_recognize', {

@@ -22,6 +22,7 @@ class OpenAIChatAPI:
         )
         self.system_model = system_ai_config["model"]
         self.system_temperature = 0.5
+        self._stop_response = False
 
     @staticmethod
     def unescape_string(s: str) -> Optional[str]:
@@ -30,6 +31,10 @@ class OpenAIChatAPI:
             return ast.literal_eval(f'"{s}"')
         except Exception:
             return None
+
+    def stop_response(self) -> None:
+        """停止当前的响应"""
+        self._stop_response = True
 
     def _create_system_prompt(
         self, user_system_prompt: str, with_system_prompt: bool
@@ -228,6 +233,8 @@ class OpenAIChatAPI:
         )
 
         logger.info("----- 流式请求 -----")
+        self._stop_response = False
+        # 发送流式请求
         response_stream = client.chat.completions.create(  # type: ignore
             model=ai_config.get("model", "gpt-3.5-turbo"),
             messages=prompt_messages,  # type: ignore
@@ -254,6 +261,10 @@ class OpenAIChatAPI:
         """处理简单流式响应（非JSON格式）"""
         full_response = ""
         for chunk in response_stream:
+            if self._stop_response:
+                logger.info("流式响应已停止")
+                break
+            # 检查是否有内容
             if chunk.choices and chunk.choices[0].delta.content:
                 content = chunk.choices[0].delta.content
                 full_response += content
@@ -277,6 +288,9 @@ class OpenAIChatAPI:
         escaped = False
 
         for chunk in response_stream:
+            if self._stop_response:
+                logger.info("流式响应已停止")
+                break
             if chunk.choices and chunk.choices[0].delta.content:
                 content = chunk.choices[0].delta.content
                 full_response += content

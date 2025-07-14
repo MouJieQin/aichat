@@ -69,7 +69,7 @@
 
 <script lang="ts" setup>
 import { ref } from 'vue'
-import { Delete, EditPen, DocumentCopy, WarningFilled } from '@element-plus/icons-vue'
+import { Delete, EditPen, DocumentCopy } from '@element-plus/icons-vue'
 import { LuPin, LuPinOff } from 'vue-icons-plus/lu'
 import { WebSocketService } from '@/common/websocket-client'
 import RenameSessionDialog from '@/components/Dialogs/RenameSessionDialog.vue'

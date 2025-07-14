@@ -115,6 +115,7 @@ DEFAULT_AI_CONFIG = AI_CONFIG[AI_CONFIG_DEFAULT["ai_config_name"]]
 # 初始化服务
 db = ChatDatabase(DATABASE_PATH)
 api = OpenAIChatAPI(AI_CONFIG, db)
+thread_api: Optional[OpenAIChatAPI] = None
 speaker = Speaker(CONFIG, VOICHAI_STORAGE_PATH)
 recognizer = Recognizer(CONFIG)
 
@@ -184,7 +185,7 @@ class SessionManager:
             del session_websockets[session_id][key]
 
     @staticmethod
-    async def broadcast_session_title(session_id: int):
+    async def broadcast_session_title(session_id: int, api: OpenAIChatAPI = api):
         """向特定会话的所有WebSocket连接广播标题"""
         title = api.get_session_title(session_id)
         msg = {
@@ -196,7 +197,7 @@ class SessionManager:
         await SessionManager.broadcast_session(session_id, json.dumps(msg))
 
     @staticmethod
-    async def update_title(session_id: int, title: str):
+    async def update_title(session_id: int, title: str, api: OpenAIChatAPI = api):
         """更新会话标题并广播"""
         api.update_session_title(session_id, title)
         msg = {
@@ -207,10 +208,10 @@ class SessionManager:
             },
         }
         await SessionManager.broadcast_spa(json.dumps(msg))
-        await SessionManager.broadcast_session_title(session_id)
+        await SessionManager.broadcast_session_title(session_id, api)
 
     @staticmethod
-    async def send_all_sessions():
+    async def send_all_sessions(api: OpenAIChatAPI = api):
         """发送所有会话信息到SPA"""
         sessions = api.get_all_session_id_title_config()
         msg = {
@@ -233,7 +234,7 @@ class SessionManager:
 
     @staticmethod
     async def send_session_config(
-        session_id: int, websocket: Optional[WebSocket] = None
+        session_id: int, websocket: Optional[WebSocket] = None, api: OpenAIChatAPI = api
     ):
         """发送会话配置到指定WebSocket或广播"""
         ai_config = api.get_session_ai_config(session_id)
@@ -431,13 +432,14 @@ class MessageHandler:
             message = json.loads(message_text)
             message_type = message["type"]
 
-            if not message_type.startswith("parsed"):
+            if not message_type.startswith("parse"):
                 logger.info(f"接收消息: {message}")
 
             handlers = {
                 "user_input": MessageHandler._handle_user_input,
                 "parsed_user_message": MessageHandler._handle_parsed_user_message,
                 "parsed_ai_response": MessageHandler._handle_parsed_ai_response,
+                "stop_response": MessageHandler._handle_stop_response,
                 "update_session_ai_config": MessageHandler._handle_update_session_config,
                 "update_message": MessageHandler._handle_update_message,
                 "delete_audio_files": MessageHandler._handle_delete_audio_files,
@@ -463,6 +465,28 @@ class MessageHandler:
 
     @staticmethod
     async def _handle_user_input(websocket: WebSocket, session_id: int, message: dict):
+        def handle_user_input():
+            asyncio.run(
+                MessageHandler._handle_user_input_imple(websocket, session_id, message)
+            )
+
+        threading.Thread(
+            target=handle_user_input,
+            daemon=True,
+        ).start()
+
+    @staticmethod
+    def create_api() -> OpenAIChatAPI:
+        db = ChatDatabase(DATABASE_PATH)
+        api = OpenAIChatAPI(AI_CONFIG, db)
+        return api
+
+    @staticmethod
+    async def _handle_user_input_imple(
+        websocket: WebSocket, session_id: int, message: dict
+    ):
+        global thread_api
+        thread_api = MessageHandler.create_api()
         user_message = message["data"]["user_message"]
 
         async def user_message_callback(message_id: int):
@@ -494,7 +518,7 @@ class MessageHandler:
         WITH_SYSTEM_PROMPT = True
 
         try:
-            response_dict = await api.chat(
+            response_dict = await thread_api.chat(
                 WITH_SYSTEM_PROMPT,
                 session_id,
                 user_message,
@@ -508,7 +532,7 @@ class MessageHandler:
             return
 
         response = response_dict["response"]
-        message_id = api.add_assistant_message(
+        message_id = thread_api.add_assistant_message(
             session_id, response, json.dumps({"sentences": [], "html": ""})
         )
 
@@ -529,8 +553,10 @@ class MessageHandler:
             if WITH_SYSTEM_PROMPT:
                 system_info = response_dict
             else:
-                system_prompt_content = api.get_session_system_message(session_id)
-                system_ai_response = api.system_chat(
+                system_prompt_content = thread_api.get_session_system_message(
+                    session_id
+                )
+                system_ai_response = thread_api.system_chat(
                     system_prompt_content, user_message, response
                 )
                 if system_ai_response is None:
@@ -541,10 +567,10 @@ class MessageHandler:
             suggestions = system_info["suggestions"]
             logger.info("标题:%s, 建议:%s", title, suggestions)
 
-            config = api.get_session_ai_config(session_id)
+            config = thread_api.get_session_ai_config(session_id)
             auto_gen_title = config["auto_gen_title"]
             if auto_gen_title:
-                await SessionManager.update_title(session_id, title)
+                await SessionManager.update_title(session_id, title, thread_api)
 
             msg = {
                 "type": "session_suggestions",
@@ -557,9 +583,9 @@ class MessageHandler:
 
             config["last_active_time"] = time.time()
             config["suggestions"] = suggestions
-            api.update_session_ai_config(session_id, config)
-            await SessionManager.send_session_config(session_id)
-            await SessionManager.send_all_sessions()
+            thread_api.update_session_ai_config(session_id, config)
+            await SessionManager.send_session_config(session_id, api=thread_api)
+            await SessionManager.send_all_sessions(api=thread_api)
 
         await system_handle()
 
@@ -586,6 +612,13 @@ class MessageHandler:
             message_id,
             json.dumps({"sentences": sentences, "html": html}, ensure_ascii=False),
         )
+
+    @staticmethod
+    async def _handle_stop_response(
+        websocket: WebSocket, session_id: int, message: dict
+    ):
+        if thread_api is not None:
+            thread_api.stop_response()
 
     @staticmethod
     async def _handle_update_session_config(

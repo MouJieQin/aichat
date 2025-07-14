@@ -141,7 +141,6 @@ const getMaxMessageId = (role: string) => {
 }
 
 watchEffect(() => {
-    console.log('Messages updateded.')
     updateVisibleMessages()
     maxUserMessageId.value = getMaxMessageId('user')
     maxAssistantMessageId.value = getMaxMessageId('assistant')

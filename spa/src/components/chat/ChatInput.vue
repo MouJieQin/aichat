@@ -9,15 +9,17 @@
                 <el-button :icon="MoreFilled" text @click="$emit('open-config')" class="control-btn" />
                 <!-- 麦克风按钮 -->
                 <div class="microphone-container" :class="{ 'active': props.isSpeechRecognizing }">
-                    <el-button :icon="Microphone" :type="props.isSpeechRecognizing ? 'success' : ''" text 
-                         @click="toggleSpeechRecognize" class="control-btn" />
+                    <el-button :icon="Microphone" :type="props.isSpeechRecognizing ? 'success' : ''" text
+                        @click="toggleSpeechRecognize" class="control-btn" />
 
                     <!-- 语音识别激活时显示加载动画 -->
-                    <puffLoader v-if="props.isSpeechRecognizing" class="puffLoader" />
+                    <PuffLoader v-if="props.isSpeechRecognizing" class="puffLoader" />
                 </div>
 
-                <el-button :icon="Promotion" :type="isInputSendable ? 'primary' : 'info'" circle
-                    :disabled="!isInputSendable" @click="handleSend" class="send-btn" />
+                <el-button v-if="!props.isStreaming" :icon="Promotion" :type="isInputSendable ? 'primary' : 'info'"
+                    circle :disabled="!isInputSendable" @click="handleSend" class="send-btn" />
+                <el-button v-else :icon="VscStopCircle" circle @click="handleStopResponse" text
+                    style="color: #ff4d4f;font-size: 30px;" />
             </div>
         </div>
     </div>
@@ -28,7 +30,9 @@ import { ref, watch, onMounted, nextTick } from 'vue'
 import { MoreFilled, Microphone, Promotion } from '@element-plus/icons-vue'
 import { ChatWebSocketService } from '@/common/chat-websocket-client'
 import { mapLanguageCode } from '@/common/utils'
-import puffLoader from '@/components/Svgs/puffLoader.vue'
+import PuffLoader from '@/components/Svgs/PuffLoader.vue'
+import { VscStopCircle } from 'vue-icons-plus/vsc'
+
 
 const props = defineProps({
     webSocket: {
@@ -54,6 +58,11 @@ const props = defineProps({
         type: Number,
         required: true,
         default: 0
+    },
+    isStreaming: {
+        type: Boolean,
+        required: true,
+        default: false
     }
 })
 
@@ -75,6 +84,10 @@ const handleSend = () => {
     emits('send', inputVal.value)
     inputVal.value = ''
     isInputSendable.value = false
+}
+
+const handleStopResponse = () => {
+    props.webSocket.sendStopResponse()
 }
 
 // 语音识别相关
@@ -193,4 +206,3 @@ const adjustFixedInputAreaPaddingTop = () => {
     }
 }
 </script>
-

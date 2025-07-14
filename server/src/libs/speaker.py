@@ -27,12 +27,13 @@ class SingletonMeta(type):
 class Speaker(metaclass=SingletonMeta):
     """语音合成和播放服务"""
 
-    def __init__(self, config: Dict):
+    def __init__(self, config: Dict, voichai_storage_path: str):
         """初始化语音合成器，支持延迟初始化"""
         if not hasattr(self, "_initialized"):
             if config is None:
                 raise ValueError("首次初始化需要提供配置")
             self.config = config
+            self.voichai_storage_path = voichai_storage_path
             self._initialize()
             self._initialized = True
 
@@ -60,21 +61,30 @@ class Speaker(metaclass=SingletonMeta):
     ) -> str:
         """获取音频文件的完整路径"""
         dir_path = os.path.join(
-            self.speaker_config["audio_dir"], str(session_id), str(message_id)
+            self.voichai_storage_path,
+            self.speaker_config["audio_dir"],
+            str(session_id),
+            str(message_id),
         )
         return os.path.join(dir_path, f"{sentence_id}.wav")
 
     def _create_audio_directory(self, session_id: int, message_id: int) -> None:
         """创建存储音频文件的目录"""
         dir_path = os.path.join(
-            self.speaker_config["audio_dir"], str(session_id), str(message_id)
+            self.voichai_storage_path,
+            self.speaker_config["audio_dir"],
+            str(session_id),
+            str(message_id),
         )
         os.makedirs(dir_path, exist_ok=True)
 
     def remove_audio_directory(self, session_id: int, message_id: int) -> None:
         """删除存储音频文件的目录"""
         dir_path = os.path.join(
-            self.speaker_config["audio_dir"], str(session_id), str(message_id)
+            self.voichai_storage_path,
+            self.speaker_config["audio_dir"],
+            str(session_id),
+            str(message_id),
         )
         if os.path.exists(dir_path):
             shutil.rmtree(dir_path)

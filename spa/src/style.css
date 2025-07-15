@@ -92,8 +92,10 @@ body::-webkit-scrollbar-thumb {
 }
 
 .el-menu {
-    /* border-right: none !important; */
     border: none !important;
+}
+
+.siderbar.el-menu {
     --el-menu-bg-color: var(--sidebar-bg-color);
 }
 
@@ -111,7 +113,6 @@ body::-webkit-scrollbar-thumb {
     border-radius: 15px;
     padding-left: 2px !important;
     margin-top: 3px;
-    /* margin-right: 20px; */
 }
 
 .el-menu-item:hover {

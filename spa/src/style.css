@@ -25,8 +25,15 @@ body::-webkit-scrollbar-thumb {
 :root {
     --main-content-left-margin: 300px;
     --fixed-input-area-padding-top: 100px;
-    --body-scrollbar-background: rgba(107, 107, 107, 0);
-    --sidebar-scrollbar-background: rgba(107, 107, 107, 0);
+
+    /* scrollbar */
+    --light-scrollbar-background: rgba(217, 217, 217, 1);
+    --scrollbar-background: rgba(217, 217, 217, 1);
+    --body-scrollbar-background: rgba(0, 0, 0, 0);
+    --sidebar-scrollbar-background: rgba(0, 0, 0, 0);
+
+    /* sidebar */
+    --sidebar-bg-color: var(--el-menu-bg-color);
 }
 
 /* -webkit-text-: red; */
@@ -56,6 +63,9 @@ body::-webkit-scrollbar-thumb {
 /* Sidebar */
 .sidebar {
     position: fixed;
+    padding-left: 3px;
+    left: 0;
+    top: 0;
     max-width: 300px;
     border-right: 1px solid #909399;
     overflow-y: auto;
@@ -64,6 +74,8 @@ body::-webkit-scrollbar-thumb {
     padding-bottom: 30px;
     --el-menu-active-color: #409eff;
     overscroll-behavior: contain;
+    /* background: rgba(243, 244, 246, 1); */
+    background: var(--sidebar-bg-color);
 }
 
 .sidebar::-webkit-scrollbar-thumb {
@@ -80,6 +92,7 @@ body::-webkit-scrollbar-thumb {
 .el-menu {
     /* border-right: none !important; */
     border: none !important;
+    --el-menu-bg-color: var(--sidebar-bg-color);
 }
 
 .el-sub-menu__title {

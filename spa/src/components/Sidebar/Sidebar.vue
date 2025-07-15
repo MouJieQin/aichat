@@ -1,6 +1,4 @@
-<!-- src/components/Sidebar/Sidebar.vue -->
 <template>
-
     <div class="sidebar" @click="handleSidebarClick" @scroll="handleScroll">
         <el-menu :default-active="activeMenu" :collapse="isCollapse" :default-openeds="['chats']" @open="handleOpen"
             @close="handleClose" class="sidebar-menu">
@@ -102,9 +100,11 @@ const handleScroll = () => {
     if (siderbarScrollTimeoutId.value) {
         clearTimeout(siderbarScrollTimeoutId.value)
     }
-    document.documentElement.style.setProperty('--sidebar-scrollbar-background', 'rgba(107, 107, 107, 1)')
+    const scrollbarBackground = getComputedStyle(document.documentElement)
+        .getPropertyValue('--scrollbar-background');
+    document.documentElement.style.setProperty('--sidebar-scrollbar-background', scrollbarBackground)
     siderbarScrollTimeoutId.value = setTimeout(() => {
-        document.documentElement.style.setProperty('--sidebar-scrollbar-background', 'rgba(107, 107, 107, 0)')
+        document.documentElement.style.setProperty('--sidebar-scrollbar-background', 'rgba(0, 0, 0, 0)')
         siderbarScrollTimeoutId.value = null
     }, 1000)
 }

@@ -97,9 +97,11 @@ const autoHideScrollbar = () => {
     if (bodyScrollTimeoutId.value) {
         clearTimeout(bodyScrollTimeoutId.value)
     }
-    document.documentElement.style.setProperty('--body-scrollbar-background', 'rgba(107, 107, 107, 1)')
+    const scrollbarBackground = getComputedStyle(document.documentElement)
+        .getPropertyValue('--scrollbar-background');
+    document.documentElement.style.setProperty('--body-scrollbar-background', scrollbarBackground)
     bodyScrollTimeoutId.value = setTimeout(() => {
-        document.documentElement.style.setProperty('--body-scrollbar-background', 'rgba(107, 107, 107, 0)')
+        document.documentElement.style.setProperty('--body-scrollbar-background', 'rgba(0, 0, 0, 0)')
         bodyScrollTimeoutId.value = null
     }, 1000)
 

@@ -7,11 +7,35 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Voichai</title>
   <script>
+
+    const darkStyleSet = () => {
+      document.documentElement.style.setProperty('--sidebar-bg-color', 'rgba(5, 5, 5, 1)');
+      document.documentElement.style.setProperty('--scrollbar-background', 'rgba(107, 107, 107, 1)')
+
+    };
+
+    const lightStyleSet = () => {
+      document.documentElement.style.setProperty('--sidebar-bg-color', 'rgba(243, 244, 246, 1)');
+      document.documentElement.style.setProperty('--scrollbar-background', 'rgba(217, 217, 217, 1)');
+    };
+
     // 在DOM加载前检测系统主题
-    if (localStorage.theme === 'dark-cancel' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+    // if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+    //   document.documentElement.classList.add('dark');
+    //   console.log('dark enter.');
+    //   darkStyleSet();
+    // } else {
+    //   document.documentElement.classList.remove('dark');
+    //   console.log('light enter.');
+    //   lightStyleSet();
+    // }
+
+    if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
       document.documentElement.classList.add('dark');
+      darkStyleSet();
     } else {
       document.documentElement.classList.remove('dark');
+      lightStyleSet();
     }
 
     // 监听系统主题变化
@@ -19,6 +43,12 @@
       const newTheme = e.matches ? 'dark' : 'light';
       document.documentElement.classList.toggle('dark', newTheme === 'dark');
       localStorage.theme = newTheme; // 可选：保存用户偏好
+      console.log('theme change:', newTheme);
+      if (newTheme === 'dark') {
+        darkStyleSet();
+      } else {
+        lightStyleSet();
+      }
     });
   </script>
 </head>

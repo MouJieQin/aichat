@@ -28,6 +28,7 @@ const loading = ref(false)
 const hasMoreMessages = ref(true)
 const pageSize = ref(20) // 每页显示的消息数量
 const currentPage = ref(1)
+const bodyScrollTimeoutId = ref<NodeJS.Timeout | null>(null)
 
 const props = defineProps({
     websocket: {
@@ -92,8 +93,21 @@ onUnmounted(() => {
     window.removeEventListener('scroll', handleScroll)
 })
 
+const autoHideScrollbar = () => {
+    if (bodyScrollTimeoutId.value) {
+        clearTimeout(bodyScrollTimeoutId.value)
+    }
+    document.documentElement.style.setProperty('--body-scrollbar-background', 'rgba(107, 107, 107, 1)')
+    bodyScrollTimeoutId.value = setTimeout(() => {
+        document.documentElement.style.setProperty('--body-scrollbar-background', 'rgba(107, 107, 107, 0)')
+        bodyScrollTimeoutId.value = null
+    }, 1000)
+
+}
+
 // 滚动事件处理
 const handleScroll = () => {
+    autoHideScrollbar()
     if (window.scrollY <= 500 && hasMoreMessages.value) {
         // 当滚动到顶部一定距离时加载更多
         loadMoreMessages()

@@ -12,6 +12,10 @@ body {
     overflow-y: auto; /* 保留垂直滚动（可选） */
 }
 
+body::-webkit-scrollbar-thumb {
+    background: var(--body-scrollbar-background);
+}
+
 *,
 *:before,
 *:after {
@@ -21,6 +25,18 @@ body {
 :root {
     --main-content-left-margin: 300px;
     --fixed-input-area-padding-top: 100px;
+    --body-scrollbar-background: rgba(107, 107, 107, 0);
+    --sidebar-scrollbar-background: rgba(107, 107, 107, 0);
+}
+
+/* -webkit-text-: red; */
+::-webkit-scrollbar {
+    width: 7px;
+    margin: 0 auto;
+}
+
+::-webkit-scrollbar-thumb {
+    border-radius: 5px;
 }
 
 #app {
@@ -47,6 +63,11 @@ body {
     z-index: 1000;
     padding-bottom: 30px;
     --el-menu-active-color: #409eff;
+    overscroll-behavior: contain;
+}
+
+.sidebar::-webkit-scrollbar-thumb {
+    background: var(--sidebar-scrollbar-background);
 }
 
 .main-content {

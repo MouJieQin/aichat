@@ -1,9 +1,9 @@
 <!-- src/components/Sidebar/Sidebar.vue -->
 <template>
 
-    <div class="sidebar" @click="handleSidebarClick">
-        <el-menu :default-active="activeMenu" :collapse="isCollapse" @open="handleOpen" @close="handleClose"
-            class="sidebar-menu">
+    <div class="sidebar" @click="handleSidebarClick" @scroll="handleScroll">
+        <el-menu :default-active="activeMenu" :collapse="isCollapse" :default-openeds="['chats']" @open="handleOpen"
+            @close="handleClose" class="sidebar-menu">
 
             <el-menu-item index="collapse" @click="toggleCollapse" style="padding-left: 2px;">
                 <el-icon v-show="!isCollapse">
@@ -49,7 +49,7 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { Plus, Expand, Fold, Location, Clock } from '@element-plus/icons-vue'
 import SessionList from '@/components/Sidebar/SessionList.vue'
@@ -61,6 +61,8 @@ const router = useRouter()
 const isCollapse = ref(false)
 const chatSessions = ref<any[]>([])
 const sidebarWidth = ref('0px')
+const siderbarScrollTimeoutId = ref<NodeJS.Timeout | null>(null)
+
 
 // 连接WebSocket
 const webSocket = useWebSocket('ws://localhost:4999/ws/aichat/spa')
@@ -93,6 +95,18 @@ const handleWebSocketMessage = (message: any) => {
             addNewSession(message.data)
             break
     }
+}
+
+const handleScroll = () => {
+    // 当滚动时，设置body的滚动条背景颜色
+    if (siderbarScrollTimeoutId.value) {
+        clearTimeout(siderbarScrollTimeoutId.value)
+    }
+    document.documentElement.style.setProperty('--sidebar-scrollbar-background', 'rgba(107, 107, 107, 1)')
+    siderbarScrollTimeoutId.value = setTimeout(() => {
+        document.documentElement.style.setProperty('--sidebar-scrollbar-background', 'rgba(107, 107, 107, 0)')
+        siderbarScrollTimeoutId.value = null
+    }, 1000)
 }
 
 const parseMarkdown = (message: any) => {

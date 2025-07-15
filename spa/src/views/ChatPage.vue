@@ -10,7 +10,7 @@
             <!-- 流式响应展示 -->
             <MessageStream :streaming="streaming" :error="isChatError" :content="streamResponse" />
             <!-- 建议消息列表 -->
-            <SuggestionsList :suggestions="sessionSuggestions" @send="sendMessage" />
+            <SuggestionsList :suggestions="sessionSuggestions" :isStreaming="streaming" @send="sendMessage" />
         </div>
 
         <!-- 输入区域 -->
@@ -36,10 +36,13 @@ import { ChatWebSocketService, useChatWebSocket } from '@/common/chat-websocket-
 import { processMarkdown } from '@/common/markdown-processor'
 import { formatTimeNow, highlightPlayingSentence, scrollToBottom, delayScrollToBottom } from '@/common/utils'
 import { Message, AIConfig } from '@/common/type-interface'
+import MarkdownIt from 'markdown-it';
+
 
 // 路由与状态
 const route = useRoute()
 const router = useRouter()
+const md = new MarkdownIt();
 const chatId = ref(-1)
 const drawerVisible = ref(false)
 
@@ -192,15 +195,25 @@ const addUserMessage = (data: any) => {
 // 添加助手消息
 const addAssistantMessage = (data: any) => {
     const result = processMarkdown(data.response, data.message_id)
-    chatMessages.value.push({
-        message_id: data.message_id,
-        raw_text: data.response,
-        processed_html: result.html,
-        sentences: result.sentences,
-        time: formatTimeNow(),
-        role: 'assistant',
-        is_playing: false
-    })
+    const lastIndex = chatMessages.value.length - 1
+    if (chatMessages.value.length > 0 && chatMessages.value[lastIndex].message_id === -1) {
+        // 如果最后一条消息是流式响应的占位符，更新它
+        chatMessages.value[lastIndex].message_id = data.message_id
+        chatMessages.value[lastIndex].raw_text = data.response
+        chatMessages.value[lastIndex].processed_html = result.html
+        chatMessages.value[lastIndex].sentences = result.sentences
+    } else {
+        // 否则添加新消息
+        chatMessages.value.push({
+            message_id: data.message_id,
+            raw_text: data.response,
+            processed_html: result.html,
+            sentences: result.sentences,
+            time: formatTimeNow(),
+            role: 'assistant',
+            is_playing: false
+        })
+    }
     data.sentences = result.sentences
     webSocket?.value?.sendParsedAiResponse(data.message_id, result.html, result.sentences)
 
@@ -216,8 +229,29 @@ const addAssistantMessage = (data: any) => {
 // 处理流式响应
 const handleStreamResponse = (data: any) => {
     streaming.value = data.is_streaming
-    isChatError.value = data.is_chat_error
-    streamResponse.value = data.response
+    if (data.is_chat_error) {
+        isChatError.value = data.is_chat_error
+        streamResponse.value = data.response
+    }
+    else {
+        const lastIndex = chatMessages.value.length - 1
+        if (lastIndex >= 0 && chatMessages.value[lastIndex].message_id === -1) {
+            chatMessages.value[lastIndex].processed_html = md.render(data.response)
+            chatMessages.value[lastIndex].raw_text = data.response
+        }
+        else {
+            const message_id = -1 // 流式响应没有特定的消息ID
+            chatMessages.value.push({
+                message_id: message_id,
+                raw_text: data.response,
+                processed_html: md.render(data.response),
+                sentences: [],
+                time: formatTimeNow(),
+                role: 'assistant',
+                is_playing: false
+            })
+        }
+    }
     scrollToBottom()
 }
 
@@ -263,7 +297,7 @@ const sendMessage = (text: string) => {
     if (isSpeechRecognizing.value) {
         webSocket?.value?.sendStopSpeechRecognition()
     }
-    sessionSuggestions.value = []
+    sessionSuggestions.value = ["", "", ""]
     scrollToBottom()
 }
 

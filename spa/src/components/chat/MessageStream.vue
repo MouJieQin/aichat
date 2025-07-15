@@ -1,12 +1,12 @@
 <template>
-    <div v-if="streaming" class="message-stream">
-        <div v-if="!error" v-html="renderedContent"></div>
-        <div v-else class="error-message" v-text="content"></div>
+    <div v-if="streaming && error" class="message-stream">
+        <!-- <div v-if="!error" v-html="renderedContent"></div> -->
+        <div v-if="error" class="error-message" v-text="content"></div>
     </div>
 </template>
 
 <script lang="ts" setup>
-import {computed } from 'vue'
+import { computed } from 'vue'
 import MarkdownIt from 'markdown-it'
 
 const md = new MarkdownIt()

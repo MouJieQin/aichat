@@ -13,6 +13,7 @@
                 <span style="font-weight: bold;">Voichai</span>
             </el-menu-item>
 
+
             <el-menu-item index="new_chat" @click="createNewSession" style="padding-left: 2px;">
                 <el-icon>
                     <Plus />
@@ -47,7 +48,7 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { Plus, Expand, Fold, Location, Clock } from '@element-plus/icons-vue'
 import SessionList from '@/components/Sidebar/SessionList.vue'
@@ -235,6 +236,7 @@ const highlightActiveItem = () => {
     if (item) {
         item.style.color = 'rgb(24, 144, 255)'
         item.style.fontWeight = 'bold'
+        item.style.backgroundColor = "var(--sidebar-menu-active-bg-color)"
     }
 }
 
@@ -245,11 +247,13 @@ const switchHighlightActiveItem = (newPath: string, oldPath: string) => {
     if (oldItem) {
         oldItem.style.color = ''
         oldItem.style.fontWeight = ''
+        oldItem.style.backgroundColor = ''
     }
 
     if (newItem) {
         newItem.style.color = 'rgb(24, 144, 255)'
         newItem.style.fontWeight = 'bold'
+        newItem.style.backgroundColor = "var(--sidebar-menu-active-bg-color)"
     }
 }
 

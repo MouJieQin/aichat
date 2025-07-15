@@ -34,6 +34,8 @@ body::-webkit-scrollbar-thumb {
 
     /* sidebar */
     --sidebar-bg-color: var(--el-menu-bg-color);
+    --sidebar-menu-active-bg-color: rgba(231, 235, 246, 1);
+    /* --sidebar-menu-hover-bg-color: rgba(231, 235, 246, 1); */
 }
 
 /* -webkit-text-: red; */
@@ -63,7 +65,7 @@ body::-webkit-scrollbar-thumb {
 /* Sidebar */
 .sidebar {
     position: fixed;
-    padding-left: 3px;
+    padding-left: 5px;
     left: 0;
     top: 0;
     max-width: 300px;
@@ -95,6 +97,10 @@ body::-webkit-scrollbar-thumb {
     --el-menu-bg-color: var(--sidebar-bg-color);
 }
 
+.el-sub-menu {
+    margin-top: 3px !important;
+}
+
 .el-sub-menu__title {
     padding-left: 2px !important;
     border-radius: 10px;
@@ -102,9 +108,14 @@ body::-webkit-scrollbar-thumb {
 }
 
 .el-menu-item {
-    border-radius: 10px;
+    border-radius: 15px;
     padding-left: 2px !important;
+    margin-top: 3px;
     /* margin-right: 20px; */
+}
+
+.el-menu-item:hover {
+    background-color: var(--sidebar-menu-active-bg-color) !important;
 }
 
 .el-button {
@@ -128,7 +139,7 @@ body::-webkit-scrollbar-thumb {
     overflow: hidden;
     text-align: left;
     text-overflow: ellipsis;
-    margin-right: 10px;
+    margin-right: 1px;
     /* 与右侧图标保持间距 */
 }
 

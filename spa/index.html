@@ -11,12 +11,14 @@
     const darkStyleSet = () => {
       document.documentElement.style.setProperty('--sidebar-bg-color', 'rgba(5, 5, 5, 1)');
       document.documentElement.style.setProperty('--scrollbar-background', 'rgba(107, 107, 107, 1)')
+      document.documentElement.style.setProperty('--sidebar-menu-active-bg-color', 'rgba(231, 235, 246, 0.1)')
 
     };
 
     const lightStyleSet = () => {
       document.documentElement.style.setProperty('--sidebar-bg-color', 'rgba(243, 244, 246, 1)');
       document.documentElement.style.setProperty('--scrollbar-background', 'rgba(217, 217, 217, 1)');
+      document.documentElement.style.setProperty('--sidebar-menu-active-bg-color', 'rgba(231, 235, 246, 1)')
     };
 
     // 在DOM加载前检测系统主题

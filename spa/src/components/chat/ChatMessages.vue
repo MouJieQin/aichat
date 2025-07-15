@@ -29,6 +29,8 @@ const hasMoreMessages = ref(true)
 const pageSize = ref(20) // 每页显示的消息数量
 const currentPage = ref(1)
 const bodyScrollTimeoutId = ref<NodeJS.Timeout | null>(null)
+const lastScrollTop = ref(0)
+const scrolledCount = ref(0)
 
 const props = defineProps({
     websocket: {
@@ -40,12 +42,13 @@ const props = defineProps({
         type: Array as () => Message[],
         required: true,
         default: () => []
-    },
+    }
 })
 
 // 定义组件输出事件
 const emits = defineEmits<{
     (e: 'send-message', text: string): void
+    (e: 'scroll'): void
 }>()
 
 const initVisibleMessages = async () => {
@@ -54,7 +57,7 @@ const initVisibleMessages = async () => {
     loading.value = false
     hasMoreMessages.value = true
     await loadMoreMessages()
-    delayScrollToBottom()
+    delayScrollToBottom('instant', 300)
 }
 
 watch(() => route.params.id, async () => {
@@ -84,7 +87,7 @@ const loadMoreMessages = async () => {
 onMounted(async () => {
     // 添加滚动事件监听器
     await loadMoreMessages()
-    delayScrollToBottom()
+    delayScrollToBottom('instant', 500)
     window.addEventListener('scroll', handleScroll)
 })
 
@@ -109,6 +112,16 @@ const autoHideScrollbar = () => {
 
 // 滚动事件处理
 const handleScroll = () => {
+    console.log("window.scrollY:", window.scrollY)
+    console.log("lastScrollTop.value:", lastScrollTop.value)
+    if (window.scrollY < lastScrollTop.value) {
+        // 向上滚动
+        scrolledCount.value++
+        if (scrolledCount.value >= 5) {
+            emits('scroll')
+        }
+    }
+    lastScrollTop.value = window.scrollY
     autoHideScrollbar()
     if (window.scrollY <= 500 && hasMoreMessages.value) {
         // 当滚动到顶部一定距离时加载更多

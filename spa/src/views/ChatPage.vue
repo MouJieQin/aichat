@@ -4,7 +4,7 @@
         <div class="chat-container">
             <!-- 只有当 webSocket 不为 null 时才渲染 ChatMessages 组件 -->
             <ChatMessages v-if="webSocket !== null" :websocket="webSocket" :messages="chatMessages"
-                @send-message="sendMessage" />
+                @send-message="sendMessage" @scroll="handleScroll" />
             <!-- 可以添加一个加载状态提示 -->
             <div v-else class="loading">加载中...</div>
             <!-- 流式响应展示 -->
@@ -51,6 +51,7 @@ const chatMessages = ref<Message[]>([])
 const sessionSuggestions = ref<string[]>([])
 const sessionTitle = ref('')
 const streaming = ref(false)
+const isScrolledWhenStreaming = ref(false)
 const isChatError = ref(false)
 const streamResponse = ref('')
 const sessionAiConfig = ref<AIConfig | null>(null)
@@ -118,7 +119,7 @@ const handleWebSocketMessage = (message: any) => {
             break
         case 'session_suggestions':
             sessionSuggestions.value = message.data.suggestions
-            delayScrollToBottom()
+            delayScrollToBottom('smooth')
             break
         case 'session_ai_config':
             sessionAiConfig.value = message.data.ai_config
@@ -174,7 +175,9 @@ const handleParseRequest = (data: any) => {
     } else if (data.type === 'ai_response') {
         addAssistantMessage(data.data)
     }
-    scrollToBottom()
+    if (!isScrolledWhenStreaming.value) {
+        scrollToBottom('smooth')
+    }
 }
 
 // 添加用户消息
@@ -226,6 +229,10 @@ const addAssistantMessage = (data: any) => {
     }
 }
 
+const handleScroll = () => {
+    isScrolledWhenStreaming.value = true
+}
+
 // 处理流式响应
 const handleStreamResponse = (data: any) => {
     streaming.value = data.is_streaming
@@ -240,6 +247,7 @@ const handleStreamResponse = (data: any) => {
             chatMessages.value[lastIndex].raw_text = data.response
         }
         else {
+            isScrolledWhenStreaming.value = false
             const message_id = -1 // 流式响应没有特定的消息ID
             chatMessages.value.push({
                 message_id: message_id,
@@ -252,7 +260,9 @@ const handleStreamResponse = (data: any) => {
             })
         }
     }
-    scrollToBottom()
+    if (!isScrolledWhenStreaming.value) {
+        scrollToBottom('smooth')
+    }
 }
 
 // 更新正在播放的句子
@@ -297,8 +307,9 @@ const sendMessage = (text: string) => {
     if (isSpeechRecognizing.value) {
         webSocket?.value?.sendStopSpeechRecognition()
     }
+    // sessionSuggestions.value = []
     sessionSuggestions.value = ["", "", ""]
-    scrollToBottom()
+    scrollToBottom('smooth')
 }
 
 // 处理语音识别中消息

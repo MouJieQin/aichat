@@ -34,16 +34,23 @@ export const highlightPlayingSentence = (messageId: number, sentenceId: number) 
     }
 }
 
-export const scrollToBottom = () => {
+export const scrollToBottom = (behavior: 'smooth' | 'auto' | 'instant' = 'instant') => {
     const scrollContainer =
         document.documentElement.scrollTop > 0
             ? document.documentElement
             : document.body;
-    scrollContainer.scrollTop = scrollContainer.scrollHeight
+    if (behavior === 'instant') {
+        scrollContainer.scrollTop = scrollContainer.scrollHeight;
+    } else {
+        scrollContainer.scrollTo({
+            top: scrollContainer.scrollHeight,
+            behavior: behavior
+        });
+    }
 }
 
-export const delayScrollToBottom = (milliseconds: number = 100) => {
-    setTimeout(scrollToBottom, milliseconds)
+export const delayScrollToBottom = (behavior: 'smooth' | 'auto' | 'instant' = 'instant', milliseconds: number = 100) => {
+    setTimeout(() => scrollToBottom(behavior), milliseconds)
 }
 
 export const mapLanguageCode = (lang?: string): string => {

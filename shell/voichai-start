@@ -14,7 +14,7 @@ fi
 
 if ! ps -ef | grep voichai-server.py | grep -v grep; then
     cd "$SCRIPT_DIR/../server/src"
-    nohup python3.9 voichai-server.py >>/tmp/voichai-server.log 2>&1 &
+    nohup python3.9 voichai-server.py >/tmp/voichai-server.log 2>&1 &
     TOTAL=5
     count=0
     while ! curl http://127.0.0.1:4999/ >/dev/null 2>&1; do

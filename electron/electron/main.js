@@ -1,4 +1,5 @@
-const { app, BrowserWindow, screen, Menu, MenuItem } = require("electron");
+const { app, ipcMain } = require("electron");
+const { BrowserWindow, screen, Menu, MenuItem } = require("electron");
 const https = require("https");
 const path = require("path");
 const fs = require("fs");
@@ -84,7 +85,7 @@ async function checkInstall() {
             const options = {
                 type: "info",
                 message:
-                    "You will be asked to input your system password into a terminal app installing dependences.",
+                    "Checking dependences.",
                 detail: `${stderr}`,
                 buttons: ["Exit", "Install"],
             };
@@ -120,6 +121,24 @@ async function runShellCommandDialog(command) {
 }
 
 async function startServer() {
+    // 处理麦克风权限请求
+    ipcMain.handle("request-mic-permission", async () => {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({
+                audio: true,
+            });
+            return true;
+        } catch (error) {
+            console.error("麦克风权限错误:", error);
+            return false;
+        }
+    });
+
+    // 处理扬声器权限请求（在macOS上不需要显式请求，但需要描述）
+    ipcMain.handle("check-speaker-permission", () => {
+        // 扬声器权限通过描述文件隐式授权
+        return true;
+    });
     await runShellCommandDialog(startPath);
 }
 

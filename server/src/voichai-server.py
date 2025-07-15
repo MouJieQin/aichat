@@ -115,7 +115,7 @@ DEFAULT_AI_CONFIG = AI_CONFIG[AI_CONFIG_DEFAULT["ai_config_name"]]
 # 初始化服务
 db = ChatDatabase(DATABASE_PATH)
 api = OpenAIChatAPI(AI_CONFIG, db)
-thread_api: Optional[OpenAIChatAPI] = None
+thread_api: OpenAIChatAPI
 speaker = Speaker(CONFIG, VOICHAI_STORAGE_PATH)
 recognizer = Recognizer(CONFIG)
 

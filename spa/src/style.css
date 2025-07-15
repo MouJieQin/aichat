@@ -95,7 +95,8 @@ body::-webkit-scrollbar-thumb {
     border: none !important;
 }
 
-.siderbar.el-menu {
+.sidebar-menu {
+    border: none !important;
     --el-menu-bg-color: var(--sidebar-bg-color);
 }
 

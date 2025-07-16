@@ -29,6 +29,7 @@ const hasMoreMessages = ref(true)
 const pageSize = ref(20) // 每页显示的消息数量
 const currentPage = ref(1)
 const bodyScrollTimeoutId = ref<NodeJS.Timeout | null>(null)
+const scrollTimeoutId = ref<NodeJS.Timeout | null>(null)
 const lastScrollTop = ref(0)
 const scrolledCount = ref(0)
 
@@ -107,21 +108,31 @@ const autoHideScrollbar = () => {
         document.documentElement.style.setProperty('--body-scrollbar-background', 'rgba(0, 0, 0, 0)')
         bodyScrollTimeoutId.value = null
     }, 1000)
+}
 
+const handleUpScroll = () => {
+    if (window.scrollY > lastScrollTop.value) {
+        // 向下滚动
+        scrolledCount.value = 0
+    } else {
+        // 向上滚动
+        scrolledCount.value += 1
+        scrollTimeoutId.value && clearTimeout(scrollTimeoutId.value)
+        scrollTimeoutId.value = setTimeout(() => {
+            scrolledCount.value = 0
+            scrollTimeoutId.value = null
+        }, 1000)
+        if (scrolledCount.value >= 10) {
+            emits('scroll')
+            scrolledCount.value = 0
+        }
+    }
+    lastScrollTop.value = window.scrollY
 }
 
 // 滚动事件处理
 const handleScroll = () => {
-    console.log("window.scrollY:", window.scrollY)
-    console.log("lastScrollTop.value:", lastScrollTop.value)
-    if (window.scrollY < lastScrollTop.value) {
-        // 向上滚动
-        scrolledCount.value++
-        if (scrolledCount.value >= 5) {
-            emits('scroll')
-        }
-    }
-    lastScrollTop.value = window.scrollY
+    handleUpScroll()
     autoHideScrollbar()
     if (window.scrollY <= 500 && hasMoreMessages.value) {
         // 当滚动到顶部一定距离时加载更多

@@ -69,7 +69,7 @@ body::-webkit-scrollbar-thumb {
     left: 0;
     top: 0;
     max-width: 300px;
-    border-right: 1px solid #909399;
+    border-right: 1px solid rgba(144, 147, 153, 0.5);
     overflow-y: auto;
     height: 100vh;
     z-index: 1000;

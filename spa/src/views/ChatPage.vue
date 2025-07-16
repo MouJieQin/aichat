@@ -307,8 +307,8 @@ const sendMessage = (text: string) => {
     if (isSpeechRecognizing.value) {
         webSocket?.value?.sendStopSpeechRecognition()
     }
-    // sessionSuggestions.value = []
-    sessionSuggestions.value = ["", "", ""]
+    sessionSuggestions.value = []
+    // sessionSuggestions.value = ["", "", ""]
     scrollToBottom('smooth')
 }
 

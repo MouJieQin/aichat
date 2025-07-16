@@ -27,15 +27,20 @@ body::-webkit-scrollbar-thumb {
     --fixed-input-area-padding-top: 100px;
 
     /* scrollbar */
-    --light-scrollbar-background: rgba(217, 217, 217, 1);
-    --scrollbar-background: rgba(217, 217, 217, 1);
     --body-scrollbar-background: rgba(0, 0, 0, 0);
     --sidebar-scrollbar-background: rgba(0, 0, 0, 0);
+    --scrollbar-background: rgba(217, 217, 217, 1);
 
     /* sidebar */
-    --sidebar-bg-color: var(--el-menu-bg-color);
+    --sidebar-bg-color: rgba(243, 244, 246, 1);
     --sidebar-menu-active-bg-color: rgba(231, 235, 246, 1);
-    /* --sidebar-menu-hover-bg-color: rgba(231, 235, 246, 1); */
+
+}
+
+.dark{
+    --sidebar-bg-color: rgba(5, 5, 5, 1);
+    --scrollbar-background: rgba(107, 107, 107, 1);
+    --sidebar-menu-active-bg-color: rgba(231, 235, 246, 0.1);
 }
 
 /* -webkit-text-: red; */

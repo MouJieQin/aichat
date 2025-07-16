@@ -114,6 +114,7 @@ body::-webkit-scrollbar-thumb {
     border-radius: 15px;
     padding-left: 2px !important;
     margin-top: 3px;
+    padding-right: 0px !important;
 }
 
 .el-menu-item:hover {
@@ -136,7 +137,7 @@ body::-webkit-scrollbar-thumb {
 .truncate-text {
     flex: 1;
     /* 文本区域占据剩余空间 */
-    max-width: calc(100% - 40px);
+    max-width: calc(100% - 30px);
     white-space: nowrap;
     overflow: hidden;
     text-align: left;
@@ -152,7 +153,7 @@ body::-webkit-scrollbar-thumb {
     /* 添加淡入淡出动画 */
     position: absolute;
     /* 绝对定位到右侧 */
-    right: 2px;
+    right: 0px;
     /* 调整右侧距离 */
 }
 

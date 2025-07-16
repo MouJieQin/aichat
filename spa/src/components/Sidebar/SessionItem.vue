@@ -7,7 +7,7 @@
                 <ChatDotSquare />
             </el-icon>
             <span class="truncate-text" :title="session.title">{{ session.title }}</span>
-            <el-icon v-if="session.config.top" style="padding-right: 10px;">
+            <el-icon v-if="session.config.top" style="font-size: 12px; margin-right: 0px;">
                 <LuPin style="opacity: 0.5;" />
             </el-icon>
 

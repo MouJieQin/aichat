@@ -1,7 +1,7 @@
 <template>
     <div class="sidebar" @click="handleSidebarClick" @scroll="handleScroll">
-        <el-menu :default-active="activeMenu" :collapse="isCollapse" :default-openeds="['chats']" @open="handleOpen"
-            @close="handleClose" class="sidebar-menu">
+        <el-menu ref="menuRef" :default-active="activeMenu" :collapse="isCollapse" :default-openeds="['chat']"
+            @open="handleOpen" @close="handleClose" class="sidebar-menu">
 
             <el-menu-item index="collapse" @click="toggleCollapse" style="padding-left: 2px;">
                 <el-icon v-show="!isCollapse">
@@ -21,18 +21,12 @@
                 <span>新对话</span>
             </el-menu-item>
 
-            <el-sub-menu index="navigator">
-                <template #title>
-                    <el-icon>
-                        <location />
-                    </el-icon>
-                    <span>导航</span>
-                </template>
-                <el-menu-item v-for="item in navigatorItems" :key="item.path" :index="item.path"
-                    @click="navigateTo(item.path)" style="padding-left: 8px;">
-                    {{ item.title }}
-                </el-menu-item>
-            </el-sub-menu>
+            <el-menu-item key="/" index="home" @click="navigateTo('/')" style="padding-left: 8px;">
+                <el-icon>
+                    <HomeFilled />
+                </el-icon>
+                <span>首页</span>
+            </el-menu-item>
 
             <el-sub-menu index="chats">
                 <template #title>
@@ -50,14 +44,16 @@
 <script lang="ts" setup>
 import { ref, computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { Plus, Expand, Fold, Location, Clock } from '@element-plus/icons-vue'
+import { Plus, Expand, Fold, Clock, HomeFilled } from '@element-plus/icons-vue'
 import SessionList from '@/components/Sidebar/SessionList.vue'
 import { useWebSocket } from '@/common/websocket-client'
 import { processMarkdown } from '@/common/markdown-processor'
+import { ElMenu } from 'element-plus'
 
 const route = useRoute()
 const router = useRouter()
 const isCollapse = ref(false)
+const menuRef = ref<InstanceType<typeof ElMenu>>();
 const chatSessions = ref<any[]>([])
 const sidebarWidth = ref('0px')
 const siderbarScrollTimeoutId = ref<NodeJS.Timeout | null>(null)
@@ -223,6 +219,10 @@ const handleSidebarClick = () => {
 // 切换折叠状态
 const toggleCollapse = () => {
     isCollapse.value = !isCollapse.value
+    // 使用 Exposes 中的 openMenu 方法主动打开子菜单
+    if (!isCollapse.value && menuRef.value) {
+        (menuRef.value as any).open('chats');
+    }
 }
 
 // 导航到指定路径
@@ -264,12 +264,6 @@ const activeMenu = computed(() => {
 
 // 监听路由变化
 watch(activeMenu, switchHighlightActiveItem)
-
-// 菜单项数据
-const navigatorItems = ref([
-    { path: '/', title: '首页' },
-    { path: '/page1', title: '内容页面1' },
-])
 
 // 菜单事件处理
 const handleOpen = (key: string, keyPath: string[]) => {

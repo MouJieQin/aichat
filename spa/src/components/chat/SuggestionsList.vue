@@ -1,6 +1,5 @@
 <template>
-    <div class="suggestions-container" v-if="suggestions.length"
-        :style="{ opacity: !isStreaming ? '1' : '0', pointerEvents: !isStreaming ? 'auto' : 'none' }">
+    <div class="suggestions-container" v-show="suggestions.length">
         <div class="suggestion-item" v-for="(item, index) in suggestions" :key="index">
             <el-button type="info" plain @click="$emit('send', item)" class="suggestion-btn">
                 {{ item }}
@@ -19,11 +18,6 @@ const props = defineProps({
     suggestions: {
         type: Array as () => string[],
         default: () => []
-    },
-    isStreaming: {
-        type: Boolean,
-        required: true,
-        default: false
     },
 })
 

@@ -96,9 +96,19 @@ export function processMarkdown(markdownContent: string, message_id: number): Pr
         return [messageId, sentenceId];
     };
 
-    walk(tempDiv);
-    return {
-        html: tempDiv.innerHTML,
-        sentences
-    };
+    try {
+        // 从根节点开始递归处理
+        walk(tempDiv);
+        return {
+            html: tempDiv.innerHTML,
+            sentences: sentences
+        };
+    } catch (error) {
+        console.error('Error processing markdown:', error);
+        // 如果发生错误，返回原始HTML和空句子列表
+        return {
+            html: tempDiv.innerHTML,
+            sentences: []
+        };
+    }
 }

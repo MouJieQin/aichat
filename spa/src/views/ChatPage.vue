@@ -10,7 +10,7 @@
             <!-- 流式响应展示 -->
             <MessageStream :streaming="streaming" :error="isChatError" :content="streamResponse" />
             <!-- 建议消息列表 -->
-            <SuggestionsList :suggestions="sessionSuggestions" :isStreaming="streaming" @send="sendMessage" />
+            <SuggestionsList :suggestions="sessionSuggestions" @send="sendMessage" />
         </div>
 
         <!-- 输入区域 -->
@@ -35,7 +35,7 @@ import AIConfigDrawer from '@/components/Chat/AIConfigDrawer.vue'
 import { ChatWebSocketService, useChatWebSocket } from '@/common/chat-websocket-client'
 import { processMarkdown } from '@/common/markdown-processor'
 import { formatTimeNow, highlightPlayingSentence, scrollToBottom, delayScrollToBottom } from '@/common/utils'
-import { Message, AIConfig } from '@/common/type-interface'
+import { Message, AIConfig, ProcessResult } from '@/common/type-interface'
 import MarkdownIt from 'markdown-it';
 
 
@@ -47,6 +47,7 @@ const chatId = ref(-1)
 const drawerVisible = ref(false)
 
 // 聊天数据状态
+const sessionAiConfig = ref<AIConfig | null>(null)
 const chatMessages = ref<Message[]>([])
 const sessionSuggestions = ref<string[]>([])
 const sessionTitle = ref('')
@@ -54,13 +55,11 @@ const streaming = ref(false)
 const isScrolledWhenStreaming = ref(false)
 const isChatError = ref(false)
 const streamResponse = ref('')
-const sessionAiConfig = ref<AIConfig | null>(null)
 
 // 输入状态
 const isSpeechRecognizing = ref(false)
 const sttText = ref('')
 const sttCursorPosition = ref(0)
-// const cursorPosition = ref(0)
 
 // WebSocket连接
 const webSocket = ref<ChatWebSocketService | null>(null)
@@ -195,16 +194,16 @@ const addUserMessage = (data: any) => {
     webSocket?.value?.sendParsedUserMessage(data.message_id, result.html, result.sentences)
 }
 
-// 添加助手消息
-const addAssistantMessage = (data: any) => {
-    const result = processMarkdown(data.response, data.message_id)
+
+const handleChatMessagesForResponse = (data: any, result: ProcessResult) => {
     const lastIndex = chatMessages.value.length - 1
     if (chatMessages.value.length > 0 && chatMessages.value[lastIndex].message_id === -1) {
         // 如果最后一条消息是流式响应的占位符，更新它
-        chatMessages.value[lastIndex].message_id = data.message_id
-        chatMessages.value[lastIndex].raw_text = data.response
+        console.log("Updating last message with new response")
         chatMessages.value[lastIndex].processed_html = result.html
+        chatMessages.value[lastIndex].raw_text = data.response
         chatMessages.value[lastIndex].sentences = result.sentences
+        chatMessages.value[lastIndex].message_id = data.message_id
     } else {
         // 否则添加新消息
         chatMessages.value.push({
@@ -217,13 +216,19 @@ const addAssistantMessage = (data: any) => {
             is_playing: false
         })
     }
+}
+
+// 添加助手消息
+const addAssistantMessage = (data: any) => {
+    const result = processMarkdown(data.response, data.message_id)
+    handleChatMessagesForResponse(data, result)
     data.sentences = result.sentences
     webSocket?.value?.sendParsedAiResponse(data.message_id, result.html, result.sentences)
 
     // 自动播放
     if (sessionAiConfig.value?.auto_play) {
+        webSocket?.value?.sendGenerateAudioFiles(data.message_id, 0, 0)
         setTimeout(() => {
-            webSocket?.value?.sendGenerateAudioFiles(data.message_id, 0, 0)
             webSocket?.value?.sendPlayMessage(data.message_id);
         }, 1000)
     }
@@ -233,32 +238,37 @@ const handleScroll = () => {
     isScrolledWhenStreaming.value = true
 }
 
+const handleChatMessagesForStreaming = (data: any) => {
+    const message_id = -1 // 流式响应没有特定的消息ID
+    const lastIndex = chatMessages.value.length - 1
+    const result = processMarkdown(data.response, message_id)
+    if (lastIndex >= 0 && chatMessages.value[lastIndex].message_id === message_id) {
+        chatMessages.value[lastIndex].processed_html = result.html
+        chatMessages.value[lastIndex].raw_text = data.response
+    }
+    else {
+        isScrolledWhenStreaming.value = false
+        chatMessages.value.push({
+            message_id: message_id,
+            raw_text: data.response,
+            processed_html: result.html,
+            sentences: [],
+            time: formatTimeNow(),
+            role: 'assistant',
+            is_playing: false
+        })
+    }
+}
+
 // 处理流式响应
 const handleStreamResponse = (data: any) => {
     streaming.value = data.is_streaming
-    if (data.is_chat_error) {
-        isChatError.value = data.is_chat_error
-        streamResponse.value = data.response
+    if (!data.is_chat_error) {
+        handleChatMessagesForStreaming(data)
     }
     else {
-        const lastIndex = chatMessages.value.length - 1
-        if (lastIndex >= 0 && chatMessages.value[lastIndex].message_id === -1) {
-            chatMessages.value[lastIndex].processed_html = md.render(data.response)
-            chatMessages.value[lastIndex].raw_text = data.response
-        }
-        else {
-            isScrolledWhenStreaming.value = false
-            const message_id = -1 // 流式响应没有特定的消息ID
-            chatMessages.value.push({
-                message_id: message_id,
-                raw_text: data.response,
-                processed_html: md.render(data.response),
-                sentences: [],
-                time: formatTimeNow(),
-                role: 'assistant',
-                is_playing: false
-            })
-        }
+        isChatError.value = data.is_chat_error
+        streamResponse.value = data.response
     }
     if (!isScrolledWhenStreaming.value) {
         scrollToBottom('smooth')

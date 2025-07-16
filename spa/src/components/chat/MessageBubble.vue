@@ -17,8 +17,7 @@
         </div>
 
         <!-- 操作按钮组 -->
-         <!-- message.message_id === -1 为流式响应-->
-        <div v-show="message.message_id !== -1" class="controls-container" :class="controlRoleClass">
+        <div v-show="message.sentences.length" class="controls-container" :class="controlRoleClass">
             <!-- 编辑状态按钮组 -->
             <el-button-group v-if="isEditing" class="edit-controls">
                 <el-button :icon="Close" text @click="cancelEdit" tooltip="取消" />

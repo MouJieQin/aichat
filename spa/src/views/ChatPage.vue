@@ -4,7 +4,7 @@
         <div class="chat-container">
             <!-- 只有当 webSocket 不为 null 时才渲染 ChatMessages 组件 -->
             <ChatMessages v-if="webSocket !== null" :websocket="webSocket" :messages="chatMessages"
-                @send-message="sendMessage" @scroll="handleScroll" />
+                @send-message="sendMessage" @scroll="isScrolledWhenStreaming = true" />
             <!-- 可以添加一个加载状态提示 -->
             <div v-else class="loading">加载中...</div>
             <!-- 流式响应展示 -->
@@ -197,13 +197,11 @@ const addUserMessage = (data: any) => {
 
 const handleChatMessagesForResponse = (data: any, result: ProcessResult) => {
     const lastIndex = chatMessages.value.length - 1
-    if (chatMessages.value.length > 0 && chatMessages.value[lastIndex].message_id === -1) {
+    if (chatMessages.value.length > 0 && chatMessages.value[lastIndex].message_id === data.message_id) {
         // 如果最后一条消息是流式响应的占位符，更新它
-        console.log("Updating last message with new response")
         chatMessages.value[lastIndex].processed_html = result.html
         chatMessages.value[lastIndex].raw_text = data.response
         chatMessages.value[lastIndex].sentences = result.sentences
-        chatMessages.value[lastIndex].message_id = data.message_id
     } else {
         // 否则添加新消息
         chatMessages.value.push({
@@ -223,7 +221,7 @@ const addAssistantMessage = (data: any) => {
     const result = processMarkdown(data.response, data.message_id)
     handleChatMessagesForResponse(data, result)
     data.sentences = result.sentences
-    webSocket?.value?.sendParsedAiResponse(data.message_id, result.html, result.sentences)
+    webSocket?.value?.sendParsedAiResponse(data.message_id, result.html, result.sentences, data.response)
 
     // 自动播放
     if (sessionAiConfig.value?.auto_play) {
@@ -232,14 +230,11 @@ const addAssistantMessage = (data: any) => {
             webSocket?.value?.sendPlayMessage(data.message_id);
         }, 1000)
     }
-}
 
-const handleScroll = () => {
-    isScrolledWhenStreaming.value = true
 }
 
 const handleChatMessagesForStreaming = (data: any) => {
-    const message_id = -1 // 流式响应没有特定的消息ID
+    const message_id = data.message_id
     const lastIndex = chatMessages.value.length - 1
     const result = processMarkdown(data.response, message_id)
     if (lastIndex >= 0 && chatMessages.value[lastIndex].message_id === message_id) {

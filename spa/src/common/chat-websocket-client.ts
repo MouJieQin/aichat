@@ -39,8 +39,9 @@ class ChatWebSocketService extends WebSocketService {
         })
     }
 
-    sendParsedAiResponse(messageId: number, html: string, sentences: any[]) {
+    sendParsedAiResponse(messageId: number, html: string, sentences: any[], rawText: string) {
         this._sendWithMessageId('parsed_ai_response', messageId, {
+            raw_text: rawText,
             html: html,
             sentences: sentences
         })

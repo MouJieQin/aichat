@@ -502,18 +502,29 @@ class MessageHandler:
             }
             await websocket.send_text(json.dumps(msg))
 
+        message_id = thread_api.add_assistant_message(
+            session_id, "", json.dumps({"sentences": [], "html": ""})
+        )
+
         async def assistant_response_callback(
             response: str, is_streaming: bool, error: bool = False
         ):
             msg = {
                 "type": "stream_response",
                 "data": {
+                    "message_id": message_id,
                     "is_streaming": is_streaming,
                     "is_chat_error": error,
                     "response": response,
                 },
             }
             await websocket.send_text(json.dumps(msg))
+
+        if message_id is None:
+            await assistant_response_callback(
+                "Error: Acquire message id failed", True, True
+            )
+            return
 
         WITH_SYSTEM_PROMPT = True
 
@@ -528,13 +539,14 @@ class MessageHandler:
             )
         except Exception as e:
             logger.error(f"聊天错误: {e}")
-            await assistant_response_callback(f"聊天错误: {e}", True, True)
+            thread_api.delete_message(message_id)
+            await assistant_response_callback(f"Error: {e}", True, True)
             return
 
         response = response_dict["response"]
-        message_id = thread_api.add_assistant_message(
-            session_id, response, json.dumps({"sentences": [], "html": ""})
-        )
+        # message_id = thread_api.add_assistant_message(
+        #     session_id, response, json.dumps({"sentences": [], "html": ""})
+        # )
 
         msg = {
             "type": "parse_request",
@@ -608,9 +620,11 @@ class MessageHandler:
         message_id = message["data"]["message_id"]
         sentences = message["data"]["sentences"]
         html = message["data"]["html"]
+        raw_text = message["data"]["raw_text"]
         api.update_message(
             message_id,
             json.dumps({"sentences": sentences, "html": html}, ensure_ascii=False),
+            raw_text=raw_text,
         )
 
     @staticmethod

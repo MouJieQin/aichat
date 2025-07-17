@@ -6,21 +6,14 @@
             <el-icon>
                 <ChatDotSquare />
             </el-icon>
+
             <span class="truncate-text" :title="session.title">{{ session.title }}</span>
+
             <el-icon v-if="session.config.top" style="font-size: 12px; margin-right: 0px;">
                 <LuPin style="opacity: 0.5;" />
             </el-icon>
 
-            <el-popover placement="top-end" :width="200" trigger="click" v-model:visible="showContextMenu"
-                @visible-change="handleContextMenuVisible">
-                <session-context-menu :session="session" :webSocket="webSocket"
-                    @closePopover="handleContextMenuVisible" />
-                <template #reference>
-                    <el-icon class="hover-icon" @click.stop>
-                        <More />
-                    </el-icon>
-                </template>
-            </el-popover>
+            <session-context-menu :session="session" :webSocket="webSocket" />
         </template>
     </el-menu-item>
 </template>
@@ -55,18 +48,9 @@ const emits = defineEmits([
     'navigate',
 ])
 
-const showContextMenu = ref(false)
-
 // 处理导航
 const handleNavigate = () => {
     emits('navigate', props.session.path)
-    showContextMenu.value = false
 }
 
-// 处理上下文菜单显示/隐藏
-const handleContextMenuVisible = (visible: boolean) => {
-    if (!visible) {
-        showContextMenu.value = false
-    }
-}
 </script>

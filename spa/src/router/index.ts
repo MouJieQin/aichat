@@ -2,24 +2,17 @@ import { createRouter, createWebHistory, RouteRecordRaw } from 'vue-router'
 
 // 懒加载组件
 const Home = () => import('@/views/Home.vue')
-const Page1 = () => import('@/views/Page1.vue')
 const Chat = () => import('@/views/ChatPage.vue')
 
 const routes: RouteRecordRaw[] = [
     {
         path: '/',
-        // component: () => import('@/layouts/SidebarLayout.vue'),
         component: () => import('@/views/ChatLayout.vue'),
         children: [
             {
                 path: '',
                 name: 'Home',
                 component: Home
-            },
-            {
-                path: 'page1',
-                name: 'Page1',
-                component: Page1
             },
             {
                 path: 'chat/:id',

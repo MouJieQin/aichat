@@ -36,13 +36,11 @@ import { ChatWebSocketService, useChatWebSocket } from '@/common/chat-websocket-
 import { processMarkdown } from '@/common/markdown-processor'
 import { formatTimeNow, highlightPlayingSentence, scrollToBottom, delayScrollToBottom } from '@/common/utils'
 import { Message, AIConfig, ProcessResult } from '@/common/type-interface'
-import MarkdownIt from 'markdown-it';
 
 
 // 路由与状态
 const route = useRoute()
 const router = useRouter()
-const md = new MarkdownIt();
 const chatId = ref(-1)
 const drawerVisible = ref(false)
 

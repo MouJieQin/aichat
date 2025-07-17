@@ -1,5 +1,5 @@
 <template>
-    <svg width="35" height="35" viewBox="0 0 44 44" xmlns="http://www.w3.org/2000/svg" stroke="#333">
+    <svg width="35" height="35" viewBox="0 0 44 44" xmlns="http://www.w3.org/2000/svg" stroke="var(--puff-loader-color)">
         <g fill="none" fill-rule="evenodd" stroke-width="2">
             <circle cx="22" cy="22" r="1">
                 <animate attributeName="r" begin="0s" dur="5s" values="1; 20" calcMode="spline" keyTimes="0; 1"

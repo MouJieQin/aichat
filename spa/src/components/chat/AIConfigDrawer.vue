@@ -28,7 +28,7 @@
                 <el-switch v-model="localConfig.auto_play" />
             </el-form-item>
 
-            <el-form-item label="Auto Gen Title">
+            <el-form-item label="自动生成标题">
                 <el-switch v-model="localConfig.auto_gen_title" :active-value="true" :inactive-value="false" />
             </el-form-item>
 

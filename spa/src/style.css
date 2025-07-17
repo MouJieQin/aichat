@@ -34,10 +34,9 @@ body::-webkit-scrollbar-thumb {
     /* sidebar */
     --sidebar-bg-color: rgba(243, 244, 246, 1);
     --sidebar-menu-active-bg-color: rgba(231, 235, 246, 1);
-
 }
 
-.dark{
+.dark {
     --sidebar-bg-color: rgba(5, 5, 5, 1);
     --scrollbar-background: rgba(107, 107, 107, 1);
     --sidebar-menu-active-bg-color: rgba(231, 235, 246, 0.1);

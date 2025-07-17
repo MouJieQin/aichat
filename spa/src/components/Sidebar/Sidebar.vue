@@ -1,6 +1,6 @@
 <template>
     <div class="sidebar" @click="handleSidebarClick" @scroll="handleScroll">
-        <el-menu ref="menuRef" :default-active="activeMenu" :collapse="isCollapse" :default-openeds="['chat']"
+        <el-menu ref="menuRef" :default-active="activeMenu" :collapse="isCollapse" :default-openeds="['chats']"
             @open="handleOpen" @close="handleClose" class="sidebar-menu">
 
             <el-menu-item index="collapse" @click="toggleCollapse" style="padding-left: 2px;">
@@ -23,7 +23,7 @@
 
             <el-menu-item key="/" index="home" @click="navigateTo('/')" style="padding-left: 8px;">
                 <el-icon>
-                    <HomeFilled />
+                    <VscHome />
                 </el-icon>
                 <span>首页</span>
             </el-menu-item>
@@ -44,7 +44,8 @@
 <script lang="ts" setup>
 import { ref, computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { Plus, Expand, Fold, Clock, HomeFilled } from '@element-plus/icons-vue'
+import { Plus, Expand, Fold, Clock } from '@element-plus/icons-vue'
+import { VscHome } from 'vue-icons-plus/vsc'
 import SessionList from '@/components/Sidebar/SessionList.vue'
 import { useWebSocket } from '@/common/websocket-client'
 import { processMarkdown } from '@/common/markdown-processor'

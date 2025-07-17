@@ -13,8 +13,39 @@ const checkInstallPath = voichaiPath.concat("/shell/voichai-checkInstall");
 const installPath = voichaiPath.concat("/install");
 const startPath = voichaiPath.concat("/shell/voichai-start");
 const stopPath = voichaiPath.concat("/shell/voichai-stop");
+
+// electron setup
+const configPath = path.join(
+    app.getPath("userData"),
+    "Voichai-Storage",
+    "config",
+    "electron-config.json"
+);
 // Access command-line arguments
 const args = process.argv.slice(2);
+
+// 读取上次保存的 URL
+function getLastUrl() {
+    try {
+        if (fs.existsSync(configPath)) {
+            const data = fs.readFileSync(configPath, "utf8");
+            return JSON.parse(data).lastUrl || "http://localhost:3999/";
+        }
+    } catch (error) {
+        console.error("读取配置文件失败:", error);
+    }
+    return "http://localhost:3999/"; // 默认 URL
+}
+
+// 保存当前 URL
+function saveLastUrl(url) {
+    try {
+        const data = { lastUrl: url };
+        fs.writeFileSync(configPath, JSON.stringify(data), "utf8");
+    } catch (error) {
+        console.error("保存配置文件失败:", error);
+    }
+}
 
 // Additional setup for Electron app
 
@@ -143,6 +174,12 @@ function createWindow(url = "http://localhost:3999/") {
     if (NODE_ENV === "development") {
         mainWindow.webContents.openDevTools();
     }
+
+    // 窗口即将关闭时保存当前 URL
+    mainWindow.on("close", (e) => {
+        const url = mainWindow.webContents.getURL();
+        saveLastUrl(url);
+    });
 }
 
 async function handleShutdown() {
@@ -177,11 +214,11 @@ app.whenReady().then(async () => {
         if (args.length > 0) {
             createWindow(args[0]);
         } else {
-            createWindow();
+            createWindow(getLastUrl());
         }
         app.on("activate", function () {
             if (BrowserWindow.getAllWindows().length === 0) {
-                createWindow();
+                createWindow(getLastUrl());
             }
         });
     }

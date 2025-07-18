@@ -82,6 +82,9 @@ class MessageHandler:
 
         title = api.get_session_title(session_id)
         config = api.get_session_ai_config(session_id)
+        config["ai_avatar_url"] = Utils.copy_session_ai_avatar(
+            config["ai_avatar_url"], new_session_id
+        )
         config["last_active_time"] = time.time()
         config["suggestions"] = []
         config["top"] = False
@@ -107,6 +110,9 @@ class MessageHandler:
 
         title = api.get_session_title(session_id)
         config = api.get_session_ai_config(session_id)
+        config["ai_avatar_url"] = Utils.copy_session_ai_avatar(
+            config["ai_avatar_url"], new_session_id
+        )
         config["last_active_time"] = time.time()
         config["top"] = False
         api.update_session_ai_config(new_session_id, config)

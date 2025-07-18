@@ -84,7 +84,7 @@ async def upload_avatar(
 
         # 删除旧文件
         old_avatar_url = api.get_session_ai_avatar_url(session_id)
-        Utils.delete_session_ai_avatar(session_id, old_avatar_url)
+        Utils.delete_session_ai_avatar(old_avatar_url)
 
         # 保存文件
         with open(file_path, "wb") as f:

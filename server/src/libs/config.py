@@ -21,6 +21,7 @@ DEFAULT_CONFIG_FILE = SERVER_SRC_ABS_PATH + "/config.json"
 DATA_PATH = VOICHAI_STORAGE_PATH + "/data"
 AVATARS_PATH = DATA_PATH + "/avatars"
 DATABASE_PATH = DATA_PATH + "/chat-history.db"
+AVATAR_BASE_URL = "/api/download?path=/avatars"
 
 CONFIG = {}
 DEFAULT_CONFIG = {}
@@ -62,15 +63,33 @@ class Utils:
     @staticmethod
     def get_ai_avatar_url(session_id: int, filename: Optional[str]):
         filename = Utils.get_ai_avatar_filename(filename)
-        return f"/api/download?path=/avatars/{session_id}/{filename}"
+        return f"{AVATAR_BASE_URL}/{session_id}/{filename}"
 
     @staticmethod
-    def delete_session_ai_avatar(session_id: int, ai_avatar_url: Optional[str]):
+    def get_filename_from_ai_avatar_url(ai_avatar_url: str) -> tuple[int, str]:
+        session_id, filename = ai_avatar_url.split("/")[-2:]
+        return int(session_id), filename
+
+    @staticmethod
+    def get_path_from_ai_avatar_url(ai_avatar_url: str) -> str:
+        session_id, filename = Utils.get_filename_from_ai_avatar_url(ai_avatar_url)
+        return Utils.get_ai_avatar_dir(session_id) + f"/{filename}"
+
+    @staticmethod
+    def delete_session_ai_avatar(ai_avatar_url: Optional[str]):
         if ai_avatar_url:
-            filename = ai_avatar_url.split("/")[-1]
-            Utils.removeFileIfExists(
-                Utils.get_ai_avatar_dir(session_id) + f"/{filename}"
-            )
+            Utils.removeFileIfExists(Utils.get_path_from_ai_avatar_url(ai_avatar_url))
+
+    @staticmethod
+    def copy_session_ai_avatar(ai_avatar_url: str, session_id: int) -> str:
+        if not ai_avatar_url:
+            return ""
+        avatar_dir = Utils.get_ai_avatar_dir(session_id)
+        Utils.createDirIfnotExists(avatar_dir)
+        src_avatar_path = Utils.get_path_from_ai_avatar_url(ai_avatar_url)
+        _, filename = Utils.get_filename_from_ai_avatar_url(ai_avatar_url)
+        shutil.copyfile(src_avatar_path, avatar_dir + f"/{filename}")
+        return f"{AVATAR_BASE_URL}/{session_id}/{filename}"
 
     @staticmethod
     def remove_session_avatar(session_id: int):

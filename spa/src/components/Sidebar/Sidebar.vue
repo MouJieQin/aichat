@@ -259,6 +259,11 @@ const highlightActiveItem = () => {
         item.style.color = 'rgb(24, 144, 255)'
         item.style.fontWeight = 'bold'
         item.style.backgroundColor = "var(--sidebar-menu-active-bg-color)"
+        item.scrollIntoView({
+            behavior: 'smooth',
+            block: 'center',
+            inline: 'center'
+        })
     }
 }
 

@@ -4,7 +4,6 @@
         @click="handleNavigate">
         <template #title>
 
-            <!-- <el-avatar :icon="ChatDotSquare" /> -->
             <el-icon v-if="!session.config.ai_avatar_url">
                 <ChatDotSquare />
             </el-icon>

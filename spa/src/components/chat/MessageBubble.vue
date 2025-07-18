@@ -56,7 +56,8 @@
                                 </el-icon>
                                 <span>删除音频文件</span>
                             </el-dropdown-item>
-                            <el-dropdown-item style="color: #ff4d4f" @click="handleDeleteConfirm">
+                            <el-dropdown-item v-if="message.role !== 'system'" style="color: #ff4d4f"
+                                @click="handleDeleteConfirm">
                                 <el-icon>
                                     <Delete />
                                 </el-icon>

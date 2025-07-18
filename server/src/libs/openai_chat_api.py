@@ -471,6 +471,10 @@ class OpenAIChatAPI:
         """更新会话最后活动时间"""
         self.update_session_property(session_id, "last_active_time", last_active_time)
 
+    def update_session_ai_avatar_url(self, session_id: int, avatar_url: str) -> None:
+        """更新会话AI头像"""
+        self.update_session_property(session_id, "ai_avatar_url", avatar_url)
+
     def delete_session(self, session_id: int) -> None:
         """删除会话及其所有消息"""
         self.db.delete_session_and_messages(session_id)

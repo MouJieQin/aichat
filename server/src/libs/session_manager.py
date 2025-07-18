@@ -1,4 +1,5 @@
 import json
+import time
 from typing import Optional
 from fastapi import WebSocket
 from libs.log_config import logger
@@ -12,26 +13,33 @@ class SessionManager:
     @staticmethod
     def initialize_sessions():
         """初始化会话配置"""
-        pass
-        # sessions = api.get_all_session_id_title_config()
-        # for session in sessions:
-        #     session_id = session["id"]
-        #     config = json.loads(session["ai_config"])
 
-        # 更新缺失的配置项
-        # for key, default_value in [
-        #     ("top", False),
-        #     ("speech_rate", 1.0),
-        #     ("auto_play", False),
-        #     ("tts_voice", "zh-CN-XiaochenNeural"),
-        #     ("auto_gen_title", True),
-        #     ("suggestions", []),
-        #     ("last_active_time", time.time()),
-        # ]:
-        #     if key not in config:
-        #         config[key] = default_value
+        def initialize_sessions_imple():
+            sessions = api.get_all_session_id_title_config()
+            for session in sessions:
+                session_id = session["id"]
+                config = json.loads(session["ai_config"])
+                is_changed = False
 
-        # api.update_session_ai_config(session_id, config)
+                # 更新缺失的配置项
+                for key, default_value in [
+                    ("top", False),
+                    ("speech_rate", 1.0),
+                    ("auto_play", False),
+                    ("tts_voice", "zh-CN-XiaochenNeural"),
+                    ("auto_gen_title", True),
+                    ("suggestions", []),
+                    ("last_active_time", time.time()),
+                    ("ai_avatar_url", ""),
+                ]:
+                    if key not in config:
+                        config[key] = default_value
+                        is_changed = True
+
+                if is_changed:
+                    api.update_session_ai_config(session_id, config)
+
+        initialize_sessions_imple()
 
     @staticmethod
     async def broadcast_spa(message: str):

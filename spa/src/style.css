@@ -175,6 +175,10 @@ body::-webkit-scrollbar-thumb {
     user-select: auto;
 }
 
+.el-dropdown-menu {
+    font-weight: bold;
+}
+
 /*  */
 /* Chat Page */
 /*  */
@@ -380,6 +384,7 @@ body::-webkit-scrollbar-thumb {
     line-height: 1.6;
     margin: 0 auto;
     text-align: left;
+    transition: opacity 0.5s;
 }
 
 .suggestion-item {

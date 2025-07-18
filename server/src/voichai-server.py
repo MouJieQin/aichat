@@ -7,14 +7,24 @@ import time
 
 from fastapi import (
     FastAPI,
+    UploadFile,
+    Form,
+    File,
+    Path,
+    HTTPException,
     WebSocket,
     WebSocketDisconnect,
 )
+from fastapi.responses import JSONResponse
+from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
-from libs.log_config import logger
+from starlette.responses import FileResponse
+from pathlib import Path
 
-from libs.config import spa_websockets, session_websockets, api
+from libs.log_config import logger
+from libs.config import spa_websockets, session_websockets, api, Utils
+from libs.config import DATA_PATH
 from libs.session_manager import SessionManager
 from libs.message_handler import MessageHandler
 
@@ -27,6 +37,67 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.get("/api/download")
+async def download(path: str):
+    logger.info(f"download path: {path}")
+    path = DATA_PATH + path
+    if not os.path.isfile(path):
+        raise HTTPException(status_code=400, detail="Not a file or does not exist")
+
+    fr = FileResponse(
+        path=path,
+        filename=Path(path).name,
+    )
+    return fr
+
+
+# 响应模型
+class UploadResponse(BaseModel):
+    success: bool
+    file_url: str
+
+
+# 单文件上传接口
+@app.post("/api/upload/avatar", response_model=UploadResponse)
+async def upload_avatar(
+    file: UploadFile = File(...),
+    session_id: int = Form(...),
+):
+    try:
+        # 检查文件类型
+        if file.content_type is None or not file.content_type.startswith(
+            ("image/jpeg", "image/png")
+        ):
+            raise HTTPException(status_code=400, detail="仅支持JPG/PNG格式的图片")
+
+        # 检查文件大小（500KB限制）
+        contents = await file.read()
+        if len(contents) > 10 * 1024 * 1024:
+            raise HTTPException(status_code=400, detail="文件大小不能超过10MB")
+
+        # 生成唯一文件名
+        Utils.createDirIfnotExists(Utils.get_ai_avatar_dir(session_id))
+        file_path = Utils.get_ai_avatar_path(session_id, file.filename)
+        file_url = Utils.get_ai_avatar_url(session_id, file.filename)
+
+        # 保存文件
+        with open(file_path, "wb") as f:
+            f.write(contents)
+
+        # 返回成功响应
+        api.update_session_ai_config(session_id, {"ai_avatar_url": file_url})
+        return {"success": True, "file_url": file_url}
+
+    except HTTPException as e:
+        return JSONResponse(
+            status_code=e.status_code, content={"success": False, "detail": e.detail}
+        )
+    except Exception as e:
+        return JSONResponse(
+            status_code=500, content={"success": False, "detail": f"上传失败: {str(e)}"}
+        )
 
 
 # WebSocket 端点

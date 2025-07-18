@@ -7,7 +7,7 @@ from fastapi import WebSocket
 from libs.log_config import logger
 from libs.openai_chat_api import OpenAIChatAPI
 from libs.config import AI_CONFIG_DEFAULT, DEFAULT_AI_CONFIG
-from libs.config import api, speaker, recognizer, create_api
+from libs.config import api, speaker, recognizer, Utils
 from libs.session_manager import SessionManager
 
 thread_api: OpenAIChatAPI
@@ -244,7 +244,7 @@ class MessageHandler:
         websocket: WebSocket, session_id: int, message: dict
     ):
         global thread_api
-        thread_api = create_api()
+        thread_api = Utils.create_api()
         user_message = message["data"]["user_message"]
 
         async def user_message_callback(message_id: int):

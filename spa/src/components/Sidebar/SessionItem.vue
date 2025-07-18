@@ -3,9 +3,12 @@
     <el-menu-item :index="session.path" :id="'chat-item-' + session.path" class="custom-menu-item"
         @click="handleNavigate">
         <template #title>
-            <el-icon>
+
+            <!-- <el-avatar :icon="ChatDotSquare" /> -->
+            <el-icon v-if="!session.config.ai_avatar_url">
                 <ChatDotSquare />
             </el-icon>
+            <el-avatar v-else :src="getAiAvatarUrl" fit="cover" />
 
             <span class="truncate-text" :title="session.title">{{ session.title }}</span>
 
@@ -19,7 +22,7 @@
 </template>
 
 <script lang="ts" setup>
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import SessionContextMenu from '@/components/Sidebar/SessionContextMenu.vue'
 import { ChatDotSquare, More } from '@element-plus/icons-vue'
 import { LuPin } from 'vue-icons-plus/lu'
@@ -42,6 +45,10 @@ const props = defineProps({
         type: WebSocketService,
         required: true
     }
+})
+
+const getAiAvatarUrl = computed(() => {
+    return 'http://localhost:4999' + props.session.config.ai_avatar_url
 })
 
 const emits = defineEmits([

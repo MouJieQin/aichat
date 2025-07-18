@@ -1,8 +1,9 @@
 import json
 import os
 import appdirs
+import shutil
 from fastapi import WebSocket
-from typing import Dict
+from typing import Dict, Optional
 from libs.log_config import logger
 from libs.chat_database import ChatDatabase
 from libs.openai_chat_api import OpenAIChatAPI
@@ -18,6 +19,7 @@ USER_CONFIG_DIR = VOICHAI_STORAGE_PATH + "/config"
 CONFIG_FILE = USER_CONFIG_DIR + "/config.json"
 DEFAULT_CONFIG_FILE = SERVER_SRC_ABS_PATH + "/config.json"
 DATA_PATH = VOICHAI_STORAGE_PATH + "/data"
+AVATARS_PATH = DATA_PATH + "/avatars"
 DATABASE_PATH = DATA_PATH + "/chat-history.db"
 
 CONFIG = {}
@@ -28,22 +30,43 @@ spa_websockets: Dict[int, WebSocket] = {}
 session_websockets: Dict[int, Dict[int, WebSocket]] = {}
 
 
-def create_api() -> OpenAIChatAPI:
-    db = ChatDatabase(DATABASE_PATH)
-    api = OpenAIChatAPI(AI_CONFIG, db)
-    return api
+class Utils:
+    @staticmethod
+    def createDirIfnotExists(path: str):
+        if not os.path.exists(path):
+            os.makedirs(path)
+
+    @staticmethod
+    def removeDirIfExists(path: str):
+        if os.path.exists(path):
+            shutil.rmtree(path)
+
+    @staticmethod
+    def get_ai_avatar_dir(session_id: int):
+        return AVATARS_PATH + f"/{session_id}"
+
+    @staticmethod
+    def get_ai_avatar_path(session_id: int, filename: Optional[str]):
+        return Utils.get_ai_avatar_dir(session_id) + f"/ai-{filename}"
+
+    @staticmethod
+    def get_ai_avatar_url(session_id: int, filename: Optional[str]):
+        return f"/api/download?path={Utils.get_ai_avatar_path(session_id, filename)}"
+
+    @staticmethod
+    def create_api() -> OpenAIChatAPI:
+        db = ChatDatabase(DATABASE_PATH)
+        api = OpenAIChatAPI(AI_CONFIG, db)
+        return api
 
 
 def init_config():
     """初始化配置目录和文件"""
     global CONFIG, DEFAULT_CONFIG
 
-    def createDirIfnotExists(path: str):
-        if not os.path.exists(path):
-            os.makedirs(path)
-
-    createDirIfnotExists(USER_CONFIG_DIR)
-    createDirIfnotExists(DATA_PATH)
+    Utils.createDirIfnotExists(USER_CONFIG_DIR)
+    Utils.createDirIfnotExists(DATA_PATH)
+    Utils.createDirIfnotExists(AVATARS_PATH)
 
     with open(DEFAULT_CONFIG_FILE, mode="r", encoding="utf-8") as f:
         DEFAULT_CONFIG = json.load(f)

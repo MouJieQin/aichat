@@ -420,6 +420,11 @@ class OpenAIChatAPI:
         """获取会话AI配置"""
         return self.db.get_session_ai_config(session_id) or {}
 
+    def get_session_ai_avatar_url(self, session_id: int) -> Optional[str]:
+        """获取会话AI头像"""
+        config = self.get_session_ai_config(session_id)
+        return config.get("ai_avatar_url", "")
+
     def is_session_exist(self, session_id: int) -> bool:
         """检查会话是否存在"""
         return self.db.is_session_exist(session_id)

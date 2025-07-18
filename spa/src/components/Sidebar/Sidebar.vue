@@ -78,6 +78,9 @@ const handleWebSocketMessage = (message: any) => {
         case 'all_sessions':
             loadSessions(message.data.sessions)
             break
+        case 'update_session_ai_avatar':
+            updateSessionAiAvatar(message.data.session_id, message.data.ai_avatar_url)
+            break
         case 'update_session_title':
             updateSessionTitle(message.data.session_id, message.data.title)
             break
@@ -153,6 +156,14 @@ const sortSessions = (sessions: any[]) => {
 const sortAndUpdateHistory = () => {
     chatSessions.value = sortSessions(chatSessions.value)
     handleSidebarClick()
+}
+
+// 更新会话AI头像
+const updateSessionAiAvatar = (sessionId: number, aiAvatarUrl: string) => {
+    const session = chatSessions.value.find(item => item.id === sessionId)
+    if (session) {
+        session.config.ai_avatar_url = aiAvatarUrl
+    }
 }
 
 // 更新会话标题

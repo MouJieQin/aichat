@@ -20,7 +20,7 @@
 
     </div>
     <!-- AI配置抽屉 -->
-    <AIConfigDrawer v-if="sessionAiConfig !== null" v-model="drawerVisible" :config="sessionAiConfig"
+    <AIConfigDrawer v-if="sessionAiConfig !== null" v-model="drawerVisible" :config="sessionAiConfig" :chatId="chatId"
         @update-config="updateSessionAiConfig" />
 </template>
 

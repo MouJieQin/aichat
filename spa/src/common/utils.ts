@@ -1,3 +1,9 @@
+export const ServerUrl = 'http://localhost:4999'
+
+export const getAiAvatarUrl = (ai_avatar_url: string) => {
+    return ServerUrl + ai_avatar_url
+}
+
 // 格式化时间
 export const formatTimeNow = () => {
     const time = new Date()

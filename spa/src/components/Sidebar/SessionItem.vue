@@ -8,7 +8,7 @@
             <el-icon v-if="!session.config.ai_avatar_url">
                 <ChatDotSquare />
             </el-icon>
-            <el-avatar v-else :src="getAiAvatarUrl" fit="cover" />
+            <el-avatar v-else :src="aiAvatarUrl" size="small" fit="cover" style="margin-right: 5px;" />
 
             <span class="truncate-text" :title="session.title">{{ session.title }}</span>
 
@@ -27,6 +27,7 @@ import SessionContextMenu from '@/components/Sidebar/SessionContextMenu.vue'
 import { ChatDotSquare, More } from '@element-plus/icons-vue'
 import { LuPin } from 'vue-icons-plus/lu'
 import { WebSocketService } from '@/common/websocket-client'
+import { getAiAvatarUrl } from '@/common/utils'
 
 const props = defineProps({
     session: {
@@ -47,8 +48,8 @@ const props = defineProps({
     }
 })
 
-const getAiAvatarUrl = computed(() => {
-    return 'http://localhost:4999' + props.session.config.ai_avatar_url
+const aiAvatarUrl = computed(() => {
+    return getAiAvatarUrl(props.session.config.ai_avatar_url)
 })
 
 const emits = defineEmits([

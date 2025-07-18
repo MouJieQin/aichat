@@ -1,6 +1,26 @@
 <template>
     <el-drawer v-model="visible" title="AI 配置" direction="rtl" size="40%">
+        <el-avatar v-if="localConfig.ai_avatar_url" :src="aiAvatarUrl" fit="cover" size="large" />
+
         <el-form :model="localConfig" label-width="150px" class="config-form">
+
+            <el-form-item label="头像">
+                <div>
+                    <el-upload class="upload-demo" drag action="http://localhost:4999/api/upload/avatar"
+                        :show-file-list="false" :data="{ 'session_id': chatId }">
+                        <el-icon class="el-icon--upload"><upload-filled /></el-icon>
+                        <div class="el-upload__text">
+                            Drop file here or <em>click to upload</em>
+                        </div>
+                        <template #tip>
+                            <div class="el-upload__tip">
+                                jpg/png files with a size less than 500kb
+                            </div>
+                        </template>
+                    </el-upload>
+                </div>
+            </el-form-item>
+
             <!-- 语言选择 -->
             <el-form-item label="语言">
                 <el-select v-model="localConfig.language" placeholder="选择语言"
@@ -59,6 +79,7 @@
             </el-form-item>
         </el-form>
 
+
         <template #footer>
             <el-button @click="visible = false">取消</el-button>
             <el-button type="primary" @click="handleConfirm">确认</el-button>
@@ -70,6 +91,9 @@
 import { ref, computed, watch } from 'vue'
 import { loadJsonFile } from '@/common/json-loader'
 import { AIConfig } from '@/common/type-interface'
+import { UploadFilled } from '@element-plus/icons-vue'
+import { getAiAvatarUrl } from '@/common/utils'
+
 
 const props = defineProps({
     modelValue: {
@@ -78,6 +102,10 @@ const props = defineProps({
     },
     config: {
         type: Object as () => AIConfig,
+        required: true
+    },
+    chatId: {
+        type: Number,
         required: true
     }
 })
@@ -90,6 +118,10 @@ const localConfig = ref<AIConfig>(JSON.parse(JSON.stringify(props.config)))
 const ttsVoices = ref<Record<string, any[]>>({})
 const languages = ref<string[]>([])
 
+
+const aiAvatarUrl = computed(() => {
+    return getAiAvatarUrl(props.config.ai_avatar_url)
+})
 
 // 加载语音数据
 const loadVoiceData = async () => {

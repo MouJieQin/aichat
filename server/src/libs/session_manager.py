@@ -101,6 +101,19 @@ class SessionManager:
         await SessionManager.broadcast_session_title(session_id, api)
 
     @staticmethod
+    async def update_session_ai_avatar(session_id: int, ai_avatar_url: str):
+        api.update_session_ai_avatar_url(session_id, ai_avatar_url)
+        msg = {
+            "type": "update_session_ai_avatar",
+            "data": {
+                "session_id": session_id,
+                "ai_avatar_url": ai_avatar_url,
+            },
+        }
+        await SessionManager.broadcast_spa(json.dumps(msg))
+        await SessionManager.send_session_config(session_id)
+
+    @staticmethod
     async def send_all_sessions(api: OpenAIChatAPI = api):
         """发送所有会话信息到SPA"""
         sessions = api.get_all_session_id_title_config()

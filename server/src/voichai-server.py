@@ -82,12 +82,16 @@ async def upload_avatar(
         file_path = Utils.get_ai_avatar_path(session_id, file.filename)
         file_url = Utils.get_ai_avatar_url(session_id, file.filename)
 
+        # 删除旧文件
+        old_avatar_url = api.get_session_ai_avatar_url(session_id)
+        Utils.delete_session_ai_avatar(session_id, old_avatar_url)
+
         # 保存文件
         with open(file_path, "wb") as f:
             f.write(contents)
 
         # 返回成功响应
-        api.update_session_ai_config(session_id, {"ai_avatar_url": file_url})
+        await SessionManager.update_session_ai_avatar(session_id, file_url)
         return {"success": True, "file_url": file_url}
 
     except HTTPException as e:

@@ -134,6 +134,7 @@ class MessageHandler:
     async def _handle_delete_session(websocket: WebSocket, message: dict):
         session_id = message["data"]["session_id"]
         api.delete_session(session_id)
+        Utils.remove_session_avatar(session_id)
 
         msg = {
             "type": "delete_session",

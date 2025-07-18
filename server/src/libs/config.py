@@ -42,16 +42,40 @@ class Utils:
             shutil.rmtree(path)
 
     @staticmethod
+    def removeFileIfExists(path: str):
+        if os.path.exists(path):
+            os.remove(path)
+
+    @staticmethod
     def get_ai_avatar_dir(session_id: int):
         return AVATARS_PATH + f"/{session_id}"
 
     @staticmethod
+    def get_ai_avatar_filename(orginal_filename: Optional[str]):
+        return f"ai-{orginal_filename}"
+
+    @staticmethod
     def get_ai_avatar_path(session_id: int, filename: Optional[str]):
-        return Utils.get_ai_avatar_dir(session_id) + f"/ai-{filename}"
+        filename = Utils.get_ai_avatar_filename(filename)
+        return Utils.get_ai_avatar_dir(session_id) + f"/{filename}"
 
     @staticmethod
     def get_ai_avatar_url(session_id: int, filename: Optional[str]):
-        return f"/api/download?path={Utils.get_ai_avatar_path(session_id, filename)}"
+        filename = Utils.get_ai_avatar_filename(filename)
+        return f"/api/download?path=/avatars/{session_id}/{filename}"
+
+    @staticmethod
+    def delete_session_ai_avatar(session_id: int, ai_avatar_url: Optional[str]):
+        if ai_avatar_url:
+            filename = ai_avatar_url.split("/")[-1]
+            Utils.removeFileIfExists(
+                Utils.get_ai_avatar_dir(session_id) + f"/{filename}"
+            )
+
+    @staticmethod
+    def remove_session_avatar(session_id: int):
+        dir = Utils.get_ai_avatar_dir(session_id)
+        Utils.removeDirIfExists(dir)
 
     @staticmethod
     def create_api() -> OpenAIChatAPI:

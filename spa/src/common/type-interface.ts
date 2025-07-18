@@ -26,6 +26,7 @@ export interface Message {
 }
 
 export interface AIConfig {
+    ai_avatar_url: string;
     base_url: string;
     api_key: string;
     model: string;

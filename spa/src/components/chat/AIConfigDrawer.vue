@@ -1,9 +1,11 @@
 <template>
     <el-drawer v-model="visible" title="AI 配置" direction="rtl" size="40%">
-        <el-avatar v-if="localConfig.ai_avatar_url" :src="aiAvatarUrl" fit="cover" size="large" />
+        <el-avatar v-if="localConfig.ai_avatar_url" :src="aiAvatarUrl" fit="cover" size="large"
+            @click="showPreview = true" />
+        <el-image-viewer v-if="showPreview" :url-list="[aiAvatarUrl]" show-progress :initial-index="0"
+            @close="showPreview = false" />
 
         <el-form :model="localConfig" label-width="150px" class="config-form">
-
             <el-form-item label="头像">
                 <div>
                     <el-upload class="upload-demo" drag action="http://localhost:4999/api/upload/avatar"
@@ -117,6 +119,7 @@ const visible = ref(props.modelValue)
 const localConfig = ref<AIConfig>(JSON.parse(JSON.stringify(props.config)))
 const ttsVoices = ref<Record<string, any[]>>({})
 const languages = ref<string[]>([])
+const showPreview = ref(false)
 
 
 const aiAvatarUrl = computed(() => {

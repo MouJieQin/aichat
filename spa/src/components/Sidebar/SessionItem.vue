@@ -8,7 +8,10 @@
             <el-icon v-if="!session.config.ai_avatar_url">
                 <ChatDotSquare />
             </el-icon>
-            <el-avatar v-else :src="aiAvatarUrl" size="small" fit="cover" style="margin-right: 5px;" />
+            <el-avatar v-else :src="aiAvatarUrl" size="small" fit="cover" style="margin-right: 5px;"
+                @click.stop="showPreview = true" />
+            <el-image-viewer v-if="showPreview" :url-list="[aiAvatarUrl]" show-progress :initial-index="0"
+                @close="showPreview = false" />
 
             <span class="truncate-text" :title="session.title">{{ session.title }}</span>
 
@@ -28,6 +31,8 @@ import { ChatDotSquare, More } from '@element-plus/icons-vue'
 import { LuPin } from 'vue-icons-plus/lu'
 import { WebSocketService } from '@/common/websocket-client'
 import { getAiAvatarUrl } from '@/common/utils'
+
+const showPreview = ref(false)
 
 const props = defineProps({
     session: {

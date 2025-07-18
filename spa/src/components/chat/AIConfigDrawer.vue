@@ -23,6 +23,11 @@
                 </div>
             </el-form-item>
 
+            <el-form-item v-if="systemPrompt.role === 'system'" label="系统设定">
+                <el-input v-model="localSystemPrompt" type="textarea" autosize placeholder="编辑设定..." />
+            </el-form-item>
+
+
             <!-- 语言选择 -->
             <el-form-item label="语言">
                 <el-select v-model="localConfig.language" placeholder="选择语言"
@@ -92,7 +97,7 @@
 <script lang="ts" setup>
 import { ref, computed, watch } from 'vue'
 import { loadJsonFile } from '@/common/json-loader'
-import { AIConfig } from '@/common/type-interface'
+import { AIConfig, Message } from '@/common/type-interface'
 import { UploadFilled } from '@element-plus/icons-vue'
 import { getAiAvatarUrl } from '@/common/utils'
 
@@ -101,6 +106,10 @@ const props = defineProps({
     modelValue: {
         type: Boolean,
         default: false
+    },
+    systemPrompt: {
+        type: Object as () => Message,
+        required: true,
     },
     config: {
         type: Object as () => AIConfig,
@@ -117,6 +126,7 @@ const emits = defineEmits(['update:modelValue', 'update-config'])
 // 状态
 const visible = ref(props.modelValue)
 const localConfig = ref<AIConfig>(JSON.parse(JSON.stringify(props.config)))
+const localSystemPrompt = ref<string>(props.systemPrompt.raw_text)
 const ttsVoices = ref<Record<string, any[]>>({})
 const languages = ref<string[]>([])
 const showPreview = ref(false)
@@ -157,15 +167,23 @@ watch(
     { deep: true }
 )
 
+watch(
+    () => props.systemPrompt,
+    (val) => {
+        localSystemPrompt.value = val.raw_text
+    }
+)
+
 // 处理确认
 const handleConfirm = () => {
-    emits('update-config', { ...localConfig.value })
+    emits('update-config', { ...localConfig.value }, props.systemPrompt.message_id, localSystemPrompt.value, props.systemPrompt.raw_text)
     visible.value = false
 }
 
 // 同步可见性
 watch(visible, (val) => {
     if (val) {
+        localSystemPrompt.value = props.systemPrompt.raw_text
         localConfig.value = JSON.parse(JSON.stringify(props.config))
     }
     emits('update:modelValue', val)

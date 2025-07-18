@@ -20,7 +20,8 @@
 
     </div>
     <!-- AI配置抽屉 -->
-    <AIConfigDrawer v-if="sessionAiConfig !== null" v-model="drawerVisible" :config="sessionAiConfig" :chatId="chatId"
+    <AIConfigDrawer v-if="sessionAiConfig !== null" v-model="drawerVisible"
+        :config="sessionAiConfig" :chatId="chatId" :systemPrompt="chatMessages[0]"
         @update-config="updateSessionAiConfig" />
 </template>
 
@@ -327,7 +328,15 @@ const openAIConfig = () => {
     drawerVisible.value = true
 }
 
-const updateSessionAiConfig = (config: AIConfig) => {
+const updateSystemPrompt = (message_id: number, raw_text: string) => {
+    const result = processMarkdown(raw_text, message_id)
+    webSocket?.value?.sendUpdateMessage(message_id, raw_text, result.html, result.sentences)
+}
+
+const updateSessionAiConfig = (config: AIConfig, systemPromptMessageId: number, newRawText: string, oldRawText: string) => {
+    if (newRawText !== oldRawText) {
+        updateSystemPrompt(systemPromptMessageId, newRawText)
+    }
     webSocket?.value?.sendUpdateSessionConfig(config)
     drawerVisible.value = false
 }

@@ -23,7 +23,7 @@
                 </div>
             </el-form-item>
 
-            <el-form-item v-if="systemPrompt.role === 'system'" label="系统设定">
+            <el-form-item v-if="systemPrompt.role === 'system' && systemPromptAutoResize" label="系统设定">
                 <el-input v-model="localSystemPrompt" type="textarea" autosize placeholder="编辑设定..." />
             </el-form-item>
 
@@ -130,6 +130,8 @@ const localSystemPrompt = ref<string>(props.systemPrompt.raw_text)
 const ttsVoices = ref<Record<string, any[]>>({})
 const languages = ref<string[]>([])
 const showPreview = ref(false)
+// workaround triggering autoresize for systemp prompt input
+const systemPromptAutoResize = ref(false)
 
 
 const aiAvatarUrl = computed(() => {
@@ -182,6 +184,7 @@ const handleConfirm = () => {
 
 // 同步可见性
 watch(visible, (val) => {
+    systemPromptAutoResize.value = val
     if (val) {
         localSystemPrompt.value = props.systemPrompt.raw_text
         localConfig.value = JSON.parse(JSON.stringify(props.config))

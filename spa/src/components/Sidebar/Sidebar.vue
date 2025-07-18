@@ -202,7 +202,17 @@ const addNewSession = (sessionData: any) => {
     sortAndUpdateHistory()
     setTimeout(() => {
         router.push(`/chat/${sessionData.session_id}`)
+        // scroll new session into view
+        const newSessionItem = document.getElementById(`chat-item-${route.path}`)
+        if (newSessionItem) {
+            newSessionItem.scrollIntoView({
+                behavior: 'smooth',
+                block: 'center',
+                inline: 'center'
+            })
+        }
     }, 300)
+
 }
 
 // 创建新会话

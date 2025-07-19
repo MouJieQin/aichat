@@ -41,3 +41,51 @@ export interface AIConfig {
     speech_rate: number;
     suggestions?: string[];
 }
+
+// system config
+
+export interface SpeakerConfig {
+    audio_dir: string;
+}
+
+export interface AzureConfig {
+    key: string;
+    region: string;
+}
+
+export interface AiAssistantDefaultConfig {
+    chat_title: string;
+    system_prompt: string;
+    ai_config_name: string;
+}
+
+export interface SystemAiConfig {
+    ai_config_name: string;
+}
+
+export interface AiApiConfig {
+    api_name: string;
+    base_url: string;
+    api_key: string;
+    model: string;
+    temperature: number;
+    max_tokens: number;
+    context_max_tokens: number;
+    max_messages: number;
+    language: string;
+    tts_voice: string;
+    auto_play: boolean;
+    auto_gen_title: boolean;
+    speech_rate: number;
+    modelsOptional: string[];
+}
+
+export interface SystemConfig {
+    speaker: SpeakerConfig;
+    azure: AzureConfig;
+    ai_assistant: {
+        default: AiAssistantDefaultConfig;
+        system_ai_config: SystemAiConfig;
+        apis: AiApiConfig[];
+    };
+}

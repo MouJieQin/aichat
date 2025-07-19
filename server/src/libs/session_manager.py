@@ -3,7 +3,7 @@ import time
 from typing import Optional
 from fastapi import WebSocket
 from libs.log_config import logger
-from libs.config import session_websockets, spa_websockets, api
+from libs.config import session_websockets, spa_websockets, api, CONFIG
 from libs.openai_chat_api import OpenAIChatAPI
 
 
@@ -121,6 +121,17 @@ class SessionManager:
             "type": "all_sessions",
             "data": {
                 "sessions": sessions,
+            },
+        }
+        await SessionManager.broadcast_spa(json.dumps(msg))
+
+    @staticmethod
+    async def send_system_config():
+        """发送系统配置到SPA"""
+        msg = {
+            "type": "system_config",
+            "data": {
+                "system_config": CONFIG,
             },
         }
         await SessionManager.broadcast_spa(json.dumps(msg))

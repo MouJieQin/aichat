@@ -2,6 +2,7 @@ import { createRouter, createWebHistory, RouteRecordRaw } from 'vue-router'
 
 // 懒加载组件
 const Home = () => import('@/views/Home.vue')
+const Setting = () => import('@/views/Setting.vue')
 const Chat = () => import('@/views/ChatPage.vue')
 
 const routes: RouteRecordRaw[] = [
@@ -13,6 +14,11 @@ const routes: RouteRecordRaw[] = [
                 path: '',
                 name: 'Home',
                 component: Home
+            },
+            {
+                path: 'setting',
+                name: 'Setting',
+                component: Setting
             },
             {
                 path: 'chat/:id',

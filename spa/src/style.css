@@ -474,6 +474,14 @@ body::-webkit-scrollbar-thumb {
     margin-top: 20px;
 }
 
+.config-class {
+    margin: 0 auto;
+    max-width: clamp(300px, 80vw, 800px);
+    padding: 10px;
+    border-radius: var(--el-border-radius-base);
+    box-shadow: var(--el-box-shadow-lighter);
+}
+
 .el-form-item {
     /* justify-content: flex-start; */
     margin-bottom: 16px;

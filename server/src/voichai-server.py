@@ -114,6 +114,7 @@ async def spa_websocket_endpoint(websocket: WebSocket):
 
     try:
         await SessionManager.send_all_sessions()
+        await SessionManager.send_system_config()
 
         while True:
             data = await websocket.receive_text()

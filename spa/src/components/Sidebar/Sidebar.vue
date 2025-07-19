@@ -28,6 +28,13 @@
                 <span>首页</span>
             </el-menu-item>
 
+            <el-menu-item key="/setting" index="setting" @click="navigateTo('/setting')" style="padding-left: 8px;">
+                <el-icon>
+                    <Setting />
+                </el-icon>
+                <span>系统配置</span>
+            </el-menu-item>
+
             <el-sub-menu index="chats">
                 <template #title>
                     <el-icon>
@@ -44,13 +51,15 @@
 <script lang="ts" setup>
 import { ref, computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { Plus, Expand, Fold, Clock } from '@element-plus/icons-vue'
+import { Plus, Expand, Fold, Clock, Setting } from '@element-plus/icons-vue'
 import { VscHome } from 'vue-icons-plus/vsc'
 import SessionList from '@/components/Sidebar/SessionList.vue'
 import { useWebSocket } from '@/common/websocket-client'
 import { processMarkdown } from '@/common/markdown-processor'
 import { ElMenu } from 'element-plus'
+import { useSystemConfigStore } from '@/stores/sidebarStore'
 
+const systemConfigStore = useSystemConfigStore()
 const route = useRoute()
 const router = useRouter()
 const isCollapse = ref(false)
@@ -74,6 +83,9 @@ const handleWebSocketMessage = (message: any) => {
             break
         case 'parse_create_session':
             parseMarkdown(message)
+            break
+        case 'system_config':
+            systemConfigStore.setSystemConfig(message.data.system_config)
             break
         case 'all_sessions':
             loadSessions(message.data.sessions)

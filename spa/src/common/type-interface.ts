@@ -64,7 +64,7 @@ export interface SystemAiConfig {
 }
 
 export interface AiApiConfig {
-    api_name: string;
+    name: string;
     base_url: string;
     api_key: string;
     model: string;

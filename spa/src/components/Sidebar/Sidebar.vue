@@ -57,9 +57,11 @@ import SessionList from '@/components/Sidebar/SessionList.vue'
 import { useWebSocket } from '@/common/websocket-client'
 import { processMarkdown } from '@/common/markdown-processor'
 import { ElMenu } from 'element-plus'
-import { useSystemConfigStore } from '@/stores/sidebarStore'
+import { useSystemConfigStore, useTtsVoiceStore } from '@/stores/sidebarStore'
+import { loadJsonFile } from '@/common/json-loader'
 
 const systemConfigStore = useSystemConfigStore()
+const ttsVoicesStore = useTtsVoiceStore()
 const route = useRoute()
 const router = useRouter()
 const isCollapse = ref(false)
@@ -67,7 +69,17 @@ const menuRef = ref<InstanceType<typeof ElMenu>>();
 const chatSessions = ref<any[]>([])
 const sidebarWidth = ref('0px')
 const siderbarScrollTimeoutId = ref<NodeJS.Timeout | null>(null)
+const ttsVoices = ref<Record<string, any[]>>({})
 
+
+// 加载语音数据
+const loadVoiceData = async () => {
+    ttsVoices.value = await loadJsonFile('/tts_voices.json')
+    ttsVoicesStore.setTtsVoices(ttsVoices.value)
+}
+
+// 初始化
+loadVoiceData()
 
 // 连接WebSocket
 const webSocket = useWebSocket('ws://localhost:4999/ws/aichat/spa')

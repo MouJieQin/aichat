@@ -84,6 +84,7 @@
             <el-form-item label="Max Messages">
                 <el-input-number v-model="localConfig.max_messages" :max="100" :min="1" :step="1" />
             </el-form-item>
+            
         </el-form>
 
 

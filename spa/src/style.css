@@ -467,8 +467,21 @@ body::-webkit-scrollbar-thumb {
 }
 
 /*  */
-/* 抽屉 */
+/* setting */
 /*  */
+.setting-container {
+    padding-bottom: 50px;
+}
+
+/*  */
+/* config */
+/*  */
+
+.system-config-title {
+    font-size: 24px;
+    font-weight: bold;
+    margin-bottom: 20px;
+}
 
 .config-form {
     margin-top: 20px;
@@ -480,6 +493,14 @@ body::-webkit-scrollbar-thumb {
     padding: 10px;
     border-radius: var(--el-border-radius-base);
     box-shadow: var(--el-box-shadow-lighter);
+    margin-bottom: 30px;
+}
+
+.config-class-title {
+    font-size: 18px;
+    font-weight: bold;
+    margin-bottom: 10px;
+    text-align: left;
 }
 
 .el-form-item {
@@ -497,4 +518,16 @@ body::-webkit-scrollbar-thumb {
 
 .drawer-header {
     height: 16px;
+}
+
+.el-tabs__nav {
+    overflow-x: scroll;
+    border: none !important;
+    white-space: nowrap;
+    display: block;
+}
+
+el-tabs__item {
+    float: none;
+    display: inline-block;
 }

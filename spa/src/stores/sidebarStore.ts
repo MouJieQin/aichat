@@ -11,3 +11,17 @@ export const useSystemConfigStore = defineStore('systemConfig', {
         }
     }
 })
+
+export const useTtsVoiceStore = defineStore('ttsVoices', {
+    state: () => ({
+        ttsVoices: {} as Record<string, any[]>,
+        languages: [] as string[]
+    }),
+    actions: {
+        setTtsVoices(ttsVoices: Record<string, any[]>) {
+            this.ttsVoices = ttsVoices
+            this.languages = Object.keys(ttsVoices)
+        }
+    }
+})
+

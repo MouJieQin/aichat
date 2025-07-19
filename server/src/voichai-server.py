@@ -23,7 +23,8 @@ from starlette.responses import FileResponse
 from pathlib import Path
 
 from libs.log_config import logger
-from libs.config import spa_websockets, session_websockets, api, Utils
+from libs.config import spa_websockets, session_websockets
+from libs.common import Utils, api
 from libs.config import DATA_PATH
 from libs.session_manager import SessionManager
 from libs.message_handler import MessageHandler
@@ -72,19 +73,19 @@ async def upload_avatar(
         ):
             raise HTTPException(status_code=400, detail="仅支持JPG/PNG格式的图片")
 
-        # 检查文件大小（500KB限制）
+        # 检查文件大小
         contents = await file.read()
         if len(contents) > 10 * 1024 * 1024:
             raise HTTPException(status_code=400, detail="文件大小不能超过10MB")
 
         # 生成唯一文件名
-        Utils.createDirIfnotExists(Utils.get_ai_avatar_dir(session_id))
-        file_path = Utils.get_ai_avatar_path(session_id, file.filename)
-        file_url = Utils.get_ai_avatar_url(session_id, file.filename)
+        Utils.createDirIfnotExists(Utils.Avatar.get_ai_avatar_dir(session_id))
+        file_path = Utils.Avatar.get_ai_avatar_path(session_id, file.filename)
+        file_url = Utils.Avatar.get_ai_avatar_url(session_id, file.filename)
 
         # 删除旧文件
         old_avatar_url = api.get_session_ai_avatar_url(session_id)
-        Utils.delete_session_ai_avatar(old_avatar_url)
+        Utils.Avatar.delete_session_ai_avatar(old_avatar_url)
 
         # 保存文件
         with open(file_path, "wb") as f:

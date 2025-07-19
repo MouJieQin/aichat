@@ -15,33 +15,37 @@
         "system_ai_config": {
             "ai_config_name": "doubao-1-5-pro-32k-system-ai"
         },
-        "doubao-1-5-pro-32k-system-ai": {
-            "base_url": "https://ark.cn-beijing.volces.com/api/v3",
-            "api_key": "",
-            "model": "doubao-1-5-pro-32k-250115",
-            "temperature": 0.5,
-            "max_tokens": 800,
-            "context_max_tokens": 3000,
-            "max_messages": 50,
-            "language": "中文",
-            "tts_voice": "zh-CN-XiaochenNeural",
-            "auto_play": false,
-            "auto_gen_title": true,
-            "speech_rate": 1.0
-        },
-        "volcengine": {
-            "base_url": "https://ark.cn-beijing.volces.com/api/v3",
-            "api_key": "",
-            "model": "doubao-1-5-pro-32k-250115",
-            "temperature": 0.7,
-            "max_tokens": 800,
-            "context_max_tokens": 3000,
-            "max_messages": 50,
-            "language": "中文",
-            "tts_voice": "zh-CN-XiaochenNeural",
-            "auto_play": false,
-            "auto_gen_title": true,
-            "speech_rate": 1.0
-        }
+        "apis": [
+            {
+                "name": "doubao-1-5-pro-32k-system-ai",
+                "base_url": "https://ark.cn-beijing.volces.com/api/v3",
+                "api_key": "",
+                "model": "doubao-1-5-pro-32k-250115",
+                "temperature": 0.5,
+                "max_tokens": 800,
+                "context_max_tokens": 3000,
+                "max_messages": 50,
+                "language": "中文",
+                "tts_voice": "zh-CN-XiaochenNeural",
+                "auto_play": false,
+                "auto_gen_title": true,
+                "speech_rate": 1.0
+            },
+            {
+                "name": "volcengine",
+                "base_url": "https://ark.cn-beijing.volces.com/api/v3",
+                "api_key": "",
+                "model": "doubao-1-5-pro-32k-250115",
+                "temperature": 0.7,
+                "max_tokens": 800,
+                "context_max_tokens": 3000,
+                "max_messages": 50,
+                "language": "中文",
+                "tts_voice": "zh-CN-XiaochenNeural",
+                "auto_play": false,
+                "auto_gen_title": true,
+                "speech_rate": 1.0
+            }
+        ]
     }
 }

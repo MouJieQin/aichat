@@ -1,28 +1,30 @@
 import openai
 import json
 import ast
+import time
 from datetime import datetime
 from typing import List, Dict, Any, Optional, Callable, Union
 from libs.chat_database import ChatDatabase
 from libs.log_config import logger
-import time
+from libs.config import SYSTEM_AI_CONFIG
 
 
 class OpenAIChatAPI:
     def __init__(
         self,
-        ai_config: dict,
         db: ChatDatabase,
     ):
         self.db = db
-        system_ai_config = ai_config[ai_config["system_ai_config"]["ai_config_name"]]
-        self.system_client = openai.OpenAI(
-            base_url=system_ai_config["base_url"],
-            api_key=system_ai_config["api_key"],
-        )
-        self.system_model = system_ai_config["model"]
-        self.system_temperature = 0.5
         self._stop_response = False
+        self.init_system_ai_config()
+
+    def init_system_ai_config(self):
+        self.system_client = openai.OpenAI(
+            base_url=SYSTEM_AI_CONFIG["base_url"],
+            api_key=SYSTEM_AI_CONFIG["api_key"],
+        )
+        self.system_model = SYSTEM_AI_CONFIG["model"]
+        self.system_temperature = 0.5
 
     @staticmethod
     def unescape_string(s: str) -> Optional[str]:

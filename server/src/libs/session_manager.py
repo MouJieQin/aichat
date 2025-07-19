@@ -3,7 +3,8 @@ import time
 from typing import Optional
 from fastapi import WebSocket
 from libs.log_config import logger
-from libs.config import session_websockets, spa_websockets, api, CONFIG
+from libs.config import session_websockets, spa_websockets, CONFIG
+from libs.common import api
 from libs.openai_chat_api import OpenAIChatAPI
 
 

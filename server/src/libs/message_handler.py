@@ -7,7 +7,7 @@ from fastapi import WebSocket
 from libs.log_config import logger
 from libs.openai_chat_api import OpenAIChatAPI
 from libs.config import AI_CONFIG_DEFAULT, DEFAULT_AI_CONFIG
-from libs.config import api, speaker, recognizer, Utils
+from libs.common import api, speaker, recognizer, Utils
 from libs.session_manager import SessionManager
 
 thread_api: OpenAIChatAPI

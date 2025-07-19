@@ -3,12 +3,8 @@ import os
 import appdirs
 import shutil
 from fastapi import WebSocket
-from typing import Dict, Optional
+from typing import Dict
 from libs.log_config import logger
-from libs.chat_database import ChatDatabase
-from libs.openai_chat_api import OpenAIChatAPI
-from libs.speaker import Speaker
-from libs.recognizer import Recognizer
 
 # 路径配置
 SERVER_SRC_ABS_PATH = os.path.abspath(os.getcwd())
@@ -31,7 +27,7 @@ spa_websockets: Dict[int, WebSocket] = {}
 session_websockets: Dict[int, Dict[int, WebSocket]] = {}
 
 
-class Utils:
+class UtilsBase:
     @staticmethod
     def createDirIfnotExists(path: str):
         if not os.path.exists(path):
@@ -47,69 +43,14 @@ class Utils:
         if os.path.exists(path):
             os.remove(path)
 
-    @staticmethod
-    def get_ai_avatar_dir(session_id: int):
-        return AVATARS_PATH + f"/{session_id}"
-
-    @staticmethod
-    def get_ai_avatar_filename(orginal_filename: Optional[str]):
-        return f"ai-{orginal_filename}"
-
-    @staticmethod
-    def get_ai_avatar_path(session_id: int, filename: Optional[str]):
-        filename = Utils.get_ai_avatar_filename(filename)
-        return Utils.get_ai_avatar_dir(session_id) + f"/{filename}"
-
-    @staticmethod
-    def get_ai_avatar_url(session_id: int, filename: Optional[str]):
-        filename = Utils.get_ai_avatar_filename(filename)
-        return f"{AVATAR_BASE_URL}/{session_id}/{filename}"
-
-    @staticmethod
-    def get_filename_from_ai_avatar_url(ai_avatar_url: str) -> tuple[int, str]:
-        session_id, filename = ai_avatar_url.split("/")[-2:]
-        return int(session_id), filename
-
-    @staticmethod
-    def get_path_from_ai_avatar_url(ai_avatar_url: str) -> str:
-        session_id, filename = Utils.get_filename_from_ai_avatar_url(ai_avatar_url)
-        return Utils.get_ai_avatar_dir(session_id) + f"/{filename}"
-
-    @staticmethod
-    def delete_session_ai_avatar(ai_avatar_url: Optional[str]):
-        if ai_avatar_url:
-            Utils.removeFileIfExists(Utils.get_path_from_ai_avatar_url(ai_avatar_url))
-
-    @staticmethod
-    def copy_session_ai_avatar(ai_avatar_url: str, session_id: int) -> str:
-        if not ai_avatar_url:
-            return ""
-        avatar_dir = Utils.get_ai_avatar_dir(session_id)
-        Utils.createDirIfnotExists(avatar_dir)
-        src_avatar_path = Utils.get_path_from_ai_avatar_url(ai_avatar_url)
-        _, filename = Utils.get_filename_from_ai_avatar_url(ai_avatar_url)
-        shutil.copyfile(src_avatar_path, avatar_dir + f"/{filename}")
-        return f"{AVATAR_BASE_URL}/{session_id}/{filename}"
-
-    @staticmethod
-    def remove_session_avatar(session_id: int):
-        dir = Utils.get_ai_avatar_dir(session_id)
-        Utils.removeDirIfExists(dir)
-
-    @staticmethod
-    def create_api() -> OpenAIChatAPI:
-        db = ChatDatabase(DATABASE_PATH)
-        api = OpenAIChatAPI(AI_CONFIG, db)
-        return api
-
 
 def init_config():
     """初始化配置目录和文件"""
     global CONFIG, DEFAULT_CONFIG
 
-    Utils.createDirIfnotExists(USER_CONFIG_DIR)
-    Utils.createDirIfnotExists(DATA_PATH)
-    Utils.createDirIfnotExists(AVATARS_PATH)
+    UtilsBase.createDirIfnotExists(USER_CONFIG_DIR)
+    UtilsBase.createDirIfnotExists(DATA_PATH)
+    UtilsBase.createDirIfnotExists(AVATARS_PATH)
 
     with open(DEFAULT_CONFIG_FILE, mode="r", encoding="utf-8") as f:
         DEFAULT_CONFIG = json.load(f)
@@ -150,10 +91,20 @@ def init_config():
 init_config()
 AI_CONFIG = CONFIG["ai_assistant"]
 AI_CONFIG_DEFAULT = AI_CONFIG["default"]
-DEFAULT_AI_CONFIG = AI_CONFIG[AI_CONFIG_DEFAULT["ai_config_name"]]
+APIS = AI_CONFIG["apis"]
 
-# 初始化服务
-db = ChatDatabase(DATABASE_PATH)
-api = OpenAIChatAPI(AI_CONFIG, db)
-speaker = Speaker(CONFIG, VOICHAI_STORAGE_PATH)
-recognizer = Recognizer(CONFIG)
+
+def find_index_by_name(name: str):
+    for i in range(len(APIS)):
+        if APIS[i].get("name") == name:
+            return i
+    return -1  # 若未找到则返回 -1
+
+
+DEFAULT_AI_CONFIG_index = find_index_by_name(AI_CONFIG_DEFAULT["ai_config_name"])
+DEFAULT_AI_CONFIG = APIS[DEFAULT_AI_CONFIG_index]
+
+SYSTEM_AI_CONFIG_index = find_index_by_name(
+    AI_CONFIG["system_ai_config"]["ai_config_name"]
+)
+SYSTEM_AI_CONFIG = APIS[SYSTEM_AI_CONFIG_index]

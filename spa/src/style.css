@@ -516,10 +516,6 @@ body::-webkit-scrollbar-thumb {
     max-width: 600px;
 }
 
-.drawer-header {
-    height: 16px;
-}
-
 .el-tabs__nav {
     overflow-x: scroll;
     border: none !important;

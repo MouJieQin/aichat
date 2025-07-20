@@ -20,9 +20,8 @@
 
     </div>
     <!-- AI配置抽屉 -->
-    <AIConfigDrawer v-if="sessionAiConfig !== null" v-model="drawerVisible"
-        :config="sessionAiConfig" :chatId="chatId" :systemPrompt="chatMessages[0]"
-        @update-config="updateSessionAiConfig" />
+    <AIConfigDrawer v-if="sessionAiConfig !== null" v-model="drawerVisible" :config="sessionAiConfig" :chatId="chatId"
+        :systemPrompt="chatMessages[0]" @update-config="updateSessionAiConfig" />
 </template>
 
 <script lang="ts" setup>
@@ -257,12 +256,10 @@ const handleChatMessagesForStreaming = (data: any) => {
 // 处理流式响应
 const handleStreamResponse = (data: any) => {
     streaming.value = data.is_streaming
+    isChatError.value = data.is_chat_error
+    streamResponse.value = data.response
     if (!data.is_chat_error) {
         handleChatMessagesForStreaming(data)
-    }
-    else {
-        isChatError.value = data.is_chat_error
-        streamResponse.value = data.response
     }
     if (!isScrolledWhenStreaming.value) {
         scrollToBottom('smooth')

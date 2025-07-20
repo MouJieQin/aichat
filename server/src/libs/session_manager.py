@@ -77,7 +77,7 @@ class SessionManager:
     @staticmethod
     async def broadcast_session_title(session_id: int, api: OpenAIChatAPI = Utils.api):
         """向特定会话的所有WebSocket连接广播标题"""
-        title = Utils.api.get_session_title(session_id)
+        title = api.get_session_title(session_id)
         msg = {
             "type": "session_title",
             "data": {
@@ -89,7 +89,7 @@ class SessionManager:
     @staticmethod
     async def update_title(session_id: int, title: str, api: OpenAIChatAPI = Utils.api):
         """更新会话标题并广播"""
-        Utils.api.update_session_title(session_id, title)
+        api.update_session_title(session_id, title)
         msg = {
             "type": "update_session_title",
             "data": {
@@ -116,7 +116,7 @@ class SessionManager:
     @staticmethod
     async def send_all_sessions(api: OpenAIChatAPI = Utils.api):
         """发送所有会话信息到SPA"""
-        sessions = Utils.api.get_all_session_id_title_config()
+        sessions = api.get_all_session_id_title_config()
         msg = {
             "type": "all_sessions",
             "data": {
@@ -150,10 +150,12 @@ class SessionManager:
 
     @staticmethod
     async def send_session_config(
-        session_id: int, websocket: Optional[WebSocket] = None, api: OpenAIChatAPI = Utils.api
+        session_id: int,
+        websocket: Optional[WebSocket] = None,
+        api: OpenAIChatAPI = Utils.api,
     ):
         """发送会话配置到指定WebSocket或广播"""
-        ai_config = Utils.api.get_session_ai_config(session_id)
+        ai_config = api.get_session_ai_config(session_id)
         msg = {
             "type": "session_ai_config",
             "data": {

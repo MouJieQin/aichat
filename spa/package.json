@@ -13,7 +13,7 @@
     "markdown-it": "^14.1.0",
     "pinia": "^3.0.3",
     "sentence-splitter": "^5.0.0",
-    "uuid": "^11.1.0",
+    "short-uuid": "^5.2.0",
     "vue": "^3.5.17",
     "vue-icons-plus": "^0.1.8",
     "vue-router": "^4.5.1"

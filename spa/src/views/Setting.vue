@@ -25,8 +25,11 @@
                         <el-input v-model="localSystemConfig.ai_assistant.default.system_prompt" type="textarea"
                             autosize placeholder="编辑设定..." />
                     </el-form-item>
-                    <el-form-item label="模型">
-                        <el-input v-model="localSystemConfig.ai_assistant.default.ai_config_name" />
+
+                    <el-form-item label="API">
+                        <el-select v-model="localSystemConfig.ai_assistant.default.ai_config_name" placeholder="请选择API">
+                            <el-option v-for="item in apis" :key="item.id" :label="item.name" :value="item.id" />
+                        </el-select>
                     </el-form-item>
                 </div>
 
@@ -124,10 +127,10 @@
 
 <script lang="ts" setup>
 import { ref, watch, onMounted, computed } from 'vue'
-import type { AiApiConfig, SystemConfig } from '@/common/type-interface'
+import type { SystemConfig } from '@/common/type-interface'
 import { useSystemConfigStore, useTtsVoiceStore } from '@/stores/sidebarStore'
 import type { TabPaneName } from 'element-plus'
-import { v4 as uuidv4 } from 'uuid';
+import short from 'short-uuid';
 
 const systemConfigStore = useSystemConfigStore()
 const ttsVoicesStore = useTtsVoiceStore()
@@ -162,7 +165,7 @@ const handleTabsEdit = (
     action: 'remove' | 'add'
 ) => {
     if (action === 'add') {
-        const id = uuidv4()
+        const id = short.generate()
         apis.value.push({
             id: id,
             name: id,

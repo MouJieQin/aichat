@@ -67,10 +67,10 @@
             <div class="config-class">
                 <p class="config-class-title">API</p>
 
-                <el-form-item label="API">
+                <el-form-item label="API (可选)">
                     <el-select v-model="selectedApiName" placeholder="选择API" @change="handleApiChange">
                         <el-option v-for="api in systemConfigStore.systemConfig?.ai_assistant.apis" :key="api.id"
-                            :label="api.name" :value="api.name" />
+                        :label="api.name" :value="api.name" />
                     </el-select>
                 </el-form-item>
 

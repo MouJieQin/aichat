@@ -7,7 +7,44 @@
             <el-form v-if="localSystemConfig" :model="localSystemConfig" label-width="150px" class="config-form">
 
                 <div class="config-class">
+                    <p class="config-class-title">Apperance</p>
+                    <el-form-item label="主题">
+                        <el-radio-group v-model="appTheme" size="large" fill="#6cf">
+                            <el-radio-button value="light">
+                                <div class="config-radio-button">
+                                    <el-icon class="config-radio-icon">
+                                        <Sunny />
+                                    </el-icon>
+                                    <span>浅色模式</span>
+                                </div>
+                            </el-radio-button>
+                            <el-radio-button :icon="Moon" label="深色模式" value="dark">
+                                <div class="config-radio-button">
+                                    <el-icon class="config-radio-icon">
+                                        <Moon />
+                                    </el-icon>
+                                    <span>深色模式</span>
+                                </div>
+                            </el-radio-button>
+                            <el-radio-button :icon="SwitchFilled" label="跟随系统" value="auto">
+                                <div class="config-radio-button">
+                                    <el-icon class="config-radio-icon">
+                                        <SwitchFilled />
+                                    </el-icon>
+                                    <span>跟随系统</span>
+                                </div>
+                            </el-radio-button>
+                        </el-radio-group>
+                    </el-form-item>
+                </div>
+
+                <div class="config-class">
                     <p class="config-class-title">Azure</p>
+                    <p class="config-class-desc">
+                        该配置用于语音合成和语音识别，
+                        请参考 <a href="https://portal.azure.com/#create/Microsoft.CognitiveServicesAIFoundry"
+                            target="_blank">Azure</a> 了解如何获取 Azure 语音服务的 API Key 和 Region。
+                    </p>
                     <el-form-item label="azure key">
                         <el-input v-model="localSystemConfig.azure.key" />
                     </el-form-item>
@@ -130,8 +167,13 @@ import { ref, watch, onMounted, computed } from 'vue'
 import type { SystemConfig } from '@/common/type-interface'
 import { useSystemConfigStore, useTtsVoiceStore } from '@/stores/sidebarStore'
 import type { TabPaneName } from 'element-plus'
+import { useTheme } from '@/common/use-theme';
+import { Sunny, Moon, SwitchFilled } from '@element-plus/icons-vue'
 import short from 'short-uuid';
 
+
+const { theme, setTheme } = useTheme();
+const appTheme = ref(theme.value)
 const systemConfigStore = useSystemConfigStore()
 const ttsVoicesStore = useTtsVoiceStore()
 const localSystemConfig = ref<SystemConfig>(JSON.parse(JSON.stringify(systemConfigStore.systemConfig)))
@@ -148,6 +190,10 @@ onMounted(() => {
 const apis = computed({
     get: () => localSystemConfig.value?.ai_assistant.apis,
     set: (val) => localSystemConfig.value.ai_assistant.apis = val
+})
+
+watch(appTheme, (newVal) => {
+    setTheme(newVal)
 })
 
 

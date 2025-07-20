@@ -6,32 +6,11 @@
   <link rel="icon" type="image/svg+xml" href="/voichai.svg" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Voichai</title>
-  <script>
-
-    // 在DOM加载前检测系统主题
-    // if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-    //   document.documentElement.classList.add('dark');
-    //   console.log('dark enter.');
-    //   darkStyleSet();
-    // } else {
-    //   document.documentElement.classList.remove('dark');
-    //   console.log('light enter.');
-    //   lightStyleSet();
-    // }
-
-    if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-
-    // 监听系统主题变化
-    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
-      const newTheme = e.matches ? 'dark' : 'light';
-      document.documentElement.classList.toggle('dark', newTheme === 'dark');
-      localStorage.theme = newTheme; // 可选：保存用户偏好
-      console.log('theme change:', newTheme);
-    });
+  <script lang="ts" setup>
+    // import { useTheme } from '@/common/use-theme';
+    // const { initTheme, watchSystemTheme } = useTheme();
+    // initTheme();
+    // watchSystemTheme();
   </script>
 </head>
 

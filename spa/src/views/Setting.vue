@@ -82,7 +82,11 @@
                                 </el-form-item>
 
                                 <el-form-item label="模型">
-                                    <el-input v-model="item.model" />
+                                    <el-select v-model="item.model" placeholder="选择模型"
+                                        @change="item.tts_voice = ttsVoicesStore.ttsVoices[item.language][0].ShortName">
+                                        <el-option v-for="model in item.modelsOptional" :key="model" :label="model"
+                                            :value="model" />
+                                    </el-select>
                                 </el-form-item>
 
                                 <el-form-item label="Temperature">
@@ -98,10 +102,9 @@
                                     <el-input-number v-model="item.max_messages" :min="1" :step="1" />
                                 </el-form-item>
 
-                                <!-- <el-form-item label="可选模型"> -->
-                                <div class="config-class">
+                                <!-- <div class="config-class">
                                     <p>可选模型</p>
-                                    <el-tabs v-model="editableModelTabsValue" type="card" closable editable stretch
+                                    <el-tabs v-model="editableModelTabsValue" type="card" closable stretch
                                         tab-position="bottom"
                                         @tab-remove="(targetName: TabPaneName) => { removeModelTab(index, targetName) }"
                                         @tab-click="() => { }">
@@ -110,14 +113,21 @@
                                         </el-tab-pane>
                                     </el-tabs>
                                 </div>
-                                <!-- </el-form-item> -->
                                 <el-form-item label="增加可选模型">
                                     <el-input v-model="newModelTabName" />
                                     <div style="margin-bottom: 20px">
-                                        <el-button size="small" @click="addModelTab(index)">
-                                            add model
+                                        <el-button :icon="Plus" size="small" @click="addModelTab(index)">
                                         </el-button>
                                     </div>
+                                </el-form-item> -->
+
+                                <el-form-item label="可选模型">
+                                    <el-select v-model="item.modelsOptional" multiple filterable allow-create
+                                        default-first-option :reserve-keyword="false"
+                                        placeholder="Choose tags for your article">
+                                        <el-option v-for="model in item.modelsOptional" :key="model" :label="model"
+                                            :value="model" />
+                                    </el-select>
                                 </el-form-item>
 
                             </el-form>
@@ -126,11 +136,14 @@
                 </div>
             </el-form>
         </div>
+        <el-affix position="bottom" :offset="20" style="text-align: right;">
+            <el-button type="primary" @click="updateSystemConfig">保存</el-button>
+        </el-affix>
     </div>
 </template>
 
 <script lang="ts" setup>
-import { ref, watch } from 'vue'
+import { ref, watch, onMounted } from 'vue'
 import type { AiApiConfig, SystemConfig } from '@/common/type-interface'
 import { useSystemConfigStore, useTtsVoiceStore } from '@/stores/sidebarStore'
 import type { TabPaneName } from 'element-plus'
@@ -141,14 +154,29 @@ const localSystemConfig = ref<SystemConfig>(JSON.parse(JSON.stringify(systemConf
 const newModelTabName = ref('')
 const editableTabsValue = ref('')
 const editableModelTabsValue = ref('')
-
 const apis = ref<AiApiConfig[]>()
+
+
+const initApis = () => {
+    if (localSystemConfig.value) {
+        apis.value = localSystemConfig.value.ai_assistant.apis
+        editableTabsValue.value = apis.value?.[0]?.name
+        editableModelTabsValue.value = apis.value?.[0]?.modelsOptional?.[0]
+    }
+}
+
+onMounted(() => {
+    initApis()
+})
+
 watch(() => systemConfigStore.systemConfig, (newVal) => {
     localSystemConfig.value = JSON.parse(JSON.stringify(newVal))
-    apis.value = localSystemConfig.value.ai_assistant.apis
-    editableTabsValue.value = apis.value?.[0]?.name
-    editableModelTabsValue.value = apis.value?.[0]?.modelsOptional?.[0]
+    initApis()
 })
+
+const updateSystemConfig = () => {
+    systemConfigStore.updateSystemConfig?.(localSystemConfig.value)
+}
 
 const handleTabsEdit = (
     targetName: TabPaneName | undefined,

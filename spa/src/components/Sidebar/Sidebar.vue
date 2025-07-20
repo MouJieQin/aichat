@@ -59,6 +59,7 @@ import { processMarkdown } from '@/common/markdown-processor'
 import { ElMenu } from 'element-plus'
 import { useSystemConfigStore, useTtsVoiceStore } from '@/stores/sidebarStore'
 import { loadJsonFile } from '@/common/json-loader'
+import type { SystemConfig } from '@/common/type-interface'
 
 const systemConfigStore = useSystemConfigStore()
 const ttsVoicesStore = useTtsVoiceStore()
@@ -71,6 +72,16 @@ const sidebarWidth = ref('0px')
 const siderbarScrollTimeoutId = ref<NodeJS.Timeout | null>(null)
 const ttsVoices = ref<Record<string, any[]>>({})
 
+
+const updateSystemConfig = (systemConfig: SystemConfig) => {
+    webSocket.send({
+        type: 'update_system_config',
+        data: {
+            system_config: systemConfig
+        }
+    })
+}
+systemConfigStore.setUpdateSystemConfig(updateSystemConfig)
 
 // 加载语音数据
 const loadVoiceData = async () => {

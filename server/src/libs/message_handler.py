@@ -6,8 +6,7 @@ import asyncio
 from fastapi import WebSocket
 from libs.log_config import logger
 from libs.openai_chat_api import OpenAIChatAPI
-from libs.config import AI_CONFIG_DEFAULT, DEFAULT_AI_CONFIG
-from libs.common import api, speaker, recognizer, Utils
+from libs.common import Utils
 from libs.session_manager import SessionManager
 
 thread_api: OpenAIChatAPI
@@ -22,9 +21,10 @@ class MessageHandler:
         try:
             message = json.loads(message_text)
             message_type = message["type"]
-            if message_type.startswith("parsed_"):
+            if not message_type.startswith("parsed_"):
                 logger.info(f"接收消息: {message}")
             handlers = {
+                "update_system_config": MessageHandler._handle_update_system_config,
                 "get_all_sessions": MessageHandler._handle_get_all_sessions,
                 "create_session": MessageHandler._handle_create_session,
                 "copy_session": MessageHandler._handle_copy_session,
@@ -44,21 +44,29 @@ class MessageHandler:
             logger.error(f"处理SPA消息时出错: {e}")
 
     @staticmethod
+    async def _handle_update_system_config(websocket: WebSocket, message: dict):
+        """更新配置"""
+        config = message["data"]["system_config"]
+        Utils.Config.init_config(config)
+        Utils.init_services()
+        await SessionManager.send_system_config()
+
+    @staticmethod
     async def _handle_get_all_sessions(websocket: WebSocket, message: dict):
         await SessionManager.send_all_sessions()
 
     @staticmethod
     async def _handle_create_session(websocket: WebSocket, message: dict):
-        system_prompt = AI_CONFIG_DEFAULT["system_prompt"]
+        system_prompt = Utils.AI_CONFIG_DEFAULT["system_prompt"]
         parsed_system_prompt = json.dumps({"sentences": [], "html": ""})
-        title = AI_CONFIG_DEFAULT["chat_title"]
+        title = Utils.AI_CONFIG_DEFAULT["chat_title"]
 
-        config = json.loads(json.dumps(DEFAULT_AI_CONFIG))
+        config = json.loads(json.dumps(Utils.DEFAULT_AI_CONFIG))
         config["top"] = False
         config["last_active_time"] = time.time()
         config["suggestions"] = []
 
-        session_id, message_id = api.create_new_session(
+        session_id, message_id = Utils.api.create_new_session(
             title, config, system_prompt, parsed_system_prompt
         )
 
@@ -75,20 +83,20 @@ class MessageHandler:
     @staticmethod
     async def _handle_copy_session(websocket: WebSocket, message: dict):
         session_id = message["data"]["session_id"]
-        new_session_id = api.copy_session(session_id)
+        new_session_id = Utils.api.copy_session(session_id)
 
         if new_session_id is None:
             raise ValueError("会话复制失败")
 
-        title = api.get_session_title(session_id)
-        config = api.get_session_ai_config(session_id)
-        config["ai_avatar_url"] = Utils.copy_session_ai_avatar(
+        title = Utils.api.get_session_title(session_id)
+        config = Utils.api.get_session_ai_config(session_id)
+        config["ai_avatar_url"] = Utils.Avatar.copy_session_ai_avatar(
             config["ai_avatar_url"], new_session_id
         )
         config["last_active_time"] = time.time()
         config["suggestions"] = []
         config["top"] = False
-        api.update_session_ai_config(new_session_id, config)
+        Utils.api.update_session_ai_config(new_session_id, config)
 
         msg = {
             "type": "new_session",
@@ -103,19 +111,19 @@ class MessageHandler:
     @staticmethod
     async def _handle_copy_session_and_message(websocket: WebSocket, message: dict):
         session_id = message["data"]["session_id"]
-        new_session_id = api.copy_session_and_messages(session_id)
+        new_session_id = Utils.api.copy_session_and_messages(session_id)
 
         if new_session_id is None:
             raise ValueError("会话复制失败")
 
-        title = api.get_session_title(session_id)
-        config = api.get_session_ai_config(session_id)
-        config["ai_avatar_url"] = Utils.copy_session_ai_avatar(
+        title = Utils.api.get_session_title(session_id)
+        config = Utils.api.get_session_ai_config(session_id)
+        config["ai_avatar_url"] = Utils.Avatar.copy_session_ai_avatar(
             config["ai_avatar_url"], new_session_id
         )
         config["last_active_time"] = time.time()
         config["top"] = False
-        api.update_session_ai_config(new_session_id, config)
+        Utils.api.update_session_ai_config(new_session_id, config)
 
         msg = {
             "type": "new_session",
@@ -133,14 +141,14 @@ class MessageHandler:
         title = message["data"]["title"]
 
         await SessionManager.update_title(session_id, title)
-        api.update_session_property(session_id, "auto_gen_title", False)
+        Utils.api.update_session_property(session_id, "auto_gen_title", False)
         await SessionManager.send_session_config(session_id)
 
     @staticmethod
     async def _handle_delete_session(websocket: WebSocket, message: dict):
         session_id = message["data"]["session_id"]
-        api.delete_session(session_id)
-        Utils.remove_session_avatar(session_id)
+        Utils.api.delete_session(session_id)
+        Utils.Avatar.remove_session_avatar(session_id)
 
         msg = {
             "type": "delete_session",
@@ -155,7 +163,7 @@ class MessageHandler:
         session_id = message["data"]["session_id"]
         top = message["data"]["top"]
 
-        api.update_session_top(session_id, top)
+        Utils.api.update_session_top(session_id, top)
 
         msg = {
             "type": "update_session_top",
@@ -171,16 +179,16 @@ class MessageHandler:
         data = message["data"]
         message_id = data["message_id"]
         session_id = data["session_id"]
-        config = api.get_session_ai_config(session_id)
+        config = Utils.api.get_session_ai_config(session_id)
 
-        title = AI_CONFIG_DEFAULT["chat_title"]
-        system_prompt = AI_CONFIG_DEFAULT["system_prompt"]
+        title = Utils.AI_CONFIG_DEFAULT["chat_title"]
+        system_prompt = Utils.AI_CONFIG_DEFAULT["system_prompt"]
         parsed_text = {
             "sentences": data["sentences"],
             "html": data["html"],
         }
 
-        api.update_message(message_id, parsed_text=json.dumps(parsed_text))
+        Utils.api.update_message(message_id, parsed_text=json.dumps(parsed_text))
 
         msg = {
             "type": "new_session",
@@ -370,7 +378,7 @@ class MessageHandler:
         message_id = message["data"]["message_id"]
         sentences = message["data"]["sentences"]
         html = message["data"]["html"]
-        api.update_message(
+        Utils.api.update_message(
             message_id,
             json.dumps({"sentences": sentences, "html": html}, ensure_ascii=False),
         )
@@ -383,7 +391,7 @@ class MessageHandler:
         sentences = message["data"]["sentences"]
         html = message["data"]["html"]
         raw_text = message["data"]["raw_text"]
-        api.update_message(
+        Utils.api.update_message(
             message_id,
             json.dumps({"sentences": sentences, "html": html}, ensure_ascii=False),
             raw_text=raw_text,
@@ -401,7 +409,7 @@ class MessageHandler:
         websocket: WebSocket, session_id: int, message: dict
     ):
         ai_config = message["data"]["ai_config"]
-        api.update_session_ai_config(session_id, ai_config)
+        Utils.api.update_session_ai_config(session_id, ai_config)
         await SessionManager.send_session_config(session_id)
 
     @staticmethod
@@ -413,10 +421,10 @@ class MessageHandler:
         sentences = message["data"]["sentences"]
         html = message["data"]["html"]
 
-        speaker.remove_audio_directory(session_id, message_id)
+        Utils.speaker.remove_audio_directory(session_id, message_id)
         parsed_text = {"sentences": sentences, "html": html}
 
-        api.update_message(
+        Utils.api.update_message(
             message_id, raw_text=raw_text, parsed_text=json.dumps(parsed_text)
         )
 
@@ -434,7 +442,7 @@ class MessageHandler:
         websocket: WebSocket, session_id: int, message: dict
     ):
         message_id = message["data"]["message_id"]
-        speaker.remove_audio_directory(session_id, message_id)
+        Utils.speaker.remove_audio_directory(session_id, message_id)
 
     @staticmethod
     async def _handle_delete_message(
@@ -442,8 +450,8 @@ class MessageHandler:
     ):
         message_id = message["data"]["message_id"]
 
-        api.delete_message(message_id)
-        speaker.remove_audio_directory(session_id, message_id)
+        Utils.api.delete_message(message_id)
+        Utils.speaker.remove_audio_directory(session_id, message_id)
 
         msg = {
             "type": "delete_message",
@@ -461,7 +469,7 @@ class MessageHandler:
         input_text = message["data"]["input_text"]
         cursor_position = message["data"]["cursor_position"]
 
-        await recognizer.start_recognition(
+        await Utils.recognizer.start_recognition(
             websocket, language, input_text, cursor_position
         )
 
@@ -471,13 +479,13 @@ class MessageHandler:
     ):
         original_text = message["data"]["original_text"]
         cursor_position = message["data"]["cursor_position"]
-        recognizer.reset_text_state(original_text, cursor_position)
+        Utils.recognizer.reset_text_state(original_text, cursor_position)
 
     @staticmethod
     async def _handle_stop_speech_recognize(
         websocket: WebSocket, session_id: int, message: dict
     ):
-        await recognizer.stop_recognition()
+        await Utils.recognizer.stop_recognition()
 
     @staticmethod
     async def _handle_generate_audio_files(
@@ -487,17 +495,17 @@ class MessageHandler:
         sentence_id_start = message["data"]["sentence_id_start"]
         sentence_id_end = message["data"]["sentence_id_end"]
 
-        ai_config = api.get_session_ai_config(session_id)
+        ai_config = Utils.api.get_session_ai_config(session_id)
         voice_name = ai_config["tts_voice"]
         speech_rate = ai_config["speech_rate"]
 
-        sentences = api.get_sentences(message_id)
+        sentences = Utils.api.get_sentences(message_id)
         if sentences is None:
             logger.warning(f"消息ID:{message_id} 未找到句子")
             return
 
         threading.Thread(
-            target=speaker.pregenerate_audio_files,
+            target=Utils.speaker.pregenerate_audio_files,
             args=(
                 session_id,
                 message_id,
@@ -515,11 +523,11 @@ class MessageHandler:
         message_id = message["data"]["message_id"]
         sentence_id = message["data"]["sentence_id"]
 
-        ai_config = api.get_session_ai_config(session_id)
+        ai_config = Utils.api.get_session_ai_config(session_id)
         voice_name = ai_config["tts_voice"]
         speech_rate = ai_config["speech_rate"]
 
-        sentences = api.get_sentences(message_id)
+        sentences = Utils.api.get_sentences(message_id)
         if sentences is None:
             logger.warning(f"消息ID:{message_id} 未找到句子")
             return
@@ -537,14 +545,14 @@ class MessageHandler:
             try:
                 await websocket.send_text(json.dumps(msg))
             except Exception as e:
-                speaker.stop_playback()
+                Utils.speaker.stop_playback()
                 logger.error(f"播放回调错误: {e}")
 
         await play_sentence_callback(-2)
 
         def play_sentence():
             asyncio.run(
-                speaker.play_sentence(
+                Utils.speaker.play_sentence(
                     session_id,
                     message_id,
                     sentence_id,
@@ -564,11 +572,11 @@ class MessageHandler:
         message_id = message["data"]["message_id"]
         sentence_id_start = message["data"]["sentence_id"]
 
-        ai_config = api.get_session_ai_config(session_id)
+        ai_config = Utils.api.get_session_ai_config(session_id)
         voice_name = ai_config["tts_voice"]
         speech_rate = ai_config["speech_rate"]
 
-        sentences = api.get_sentences(message_id)
+        sentences = Utils.api.get_sentences(message_id)
         if sentences is None:
             logger.warning(f"消息ID:{message_id} 未找到句子")
             return
@@ -585,25 +593,25 @@ class MessageHandler:
 
     @staticmethod
     async def _handle_pause(websocket: WebSocket, session_id: int, message: dict):
-        speaker.pause_playback()
+        Utils.speaker.pause_playback()
 
     @staticmethod
     async def _handle_unpause(websocket: WebSocket, session_id: int, message: dict):
-        speaker.resume_playback()
+        Utils.speaker.resume_playback()
 
     @staticmethod
     async def _handle_play(websocket: WebSocket, session_id: int, message: dict):
-        if speaker.is_playing():
-            speaker.resume_playback()
+        if Utils.speaker.is_playing():
+            Utils.speaker.resume_playback()
         else:
             message_id = message["data"]["message_id"]
 
-            ai_config = api.get_session_ai_config(session_id)
+            ai_config = Utils.api.get_session_ai_config(session_id)
             voice_name = ai_config["tts_voice"]
             speech_rate = ai_config["speech_rate"]
             sentence_id_start = 0
 
-            sentences = api.get_sentences(message_id)
+            sentences = Utils.api.get_sentences(message_id)
             if sentences is not None:
                 await MessageHandler._play_sentences_impl(
                     websocket,
@@ -617,7 +625,7 @@ class MessageHandler:
 
     @staticmethod
     async def _handle_stop(websocket: WebSocket, session_id: int, message: dict):
-        speaker.stop_playback()
+        Utils.speaker.stop_playback()
 
     @staticmethod
     async def _play_sentences_impl(
@@ -640,14 +648,14 @@ class MessageHandler:
             try:
                 await websocket.send_text(json.dumps(msg))
             except Exception as e:
-                speaker.stop_playback()
+                Utils.speaker.stop_playback()
                 logger.error(f"播放回调错误: {e}")
 
         await play_sentence_callback(-2)
 
         def play_sentences():
             asyncio.run(
-                speaker.play_sentences(
+                Utils.speaker.play_sentences(
                     session_id,
                     message_id,
                     sentence_id_start,

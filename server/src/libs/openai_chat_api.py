@@ -6,7 +6,7 @@ from datetime import datetime
 from typing import List, Dict, Any, Optional, Callable, Union
 from libs.chat_database import ChatDatabase
 from libs.log_config import logger
-from libs.config import SYSTEM_AI_CONFIG
+from libs.config import UtilsBase
 
 
 class OpenAIChatAPI:
@@ -20,10 +20,10 @@ class OpenAIChatAPI:
 
     def init_system_ai_config(self):
         self.system_client = openai.OpenAI(
-            base_url=SYSTEM_AI_CONFIG["base_url"],
-            api_key=SYSTEM_AI_CONFIG["api_key"],
+            base_url=UtilsBase.SYSTEM_AI_CONFIG["base_url"],
+            api_key=UtilsBase.SYSTEM_AI_CONFIG["api_key"],
         )
-        self.system_model = SYSTEM_AI_CONFIG["model"]
+        self.system_model = UtilsBase.SYSTEM_AI_CONFIG["model"]
         self.system_temperature = 0.5
 
     @staticmethod

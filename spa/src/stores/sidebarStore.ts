@@ -3,11 +3,15 @@ import type { SystemConfig } from '@/common/type-interface'
 
 export const useSystemConfigStore = defineStore('systemConfig', {
     state: () => ({
-        systemConfig: null as SystemConfig | null
+        systemConfig: null as SystemConfig | null,
+        updateSystemConfig: null as unknown as (systemConfig: SystemConfig) => void | null
     }),
     actions: {
         setSystemConfig(systemConfig: SystemConfig) {
             this.systemConfig = systemConfig
+        },
+        setUpdateSystemConfig(updateSystemConfig: (systemConfig: SystemConfig) => void) {
+            this.updateSystemConfig = updateSystemConfig
         }
     }
 })

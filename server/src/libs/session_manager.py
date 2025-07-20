@@ -3,8 +3,7 @@ import time
 from typing import Optional
 from fastapi import WebSocket
 from libs.log_config import logger
-from libs.config import session_websockets, spa_websockets, CONFIG
-from libs.common import api
+from libs.common import Utils
 from libs.openai_chat_api import OpenAIChatAPI
 
 
@@ -16,7 +15,7 @@ class SessionManager:
         """初始化会话配置"""
 
         def initialize_sessions_imple():
-            sessions = api.get_all_session_id_title_config()
+            sessions = Utils.api.get_all_session_id_title_config()
             for session in sessions:
                 session_id = session["id"]
                 config = json.loads(session["ai_config"])
@@ -38,7 +37,7 @@ class SessionManager:
                         is_changed = True
 
                 if is_changed:
-                    api.update_session_ai_config(session_id, config)
+                    Utils.api.update_session_ai_config(session_id, config)
 
         initialize_sessions_imple()
 
@@ -46,7 +45,7 @@ class SessionManager:
     async def broadcast_spa(message: str):
         """向所有SPA WebSocket连接广播消息"""
         invalid_keys = []
-        for key, websocket in spa_websockets.items():
+        for key, websocket in Utils.spa_websockets.items():
             try:
                 await websocket.send_text(message)
             except Exception as e:
@@ -54,17 +53,17 @@ class SessionManager:
                 invalid_keys.append(key)
 
         for key in invalid_keys:
-            del spa_websockets[key]
+            del Utils.spa_websockets[key]
 
     @staticmethod
     async def broadcast_session(session_id: int, message: str):
         """向特定会话的所有WebSocket连接广播消息"""
         session_id = int(session_id)
-        if session_id not in session_websockets:
+        if session_id not in Utils.session_websockets:
             return
 
         invalid_keys = []
-        for key, websocket in session_websockets[session_id].items():
+        for key, websocket in Utils.session_websockets[session_id].items():
             try:
                 await websocket.send_text(message)
             except Exception as e:
@@ -73,12 +72,12 @@ class SessionManager:
 
         # 移除无效连接
         for key in invalid_keys:
-            del session_websockets[session_id][key]
+            del Utils.session_websockets[session_id][key]
 
     @staticmethod
-    async def broadcast_session_title(session_id: int, api: OpenAIChatAPI = api):
+    async def broadcast_session_title(session_id: int, api: OpenAIChatAPI = Utils.api):
         """向特定会话的所有WebSocket连接广播标题"""
-        title = api.get_session_title(session_id)
+        title = Utils.api.get_session_title(session_id)
         msg = {
             "type": "session_title",
             "data": {
@@ -88,9 +87,9 @@ class SessionManager:
         await SessionManager.broadcast_session(session_id, json.dumps(msg))
 
     @staticmethod
-    async def update_title(session_id: int, title: str, api: OpenAIChatAPI = api):
+    async def update_title(session_id: int, title: str, api: OpenAIChatAPI = Utils.api):
         """更新会话标题并广播"""
-        api.update_session_title(session_id, title)
+        Utils.api.update_session_title(session_id, title)
         msg = {
             "type": "update_session_title",
             "data": {
@@ -103,7 +102,7 @@ class SessionManager:
 
     @staticmethod
     async def update_session_ai_avatar(session_id: int, ai_avatar_url: str):
-        api.update_session_ai_avatar_url(session_id, ai_avatar_url)
+        Utils.api.update_session_ai_avatar_url(session_id, ai_avatar_url)
         msg = {
             "type": "update_session_ai_avatar",
             "data": {
@@ -115,9 +114,9 @@ class SessionManager:
         await SessionManager.send_session_config(session_id)
 
     @staticmethod
-    async def send_all_sessions(api: OpenAIChatAPI = api):
+    async def send_all_sessions(api: OpenAIChatAPI = Utils.api):
         """发送所有会话信息到SPA"""
-        sessions = api.get_all_session_id_title_config()
+        sessions = Utils.api.get_all_session_id_title_config()
         msg = {
             "type": "all_sessions",
             "data": {
@@ -129,18 +128,20 @@ class SessionManager:
     @staticmethod
     async def send_system_config():
         """发送系统配置到SPA"""
+        global CONFIG
         msg = {
             "type": "system_config",
             "data": {
-                "system_config": CONFIG,
+                "system_config": Utils.CONFIG,
             },
         }
+        print(msg)
         await SessionManager.broadcast_spa(json.dumps(msg))
 
     @staticmethod
     async def send_session_messages(websocket: WebSocket, session_id: int):
         """发送会话消息到指定WebSocket"""
-        messages = api.get_session_messages(session_id, limit=-1)
+        messages = Utils.api.get_session_messages(session_id, limit=-1)
         msg = {
             "type": "session_messages",
             "data": {"messages": messages},
@@ -149,10 +150,10 @@ class SessionManager:
 
     @staticmethod
     async def send_session_config(
-        session_id: int, websocket: Optional[WebSocket] = None, api: OpenAIChatAPI = api
+        session_id: int, websocket: Optional[WebSocket] = None, api: OpenAIChatAPI = Utils.api
     ):
         """发送会话配置到指定WebSocket或广播"""
-        ai_config = api.get_session_ai_config(session_id)
+        ai_config = Utils.api.get_session_ai_config(session_id)
         msg = {
             "type": "session_ai_config",
             "data": {

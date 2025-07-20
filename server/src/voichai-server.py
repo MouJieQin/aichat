@@ -23,9 +23,7 @@ from starlette.responses import FileResponse
 from pathlib import Path
 
 from libs.log_config import logger
-from libs.config import spa_websockets, session_websockets
-from libs.common import Utils, api
-from libs.config import DATA_PATH
+from libs.common import Utils
 from libs.session_manager import SessionManager
 from libs.message_handler import MessageHandler
 
@@ -43,7 +41,7 @@ app.add_middleware(
 @app.get("/api/download")
 async def download(path: str):
     logger.info(f"download path: {path}")
-    path = DATA_PATH + path
+    path = Utils.DATA_PATH + path
     if not os.path.isfile(path):
         raise HTTPException(status_code=400, detail="Not a file or does not exist")
 
@@ -84,7 +82,7 @@ async def upload_avatar(
         file_url = Utils.Avatar.get_ai_avatar_url(session_id, file.filename)
 
         # 删除旧文件
-        old_avatar_url = api.get_session_ai_avatar_url(session_id)
+        old_avatar_url = Utils.api.get_session_ai_avatar_url(session_id)
         Utils.Avatar.delete_session_ai_avatar(old_avatar_url)
 
         # 保存文件
@@ -111,7 +109,7 @@ async def spa_websocket_endpoint(websocket: WebSocket):
     """SPA WebSocket端点"""
     await websocket.accept()
     connection_id = int(time.time() * 1000)
-    spa_websockets[connection_id] = websocket
+    Utils.spa_websockets[connection_id] = websocket
 
     try:
         await SessionManager.send_all_sessions()
@@ -126,8 +124,8 @@ async def spa_websocket_endpoint(websocket: WebSocket):
     except Exception as e:
         logger.error(f"SPA WebSocket错误: {e}")
     finally:
-        if connection_id in spa_websockets:
-            del spa_websockets[connection_id]
+        if connection_id in Utils.spa_websockets:
+            del Utils.spa_websockets[connection_id]
 
 
 @app.websocket("/ws/aichat/{clientID}")
@@ -136,7 +134,7 @@ async def session_websocket_endpoint(websocket: WebSocket, clientID: int):
     await websocket.accept()
 
     session_id = int(clientID)
-    if not api.is_session_exist(session_id):
+    if not Utils.api.is_session_exist(session_id):
         msg = {"type": "error_session_not_exist", "data": {"session_id": session_id}}
         await websocket.send_text(json.dumps(msg))
         await websocket.close()
@@ -144,10 +142,10 @@ async def session_websocket_endpoint(websocket: WebSocket, clientID: int):
 
     connection_id = int(time.time() * 1000)
 
-    if session_id not in session_websockets:
-        session_websockets[session_id] = {}
+    if session_id not in Utils.session_websockets:
+        Utils.session_websockets[session_id] = {}
 
-    session_websockets[session_id][connection_id] = websocket
+    Utils.session_websockets[session_id][connection_id] = websocket
 
     try:
         await SessionManager.send_session_messages(websocket, session_id)
@@ -164,10 +162,10 @@ async def session_websocket_endpoint(websocket: WebSocket, clientID: int):
         logger.error(f"会话WebSocket {clientID} 错误: {e}")
     finally:
         if (
-            session_id in session_websockets
-            and connection_id in session_websockets[session_id]
+            session_id in Utils.session_websockets
+            and connection_id in Utils.session_websockets[session_id]
         ):
-            del session_websockets[session_id][connection_id]
+            del Utils.session_websockets[session_id][connection_id]
 
 
 # 启动应用

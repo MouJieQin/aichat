@@ -33,8 +33,7 @@
                 <div class="config-class">
                     <p class="config-class-title">API</p>
                     <el-tabs v-model="editableTabsValue" type="card" editable @edit="handleTabsEdit">
-                        <el-tab-pane v-for="(item, index) in apis" :key="item.name" :label="item.name"
-                            :name="item.name">
+                        <el-tab-pane v-for="(item, index) in apis" :key="item.id" :label="item.name" :name="item.id">
                             <el-form :model="item" label-width="150px" class="config-form">
                                 <el-form-item label="name">
                                     <el-input v-model="item.name" />
@@ -102,25 +101,6 @@
                                     <el-input-number v-model="item.max_messages" :min="1" :step="1" />
                                 </el-form-item>
 
-                                <!-- <div class="config-class">
-                                    <p>可选模型</p>
-                                    <el-tabs v-model="editableModelTabsValue" type="card" closable stretch
-                                        tab-position="bottom"
-                                        @tab-remove="(targetName: TabPaneName) => { removeModelTab(index, targetName) }"
-                                        @tab-click="() => { }">
-                                        <el-tab-pane v-for="model in item.modelsOptional" :key="model" :label="model"
-                                            :name="model">
-                                        </el-tab-pane>
-                                    </el-tabs>
-                                </div>
-                                <el-form-item label="增加可选模型">
-                                    <el-input v-model="newModelTabName" />
-                                    <div style="margin-bottom: 20px">
-                                        <el-button :icon="Plus" size="small" @click="addModelTab(index)">
-                                        </el-button>
-                                    </div>
-                                </el-form-item> -->
-
                                 <el-form-item label="可选模型">
                                     <el-select v-model="item.modelsOptional" multiple filterable allow-create
                                         default-first-option :reserve-keyword="false"
@@ -143,31 +123,30 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, watch, onMounted } from 'vue'
+import { ref, watch, onMounted, computed } from 'vue'
 import type { AiApiConfig, SystemConfig } from '@/common/type-interface'
 import { useSystemConfigStore, useTtsVoiceStore } from '@/stores/sidebarStore'
 import type { TabPaneName } from 'element-plus'
+import { v4 as uuidv4 } from 'uuid';
 
 const systemConfigStore = useSystemConfigStore()
 const ttsVoicesStore = useTtsVoiceStore()
 const localSystemConfig = ref<SystemConfig>(JSON.parse(JSON.stringify(systemConfigStore.systemConfig)))
-const newModelTabName = ref('')
 const editableTabsValue = ref('')
-const editableModelTabsValue = ref('')
-const apis = ref<AiApiConfig[]>()
-
 
 const initApis = () => {
-    if (localSystemConfig.value) {
-        apis.value = localSystemConfig.value.ai_assistant.apis
-        editableTabsValue.value = apis.value?.[0]?.name
-        editableModelTabsValue.value = apis.value?.[0]?.modelsOptional?.[0]
-    }
+    editableTabsValue.value = apis.value?.[0]?.id
 }
 
 onMounted(() => {
     initApis()
 })
+
+const apis = computed({
+    get: () => localSystemConfig.value?.ai_assistant.apis,
+    set: (val) => localSystemConfig.value.ai_assistant.apis = val
+})
+
 
 watch(() => systemConfigStore.systemConfig, (newVal) => {
     localSystemConfig.value = JSON.parse(JSON.stringify(newVal))
@@ -182,13 +161,11 @@ const handleTabsEdit = (
     targetName: TabPaneName | undefined,
     action: 'remove' | 'add'
 ) => {
-    if (!apis.value) {
-        return
-    }
     if (action === 'add') {
-        const newTabName = `api_${apis.value.length + 1}`
+        const id = uuidv4()
         apis.value.push({
-            name: newTabName,
+            id: id,
+            name: id,
             base_url: '',
             api_key: '',
             model: '',
@@ -203,7 +180,7 @@ const handleTabsEdit = (
             speech_rate: 1,
             modelsOptional: [],
         })
-        editableTabsValue.value = newTabName
+        editableTabsValue.value = id
     } else if (action === 'remove') {
         const tabs = apis.value
         let activeName = editableTabsValue.value
@@ -219,40 +196,9 @@ const handleTabsEdit = (
         }
 
         editableTabsValue.value = activeName
-        apis.value = tabs.filter((tab) => tab.name !== targetName)
+        apis.value = tabs.filter((tab) => tab.id !== targetName)
     }
 }
 
-
-
-const addModelTab = (index: number) => {
-    if (!apis.value) return
-    if (apis.value[index].modelsOptional.includes(newModelTabName.value)) {
-        console.log('模型已存在')
-        return
-    }
-    apis.value[index].modelsOptional.push(newModelTabName.value)
-    editableModelTabsValue.value = newModelTabName.value
-    newModelTabName.value = ''
-}
-
-const removeModelTab = (index: number, targetName: TabPaneName) => {
-    if (!apis.value) return
-    const tabs = apis.value[index].modelsOptional
-    let activeName = editableModelTabsValue.value
-    if (activeName === targetName) {
-        tabs.forEach((model, index) => {
-            if (model === targetName) {
-                const nextTab = tabs[index + 1] || tabs[index - 1]
-                if (nextTab) {
-                    activeName = nextTab
-                }
-            }
-        })
-    }
-
-    editableModelTabsValue.value = activeName
-    apis.value[index].modelsOptional = tabs.filter((tab) => tab !== targetName)
-}
 
 </script>

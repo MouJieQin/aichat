@@ -157,7 +157,7 @@
             </el-form>
         </div>
         <el-affix position="bottom" :offset="20" style="text-align: right;">
-            <el-button type="primary" @click="updateSystemConfig">保存</el-button>
+            <el-button type="" @click="updateSystemConfig">保存</el-button>
         </el-affix>
     </div>
 </template>

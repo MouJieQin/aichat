@@ -1,7 +1,7 @@
 <!-- src/components/Sidebar/SessionItem.vue -->
 <template>
     <el-menu-item :index="session.path" :id="'chat-item-' + session.path" class="custom-menu-item"
-        @click="handleNavigate">
+        @click="handleNavigate('chat-item-' + session.path)">
         <template #title>
 
             <el-icon v-if="!session.config.ai_avatar_url">
@@ -61,8 +61,8 @@ const emits = defineEmits([
 ])
 
 // 处理导航
-const handleNavigate = () => {
-    emits('navigate', props.session.path)
+const handleNavigate = (id: string) => {
+    emits('navigate', props.session.path, id)
 }
 
 </script>

@@ -24,7 +24,7 @@ const emits = defineEmits([
     'navigate',
 ])
 
-const navigateTo = (path: string) => {
-    emits('navigate', path)
+const navigateTo = (path: string, id: string) => {
+    emits('navigate', path, id)
 }
 </script>

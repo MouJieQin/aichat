@@ -1,9 +1,10 @@
 <template>
-    <div class="sidebar" @click="handleSidebarClick" @scroll="handleScroll">
+    <div class="sidebar" @scroll="handleScroll">
         <el-menu ref="menuRef" :default-active="activeMenu" :collapse="isCollapse" :default-openeds="['chats']"
-            @open="handleOpen" @close="handleClose" class="sidebar-menu">
+            class="sidebar-menu">
 
-            <el-menu-item index="collapse" @click="toggleCollapse" style="padding-left: 2px;">
+            <el-menu-item index="collapse" id="sidebar-collapse" @click="toggleCollapse('sidebar-collapse')"
+                style="padding-left: 2px;">
                 <el-icon v-show="!isCollapse">
                     <Fold />
                 </el-icon>
@@ -14,21 +15,23 @@
             </el-menu-item>
 
 
-            <el-menu-item index="new_chat" @click="createNewSession" style="padding-left: 2px;">
+            <el-menu-item index="new_chat" id="sidebar-new-chat" @click="createNewSession('sidebar-new-chat')"
+                style="padding-left: 2px;">
                 <el-icon>
                     <Plus />
                 </el-icon>
                 <span>新对话</span>
             </el-menu-item>
 
-            <el-menu-item key="/" index="home" @click="navigateTo('/')" style="padding-left: 8px;">
+            <el-menu-item index="home" id="sidebar-/" @click="navigateTo('/', 'sidebar-/')" style="padding-left: 8px;">
                 <el-icon>
                     <VscHome />
                 </el-icon>
                 <span>首页</span>
             </el-menu-item>
 
-            <el-menu-item key="/setting" index="setting" @click="navigateTo('/setting')" style="padding-left: 8px;">
+            <el-menu-item index="setting" id="sidebar-/setting" @click="navigateTo('/setting', 'sidebar-/setting')"
+                style="padding-left: 8px;">
                 <el-icon>
                     <Setting />
                 </el-icon>
@@ -49,7 +52,7 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { Plus, Expand, Fold, Clock, Setting } from '@element-plus/icons-vue'
 import { VscHome } from 'vue-icons-plus/vsc'
@@ -71,7 +74,7 @@ const chatSessions = ref<any[]>([])
 const sidebarWidth = ref('0px')
 const siderbarScrollTimeoutId = ref<NodeJS.Timeout | null>(null)
 const ttsVoices = ref<Record<string, any[]>>({})
-
+const activeMenuId = ref('')
 
 const updateSystemConfig = (systemConfig: SystemConfig) => {
     webSocket.send({
@@ -132,7 +135,7 @@ const handleWebSocketMessage = (message: any) => {
 }
 
 const handleScroll = () => {
-    // 当滚动时，设置body的滚动条背景颜色
+    // 当滚动时，设置滚动条背景颜色
     if (siderbarScrollTimeoutId.value) {
         clearTimeout(siderbarScrollTimeoutId.value)
     }
@@ -167,7 +170,7 @@ const loadSessions = (sessionsData: any[]) => {
         config: JSON.parse(session.ai_config),
         id: session.id
     }))
-    sortAndUpdateHistory()
+    sortAndUpdateHistory(true)
 }
 
 const sortSessions = (sessions: any[]) => {
@@ -188,9 +191,16 @@ const sortSessions = (sessions: any[]) => {
 }
 
 // 排序并更新历史会话
-const sortAndUpdateHistory = () => {
+const sortAndUpdateHistory = (wait: boolean = false) => {
     chatSessions.value = sortSessions(chatSessions.value)
-    handleSidebarClick()
+    if (!wait) {
+        highlightActiveItem()
+    }
+    else {
+        setTimeout(() => {
+            highlightActiveItem()
+        }, 300)
+    }
 }
 
 // 更新会话AI头像
@@ -234,24 +244,13 @@ const addNewSession = (sessionData: any) => {
         config: sessionData.config,
         id: sessionData.session_id
     })
-    sortAndUpdateHistory()
-    setTimeout(() => {
-        router.push(`/chat/${sessionData.session_id}`)
-        // scroll new session into view
-        const newSessionItem = document.getElementById(`chat-item-${route.path}`)
-        if (newSessionItem) {
-            newSessionItem.scrollIntoView({
-                behavior: 'smooth',
-                block: 'center',
-                inline: 'center'
-            })
-        }
-    }, 300)
-
+    sortAndUpdateHistory(true)
+    router.push(`/chat/${sessionData.session_id}`)
 }
 
 // 创建新会话
-const createNewSession = () => {
+const createNewSession = (id: string) => {
+    activeMenuId.value = id
     webSocket.send({
         type: 'create_session',
         data: {}
@@ -259,7 +258,7 @@ const createNewSession = () => {
 }
 
 // 侧边栏点击处理
-const handleSidebarClick = () => {
+const handleMenuFold = () => {
     const sidebar = document.querySelector('.sidebar')
     if (sidebar) {
         setTimeout(() => {
@@ -268,13 +267,14 @@ const handleSidebarClick = () => {
                 sidebarWidth.value = newSidebarWidth
                 document.documentElement.style.setProperty('--main-content-left-margin', sidebarWidth.value)
             }
-            highlightActiveItem()
         }, 500)
     }
 }
 
 // 切换折叠状态
-const toggleCollapse = () => {
+const toggleCollapse = (id: string) => {
+    activeMenuId.value = id
+
     isCollapse.value = !isCollapse.value
     // 使用 Exposes 中的 openMenu 方法主动打开子菜单
     if (!isCollapse.value && menuRef.value) {
@@ -283,28 +283,24 @@ const toggleCollapse = () => {
 }
 
 // 导航到指定路径
-const navigateTo = (path: string) => {
+const navigateTo = (path: string, id: string) => {
+    activeMenuId.value = id
     router.push(path)
 }
 
 // 高亮当前活动项
 const highlightActiveItem = () => {
-    const item = document.getElementById(`chat-item-${route.path}`)
+    let item = document.getElementById(`chat-item-${route.path}`)
     if (item) {
-        item.style.color = 'rgb(24, 144, 255)'
-        item.style.fontWeight = 'bold'
-        item.style.backgroundColor = "var(--sidebar-menu-active-bg-color)"
-        item.scrollIntoView({
-            behavior: 'smooth',
-            block: 'center',
-            inline: 'center'
-        })
+        activeMenuId.value = `chat-item-${route.path}`
+    } else {
+        activeMenuId.value = `sidebar-${route.path}`
     }
 }
 
-const switchHighlightActiveItem = (newPath: string, oldPath: string) => {
-    const newItem = document.getElementById(`chat-item-${newPath}`)
-    const oldItem = document.getElementById(`chat-item-${oldPath}`)
+const switchHighlightActiveItem = (newId: string, oldId: string) => {
+    const newItem = document.getElementById(newId)
+    const oldItem = document.getElementById(oldId)
 
     if (oldItem) {
         oldItem.style.color = ''
@@ -316,7 +312,22 @@ const switchHighlightActiveItem = (newPath: string, oldPath: string) => {
         newItem.style.color = 'rgb(24, 144, 255)'
         newItem.style.fontWeight = 'bold'
         newItem.style.backgroundColor = "var(--sidebar-menu-active-bg-color)"
+
+        newItem.scrollIntoView({
+            behavior: 'smooth',
+            block: 'center',
+            inline: 'center'
+        })
     }
+
+
+}
+
+const handleActiveMenuIdChange = (newId: string, oldId: string) => {
+    if (newId === "sidebar-collapse") {
+        handleMenuFold()
+    }
+    switchHighlightActiveItem(newId, oldId)
 }
 
 // 当前活动菜单项
@@ -325,14 +336,6 @@ const activeMenu = computed(() => {
 })
 
 // 监听路由变化
-watch(activeMenu, switchHighlightActiveItem)
+watch(() => activeMenuId.value, handleActiveMenuIdChange)
 
-// 菜单事件处理
-const handleOpen = (key: string, keyPath: string[]) => {
-    console.log('菜单打开:', key, keyPath)
-}
-
-const handleClose = (key: string, keyPath: string[]) => {
-    console.log('菜单关闭:', key, keyPath)
-}
 </script>

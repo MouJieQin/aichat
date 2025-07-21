@@ -167,13 +167,13 @@ import { ref, watch, onMounted, computed } from 'vue'
 import type { SystemConfig } from '@/common/type-interface'
 import { useSystemConfigStore, useTtsVoiceStore } from '@/stores/sidebarStore'
 import type { TabPaneName } from 'element-plus'
-import { useTheme } from '@/common/use-theme';
+import { useThemeStore } from '@/common/use-theme';
 import { Sunny, Moon, SwitchFilled } from '@element-plus/icons-vue'
 import short from 'short-uuid';
 
 
-const { theme, setTheme } = useTheme();
-const appTheme = ref(theme.value)
+const themeStore = useThemeStore();
+const appTheme = ref(themeStore.theme)
 const systemConfigStore = useSystemConfigStore()
 const ttsVoicesStore = useTtsVoiceStore()
 const localSystemConfig = ref<SystemConfig>(JSON.parse(JSON.stringify(systemConfigStore.systemConfig)))
@@ -193,7 +193,7 @@ const apis = computed({
 })
 
 watch(appTheme, (newVal) => {
-    setTheme(newVal)
+    themeStore.setTheme(newVal)
 })
 
 

@@ -55,6 +55,9 @@
 
                 <div class="config-class">
                     <p class="config-class-title">Session</p>
+                    <p class="config-class-desc">
+                        创建一个新会话时的默认配置
+                    </p>
                     <el-form-item label="标题">
                         <el-input v-model="localSystemConfig.ai_assistant.default.chat_title" />
                     </el-form-item>

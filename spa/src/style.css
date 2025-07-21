@@ -527,7 +527,8 @@ body::-webkit-scrollbar-thumb {
 
 .config-class-desc {
     font-size: 14px;
-    margin-bottom: 10px;
+    text-align: left;
+    margin-bottom: 20px;
     opacity: 0.5;
 }
 

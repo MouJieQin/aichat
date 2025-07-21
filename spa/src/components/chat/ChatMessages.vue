@@ -49,7 +49,7 @@ const props = defineProps({
 // 定义组件输出事件
 const emits = defineEmits<{
     (e: 'send-message', text: string): void
-    (e: 'scroll'): void
+    (e: 'scroll-up'): void
 }>()
 
 const initVisibleMessages = async () => {
@@ -83,7 +83,6 @@ const loadMoreMessages = async () => {
     currentPage.value++
     // await new Promise(resolve => setTimeout(resolve, 3000))
     updateVisibleMessages()
-    //等待3000ms
     loading.value = false
 }
 
@@ -125,7 +124,7 @@ const handleUpScroll = () => {
             scrollTimeoutId.value = null
         }, 1000)
         if (scrolledCount.value >= 10) {
-            emits('scroll')
+            emits('scroll-up')
             scrolledCount.value = 0
         }
     }

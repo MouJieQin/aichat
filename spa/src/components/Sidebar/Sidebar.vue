@@ -290,8 +290,8 @@ const toggleCollapse = (id: string) => {
 
 // 导航到指定路径
 const navigateTo = (path: string, id: string) => {
-    activeMenuId.value = id
     router.push(path)
+    activeMenuId.value = id
 }
 
 // 高亮当前活动项

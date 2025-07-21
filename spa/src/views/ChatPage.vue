@@ -4,7 +4,7 @@
         <div class="chat-container">
             <!-- 只有当 webSocket 不为 null 时才渲染 ChatMessages 组件 -->
             <ChatMessages v-if="webSocket !== null" :websocket="webSocket" :messages="chatMessages"
-                @send-message="sendMessage" @scroll="isScrolledWhenStreaming = true" />
+                @send-message="sendMessage" @scroll-up="isScrolledWhenStreaming = true" />
             <div v-if="isSentNoStream" class="loader-container">
                 <ThreeDotsLoader class="threeDotsLoader" />
             </div>
@@ -74,9 +74,15 @@ onBeforeUnmount(() => {
     document.title = 'Voichai'
 })
 
-router.beforeEach((to, from, next) => {
+router.beforeEach(async (to, from, next) => {
     // 关闭 WebSocket
-    webSocket.value?.close()
+    if (!isSentNoStream.value && !streaming.value) {
+        webSocket.value?.close()
+    } else {
+        webSocket.value?.sendStopResponse()
+        await new Promise(resolve => setTimeout(resolve, 250))
+        webSocket.value?.close()
+    }
     next()
 })
 

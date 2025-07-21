@@ -234,6 +234,9 @@ const deleteSession = (sessionId: number) => {
     if (index !== -1) {
         chatSessions.value.splice(index, 1)
     }
+    if (route.path === `/chat/${sessionId}`) {
+        router.push('/')
+    }
 }
 
 // 添加新会话
@@ -274,11 +277,13 @@ const handleMenuFold = () => {
 // 切换折叠状态
 const toggleCollapse = (id: string) => {
     activeMenuId.value = id
-
     isCollapse.value = !isCollapse.value
     // 使用 Exposes 中的 openMenu 方法主动打开子菜单
     if (!isCollapse.value && menuRef.value) {
         (menuRef.value as any).open('chats');
+        setTimeout(() => {
+            highlightActiveItem()
+        }, 500)
     }
 }
 
@@ -319,8 +324,6 @@ const switchHighlightActiveItem = (newId: string, oldId: string) => {
             inline: 'center'
         })
     }
-
-
 }
 
 const handleActiveMenuIdChange = (newId: string, oldId: string) => {

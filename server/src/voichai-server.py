@@ -122,7 +122,7 @@ async def spa_websocket_endpoint(websocket: WebSocket):
     except WebSocketDisconnect:
         logger.info(f"SPA WebSocket断开连接")
     except Exception as e:
-        logger.error(f"SPA WebSocket错误: {e}")
+        logger.error(f"SPA WebSocket错误: {e}", exc_info=True)
     finally:
         if connection_id in Utils.spa_websockets:
             del Utils.spa_websockets[connection_id]
@@ -159,7 +159,7 @@ async def session_websocket_endpoint(websocket: WebSocket, clientID: int):
     except WebSocketDisconnect:
         logger.info(f"会话WebSocket {clientID} 断开连接")
     except Exception as e:
-        logger.error(f"会话WebSocket {clientID} 错误: {e}")
+        logger.error(f"会话WebSocket {clientID} 错误: {e}", exc_info=True)
     finally:
         if (
             session_id in Utils.session_websockets

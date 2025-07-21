@@ -155,6 +155,5 @@ const deleteSession = () => {
         },
     }
     props.webSocket.send(message)
-
 }
 </script>

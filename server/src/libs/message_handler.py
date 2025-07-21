@@ -41,7 +41,7 @@ class MessageHandler:
                 logger.warning(f"未知的SPA消息类型: {message_type}")
 
         except Exception as e:
-            logger.error(f"处理SPA消息时出错: {e}")
+            logger.error(f"处理SPA消息时出错: {e}", exc_info=True)
 
     @staticmethod
     async def _handle_update_system_config(websocket: WebSocket, message: dict):
@@ -240,7 +240,7 @@ class MessageHandler:
                 logger.warning(f"未知的会话消息类型: {message_type}")
 
         except Exception as e:
-            logger.error(f"处理会话消息时出错: {e}")
+            logger.error(f"处理会话消息时出错: {e}", exc_info=True)
 
     @staticmethod
     async def _handle_user_input(websocket: WebSocket, session_id: int, message: dict):

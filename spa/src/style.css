@@ -205,6 +205,17 @@ body::-webkit-scrollbar-thumb {
     margin-bottom: 16px;
 }
 
+.loader-container {
+    max-width: clamp(300px, 80vw, 800px);
+    text-align: left;
+    margin: 0 auto;
+}
+
+.loader-container .threeDotsLoader {
+    margin-left: 20px;
+    transform: translate(-50%, -50%);
+}
+
 /*  */
 /* Message bubble */
 /*  */

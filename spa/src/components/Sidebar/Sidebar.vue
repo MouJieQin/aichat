@@ -285,6 +285,7 @@ const toggleCollapse = (id: string) => {
             highlightActiveItem()
         }, 500)
     }
+    handleMenuFold()
 }
 
 // 导航到指定路径
@@ -327,9 +328,6 @@ const switchHighlightActiveItem = (newId: string, oldId: string) => {
 }
 
 const handleActiveMenuIdChange = (newId: string, oldId: string) => {
-    if (newId === "sidebar-collapse") {
-        handleMenuFold()
-    }
     switchHighlightActiveItem(newId, oldId)
 }
 

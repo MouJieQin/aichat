@@ -5,8 +5,9 @@
             <!-- 只有当 webSocket 不为 null 时才渲染 ChatMessages 组件 -->
             <ChatMessages v-if="webSocket !== null" :websocket="webSocket" :messages="chatMessages"
                 @send-message="sendMessage" @scroll="isScrolledWhenStreaming = true" />
-            <!-- 可以添加一个加载状态提示 -->
-            <div v-else class="loading">加载中...</div>
+            <div v-if="isSentNoStream" class="loader-container">
+                <ThreeDotsLoader class="threeDotsLoader" />
+            </div>
             <!-- 流式响应展示 -->
             <MessageStream :streaming="streaming" :error="isChatError" :content="streamResponse" />
             <!-- 建议消息列表 -->
@@ -32,6 +33,7 @@ import MessageStream from '@/components/Chat/MessageStream.vue'
 import SuggestionsList from '@/components/Chat/SuggestionsList.vue'
 import ChatInput from '@/components/Chat/ChatInput.vue'
 import AIConfigDrawer from '@/components/Chat/AIConfigDrawer.vue'
+import ThreeDotsLoader from '@/components/Svgs/ThreeDotsLoader.vue'
 import { ChatWebSocketService, useChatWebSocket } from '@/common/chat-websocket-client'
 import { processMarkdown } from '@/common/markdown-processor'
 import { formatTimeNow, highlightPlayingSentence, scrollToBottom, delayScrollToBottom } from '@/common/utils'
@@ -53,6 +55,7 @@ const streaming = ref(false)
 const isScrolledWhenStreaming = ref(false)
 const isChatError = ref(false)
 const streamResponse = ref('')
+const isSentNoStream = ref(false)
 
 // 输入状态
 const isSpeechRecognizing = ref(false)
@@ -256,6 +259,7 @@ const handleChatMessagesForStreaming = (data: any) => {
 // 处理流式响应
 const handleStreamResponse = (data: any) => {
     streaming.value = data.is_streaming
+    isSentNoStream.value = false
     isChatError.value = data.is_chat_error
     streamResponse.value = data.response
     if (!data.is_chat_error) {
@@ -305,6 +309,7 @@ const removeMessage = (data: any) => {
 const sendMessage = (text: string) => {
     if (!text.trim() || !chatId.value) return
     webSocket?.value?.sendUserInput(text)
+    isSentNoStream.value = true
     if (isSpeechRecognizing.value) {
         webSocket?.value?.sendStopSpeechRecognition()
     }

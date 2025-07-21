@@ -1,7 +1,7 @@
 <template>
     <div class="chat-messages-container">
-        <div class="chat-message" v-for="message in visibleMessages" :key="message.message_id">
-            <div v-if="loading" class="loading-indicator">加载中...</div>
+        <el-skeleton v-if="loading" :rows="5" animated />
+        <div v-if="!loading" class="chat-message" v-for="message in visibleMessages" :key="message.message_id">
             <MessageBubble :websocket="websocket" :message="message"
                 :showRefreshButton="message.message_id === maxAssistantMessageId" @regenerate="handleRegenerate"
                 @update-message="handleUpdateMessage" />
@@ -81,7 +81,9 @@ const loadMoreMessages = async () => {
     if (loading.value || !hasMoreMessages.value) return
     loading.value = true
     currentPage.value++
+    // await new Promise(resolve => setTimeout(resolve, 3000))
     updateVisibleMessages()
+    //等待3000ms
     loading.value = false
 }
 

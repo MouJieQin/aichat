@@ -1,4 +1,5 @@
 <template>
+    <!-- By Sam Herbert (@sherb), for everyone. More @ http://goo.gl/7AJzbL -->
     <svg width="35" height="35" viewBox="0 0 44 44" xmlns="http://www.w3.org/2000/svg" stroke="var(--puff-loader-color)">
         <g fill="none" fill-rule="evenodd" stroke-width="2">
             <circle cx="22" cy="22" r="1">

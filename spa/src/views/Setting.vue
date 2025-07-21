@@ -68,7 +68,7 @@
 
                     <el-form-item label="API">
                         <el-select v-model="localSystemConfig.ai_assistant.default.ai_config_name" placeholder="请选择API">
-                            <el-option v-for="item in apis" :key="item.id" :label="item.name" :value="item.id" />
+                            <el-option v-for="item in apis" :key="item.id" :label="item.name" :value="item.name" />
                         </el-select>
                     </el-form-item>
                 </div>

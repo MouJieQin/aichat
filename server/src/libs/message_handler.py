@@ -16,6 +16,17 @@ class MessageHandler:
     """消息处理器，处理不同类型的WebSocket消息"""
 
     @staticmethod
+    async def handle_electron_message(websocket: WebSocket, message_text: str):
+        """处理electron WebSocket消息"""
+        try:
+            message = json.loads(message_text)
+            message_type = message["type"]
+
+            logger.warning(f"未知的electron消息类型: {message_type}")
+        except Exception as e:
+            logger.error(f"处理electron消息时出错: {e}", exc_info=True)
+
+    @staticmethod
     async def handle_spa_message(websocket: WebSocket, message_text: str):
         """处理SPA WebSocket消息"""
         try:
@@ -24,6 +35,7 @@ class MessageHandler:
             if not message_type.startswith("parsed_"):
                 logger.info(f"接收消息: {message}")
             handlers = {
+                "update_theme": MessageHandler._handle_update_theme,
                 "update_system_config": MessageHandler._handle_update_system_config,
                 "get_all_sessions": MessageHandler._handle_get_all_sessions,
                 "create_session": MessageHandler._handle_create_session,
@@ -42,6 +54,12 @@ class MessageHandler:
 
         except Exception as e:
             logger.error(f"处理SPA消息时出错: {e}", exc_info=True)
+
+    @staticmethod
+    async def _handle_update_theme(websocket: WebSocket, message: dict):
+        """更新主题"""
+        Utils.theme = message["data"]["theme"]
+        await SessionManager.broadcast_electron_theme()
 
     @staticmethod
     async def _handle_update_system_config(websocket: WebSocket, message: dict):

@@ -55,6 +55,7 @@ class UtilsBase:
     SYSTEM_AI_CONFIG = {}
 
     # WebSocket 连接管理
+    electron_websockets: Dict[int, WebSocket] = {}
     spa_websockets: Dict[int, WebSocket] = {}
     session_websockets: Dict[int, Dict[int, WebSocket]] = {}
 

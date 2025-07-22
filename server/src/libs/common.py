@@ -10,6 +10,7 @@ from libs.config import UtilsBase
 
 class Utils(UtilsBase):
     # 初始化服务
+    theme = "light"
     db = ChatDatabase(UtilsBase.DATABASE_PATH)
     api = OpenAIChatAPI(db)
     speaker = Speaker(UtilsBase.CONFIG, UtilsBase.VOICHAI_STORAGE_PATH)
@@ -20,7 +21,7 @@ class Utils(UtilsBase):
         db = ChatDatabase(UtilsBase.DATABASE_PATH)
         api = OpenAIChatAPI(db)
         return api
-    
+
     @staticmethod
     def init_services():
         Utils.db = ChatDatabase(UtilsBase.DATABASE_PATH)
@@ -81,4 +82,3 @@ class Utils(UtilsBase):
         def remove_session_avatar(session_id: int):
             dir = Utils.Avatar.get_ai_avatar_dir(session_id)
             Utils.removeDirIfExists(dir)
-

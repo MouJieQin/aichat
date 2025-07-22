@@ -104,6 +104,28 @@ async def upload_avatar(
 
 
 # WebSocket 端点
+@app.websocket("/ws/aichat/electron")
+async def electron_websocket_endpoint(websocket: WebSocket):
+    """electron WebSocket端点"""
+    await websocket.accept()
+    connection_id = int(time.time() * 1000)
+    Utils.electron_websockets[connection_id] = websocket
+
+    try:
+        await SessionManager.broadcast_electron_theme()
+        while True:
+            data = await websocket.receive_text()
+            await MessageHandler.handle_spa_message(websocket, data)
+
+    except WebSocketDisconnect:
+        logger.info(f"electron WebSocket断开连接")
+    except Exception as e:
+        logger.error(f"electron WebSocket错误: {e}", exc_info=True)
+    finally:
+        if connection_id in Utils.electron_websockets:
+            del Utils.electron_websockets[connection_id]
+
+
 @app.websocket("/ws/aichat/spa")
 async def spa_websocket_endpoint(websocket: WebSocket):
     """SPA WebSocket端点"""

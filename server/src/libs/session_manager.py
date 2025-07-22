@@ -42,6 +42,20 @@ class SessionManager:
         initialize_sessions_imple()
 
     @staticmethod
+    async def broadcast_electron(message: str):
+        """向所有electron WebSocket连接广播消息"""
+        invalid_keys = []
+        for key, websocket in Utils.electron_websockets.items():
+            try:
+                await websocket.send_text(message)
+            except Exception as e:
+                logger.error(f"electron广播错误: {e}")
+                invalid_keys.append(key)
+
+        for key in invalid_keys:
+            del Utils.electron_websockets[key]
+
+    @staticmethod
     async def broadcast_spa(message: str):
         """向所有SPA WebSocket连接广播消息"""
         invalid_keys = []
@@ -167,3 +181,14 @@ class SessionManager:
             await websocket.send_text(json.dumps(msg))
         else:
             await SessionManager.broadcast_session(session_id, json.dumps(msg))
+
+    @staticmethod
+    async def broadcast_electron_theme():
+        """发送会话主题到指定WebSocket或广播"""
+        msg = {
+            "type": "update_theme",
+            "data": {
+                "theme": Utils.theme,
+            },
+        }
+        await SessionManager.broadcast_electron(json.dumps(msg))

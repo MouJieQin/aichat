@@ -7,7 +7,7 @@
             <el-form v-if="localSystemConfig" :model="localSystemConfig" label-width="150px" class="config-form">
 
                 <div class="config-class">
-                    <p class="config-class-title">Apperance</p>
+                    <p class="config-class-title">Appearance</p>
                     <el-form-item label="主题">
                         <el-radio-group v-model="appTheme" size="large" fill="#6cf">
                             <el-radio-button value="light">

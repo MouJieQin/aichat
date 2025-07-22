@@ -1,10 +1,12 @@
 const { app } = require("electron");
 const { BrowserWindow, screen, Menu, MenuItem } = require("electron");
-const https = require("https");
+const http = require("http");
 const path = require("path");
 const fs = require("fs");
+const WebSocket = require("ws");
 const { exec } = require("child_process");
 const { dialog } = require("electron");
+const { nativeTheme } = require("electron");
 
 const splits = __dirname.split("/");
 const voichaiPath = splits.splice(0, splits.length - 2).join("/");
@@ -13,6 +15,7 @@ const checkInstallPath = voichaiPath.concat("/shell/voichai-checkInstall");
 const installPath = voichaiPath.concat("/install");
 const startPath = voichaiPath.concat("/shell/voichai-start");
 const stopPath = voichaiPath.concat("/shell/voichai-stop");
+var webSocket = {};
 
 // electron setup
 const configPath = path.join(
@@ -23,6 +26,62 @@ const configPath = path.join(
 );
 // Access command-line arguments
 const args = process.argv.slice(2);
+
+// websocket
+function retryWebsocketConnection() {
+    let timer = setTimeout(async () => {
+        clearTimeout(timer);
+        if (webSocket.readyState !== WebSocket.OPEN) {
+            try {
+                await webSocketManager();
+            } catch (error) {
+                console.log("This could be an expected exception:", error);
+                return [];
+            }
+        }
+    }, 5000);
+}
+
+function handleMessage(message) {
+    switch (message.type) {
+        case "new_window":
+            createWindow(message.data.url);
+            break;
+        case "update_theme":
+            nativeTheme.themeSource = message.data.theme;
+            break;
+        default:
+            break;
+    }
+}
+
+const options = {
+    rejectUnauthorized: false, // Bypass SSL certificate verification
+};
+
+const agent = new http.Agent(options);
+
+async function webSocketManager() {
+    try {
+        const wsUrl = "ws://localhost:4999/ws/aichat/electron";
+        webSocket = new WebSocket(wsUrl, { agent });
+        webSocket.onerror = (error) => {
+            // console.error("WebSocket error:", error);
+        };
+        // webSocket.onopen = (event) => {};
+        webSocket.onmessage = (event) => {
+            const message = JSON.parse(event.data);
+            console.log("message:", message);
+            handleMessage(message);
+        };
+        webSocket.onclose = (event) => {
+            retryWebsocketConnection();
+        };
+    } catch (error) {
+        console.error("WebSocket error:", error);
+        retryWebsocketConnection();
+    }
+}
 
 // 读取上次保存的 URL
 function getLastUrl() {
@@ -180,6 +239,7 @@ function createWindow(url = "http://localhost:3999/") {
         const url = mainWindow.webContents.getURL();
         saveLastUrl(url);
     });
+    mainWindow.webContents.send("theme-changed", true);
 }
 
 async function handleShutdown() {
@@ -211,6 +271,7 @@ app.whenReady().then(async () => {
         app.quit();
     } else {
         await startServer();
+        await webSocketManager();
         if (args.length > 0) {
             createWindow(args[0]);
         } else {

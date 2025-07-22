@@ -4,11 +4,16 @@ import { defineStore } from 'pinia'
 export const useThemeStore = defineStore('theme', {
   state: () => ({
     theme: localStorage.theme as string || 'auto',
+    callback: null as ((theme: string) => void) | null
   }),
+
   actions: {
     setTheme(newTheme: string) {
       this.theme = newTheme;
       localStorage.theme = this.theme;
+    },
+    setCallback(callback: (theme: string) => void) {
+      this.callback = callback;
     }
   }
 })
@@ -31,8 +36,10 @@ export const useTheme = () => {
   const initTheme = () => {
     if (themeStore.theme === 'auto') {
       document.documentElement.classList.toggle('dark', operationSystemTheme.value === 'dark');
+      themeStore.callback?.(operationSystemTheme.value);
     } else {
       document.documentElement.classList.toggle('dark', themeStore.theme === 'dark');
+      themeStore.callback?.(themeStore.theme);
     }
   };
 
@@ -42,6 +49,7 @@ export const useTheme = () => {
       operationSystemTheme.value = e.matches ? 'dark' : 'light';
       if (themeStore.theme === 'auto') {
         document.documentElement.classList.toggle('dark', operationSystemTheme.value === 'dark');
+        themeStore.callback?.(operationSystemTheme.value);
       }
     });
   };

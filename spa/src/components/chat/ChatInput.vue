@@ -7,6 +7,9 @@
             <div class="button-group">
 
                 <el-button :icon="MoreFilled" text @click="$emit('open-config')" class="control-btn" />
+
+                <el-button :icon="AiOutlineLineChart" text @click="$emit('open-statistic')" class="control-btn" />
+
                 <!-- 麦克风按钮 -->
                 <div class="microphone-container" :class="{ 'active': props.isSpeechRecognizing }">
                     <el-button :icon="Microphone" :type="props.isSpeechRecognizing ? 'success' : ''" text
@@ -32,6 +35,7 @@ import { ChatWebSocketService } from '@/common/chat-websocket-client'
 import { mapLanguageCode } from '@/common/utils'
 import PuffLoader from '@/components/Svgs/PuffLoader.vue'
 import { VscStopCircle } from 'vue-icons-plus/vsc'
+import { AiOutlineLineChart } from 'vue-icons-plus/ai'
 
 
 const props = defineProps({
@@ -67,6 +71,7 @@ const props = defineProps({
 })
 
 const emits = defineEmits<{
+    (e: 'open-statistic'): void
     (e: 'open-config'): void
     (e: 'send', text: string): void
 }>()

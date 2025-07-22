@@ -1,4 +1,7 @@
 {
+    "appearance": {
+        "theme": "auto"
+    },
     "speaker": {
         "audio_dir": "data/voice/audio"
     },

@@ -63,7 +63,6 @@ import { ElMenu } from 'element-plus'
 import { useSystemConfigStore, useTtsVoiceStore } from '@/stores/sidebarStore'
 import { loadJsonFile } from '@/common/json-loader'
 import type { SystemConfig } from '@/common/type-interface'
-import { useThemeStore } from '@/common/use-theme';
 
 const systemConfigStore = useSystemConfigStore()
 const ttsVoicesStore = useTtsVoiceStore()
@@ -76,16 +75,16 @@ const sidebarWidth = ref('0px')
 const siderbarScrollTimeoutId = ref<NodeJS.Timeout | null>(null)
 const ttsVoices = ref<Record<string, any[]>>({})
 const activeMenuId = ref('')
-const themeStore = useThemeStore()
 
 const updateTheme = (theme: string) => {
     webSocket.send({
         type: 'update_theme',
         data: {
-            theme: theme
+            theme: theme,
         }
     })
 }
+systemConfigStore.setUpdateAppearanceTheme(updateTheme)
 
 const updateSystemConfig = (systemConfig: SystemConfig) => {
     webSocket.send({
@@ -123,7 +122,6 @@ const handleWebSocketMessage = (message: any) => {
             break
         case 'system_config':
             systemConfigStore.setSystemConfig(message.data.system_config)
-            themeStore.setCallback(updateTheme)
             break
         case 'all_sessions':
             loadSessions(message.data.sessions)

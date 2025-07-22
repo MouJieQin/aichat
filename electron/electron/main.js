@@ -48,7 +48,11 @@ function handleMessage(message) {
             createWindow(message.data.url);
             break;
         case "update_theme":
-            nativeTheme.themeSource = message.data.theme;
+            if (message.data.theme === "auto") {
+                nativeTheme.themeSource = "system";
+            } else {
+                nativeTheme.themeSource = message.data.theme;
+            }
             break;
         default:
             break;

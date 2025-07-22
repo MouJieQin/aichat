@@ -183,12 +183,14 @@ class SessionManager:
             await SessionManager.broadcast_session(session_id, json.dumps(msg))
 
     @staticmethod
-    async def broadcast_electron_theme():
+    async def broadcast_electron_theme(
+        theme: str = Utils.CONFIG["appearance"]["theme"],
+    ):
         """发送会话主题到指定WebSocket或广播"""
         msg = {
             "type": "update_theme",
             "data": {
-                "theme": Utils.theme,
+                "theme": theme,
             },
         }
         await SessionManager.broadcast_electron(json.dumps(msg))

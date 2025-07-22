@@ -1,29 +1,12 @@
 import { ref, watch } from 'vue';
-import { defineStore } from 'pinia'
-
-export const useThemeStore = defineStore('theme', {
-  state: () => ({
-    theme: localStorage.theme as string || 'auto',
-    callback: null as ((theme: string) => void) | null
-  }),
-
-  actions: {
-    setTheme(newTheme: string) {
-      this.theme = newTheme;
-      localStorage.theme = this.theme;
-    },
-    setCallback(callback: (theme: string) => void) {
-      this.callback = callback;
-    }
-  }
-})
+import { useSystemConfigStore } from '@/stores/sidebarStore';
 
 export const useTheme = () => {
 
-  const themeStore = useThemeStore();
+  const systemConfigStore = useSystemConfigStore();
 
-  watch(() => themeStore.theme, () => {
-    initTheme();
+  watch(() => systemConfigStore.systemConfig?.appearance.theme, () => {
+    updateTheme();
   })
 
   const getOperationSystemTheme = (): string => {
@@ -32,24 +15,30 @@ export const useTheme = () => {
 
   const operationSystemTheme = ref(getOperationSystemTheme());
 
+  const updateTheme = () => {
+    const theme = systemConfigStore.systemConfig?.appearance.theme;
+    if (theme) {
+      systemConfigStore.updateAppearanceTheme(theme);
+      if (theme === 'auto') {
+        document.documentElement.classList.toggle('dark', operationSystemTheme.value === 'dark');
+      } else {
+        document.documentElement.classList.toggle('dark', theme === 'dark');
+      }
+    }
+  }
+
   // 初始化主题
   const initTheme = () => {
-    if (themeStore.theme === 'auto') {
-      document.documentElement.classList.toggle('dark', operationSystemTheme.value === 'dark');
-      themeStore.callback?.(operationSystemTheme.value);
-    } else {
-      document.documentElement.classList.toggle('dark', themeStore.theme === 'dark');
-      themeStore.callback?.(themeStore.theme);
-    }
+    updateTheme();
   };
 
   // 监听系统主题变化
   const watchSystemTheme = () => {
     window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
       operationSystemTheme.value = e.matches ? 'dark' : 'light';
-      if (themeStore.theme === 'auto') {
+      const theme = systemConfigStore.systemConfig?.appearance.theme;
+      if (theme === 'auto') {
         document.documentElement.classList.toggle('dark', operationSystemTheme.value === 'dark');
-        themeStore.callback?.(operationSystemTheme.value);
       }
     });
   };

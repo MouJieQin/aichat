@@ -58,8 +58,8 @@ class MessageHandler:
     @staticmethod
     async def _handle_update_theme(websocket: WebSocket, message: dict):
         """更新主题"""
-        Utils.theme = message["data"]["theme"]
-        await SessionManager.broadcast_electron_theme()
+        theme = message["data"]["theme"]
+        await SessionManager.broadcast_electron_theme(theme)
 
     @staticmethod
     async def _handle_update_system_config(websocket: WebSocket, message: dict):

@@ -170,14 +170,12 @@ import { ref, watch, onMounted, computed } from 'vue'
 import type { SystemConfig } from '@/common/type-interface'
 import { useSystemConfigStore, useTtsVoiceStore } from '@/stores/sidebarStore'
 import type { TabPaneName } from 'element-plus'
-import { useThemeStore } from '@/common/use-theme';
 import { Sunny, Moon, SwitchFilled } from '@element-plus/icons-vue'
 import short from 'short-uuid';
 
 
-const themeStore = useThemeStore();
-const appTheme = ref(themeStore.theme)
 const systemConfigStore = useSystemConfigStore()
+// const appTheme = ref(systemConfigStore.systemConfig?.appearance.theme)
 const ttsVoicesStore = useTtsVoiceStore()
 const localSystemConfig = ref<SystemConfig>(JSON.parse(JSON.stringify(systemConfigStore.systemConfig)))
 const editableTabsValue = ref('')
@@ -195,10 +193,13 @@ const apis = computed({
     set: (val) => localSystemConfig.value.ai_assistant.apis = val
 })
 
-watch(appTheme, (newVal) => {
-    themeStore.setTheme(newVal)
+const appTheme = computed({
+    get: () => localSystemConfig.value?.appearance.theme,
+    set: (val) => {
+        localSystemConfig.value.appearance.theme = val
+        systemConfigStore.setAppearanceTheme(val)
+    }
 })
-
 
 watch(() => systemConfigStore.systemConfig, (newVal) => {
     localSystemConfig.value = JSON.parse(JSON.stringify(newVal))

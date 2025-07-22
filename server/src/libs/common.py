@@ -10,7 +10,6 @@ from libs.config import UtilsBase
 
 class Utils(UtilsBase):
     # 初始化服务
-    theme = "light"
     db = ChatDatabase(UtilsBase.DATABASE_PATH)
     api = OpenAIChatAPI(db)
     speaker = Speaker(UtilsBase.CONFIG, UtilsBase.VOICHAI_STORAGE_PATH)

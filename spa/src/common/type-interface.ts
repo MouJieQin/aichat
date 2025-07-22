@@ -44,6 +44,10 @@ export interface AIConfig {
 
 // system config
 
+export interface AppearanceConfig {
+    theme: string;
+}
+
 export interface SpeakerConfig {
     audio_dir: string;
 }
@@ -82,6 +86,7 @@ export interface AiApiConfig {
 }
 
 export interface SystemConfig {
+    appearance: AppearanceConfig;
     speaker: SpeakerConfig;
     azure: AzureConfig;
     ai_assistant: {

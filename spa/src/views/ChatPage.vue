@@ -172,6 +172,7 @@ const handleSessionMessages = (messages: any[]) => {
         }
     })
     console.log("Parsed messages time in milliseconds:", new Date().getTime() - receivedTime)
+    delayScrollToBottom('instant')
 }
 
 // 处理解析请求

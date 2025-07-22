@@ -1,3 +1,5 @@
+import { nextTick } from 'vue'
+
 export const ServerUrl = 'http://localhost:4999'
 
 export const getAiAvatarUrl = (ai_avatar_url: string) => {
@@ -41,18 +43,20 @@ export const highlightPlayingSentence = (messageId: number, sentenceId: number) 
 }
 
 export const scrollToBottom = (behavior: 'smooth' | 'auto' | 'instant' = 'instant') => {
-    const scrollContainer =
-        document.documentElement.scrollTop > 0
-            ? document.documentElement
-            : document.body;
-    if (behavior === 'instant') {
-        scrollContainer.scrollTop = scrollContainer.scrollHeight;
-    } else {
-        scrollContainer.scrollTo({
-            top: scrollContainer.scrollHeight,
-            behavior: behavior
-        });
-    }
+    nextTick(() => {
+        const scrollContainer =
+            document.documentElement.scrollTop > 0
+                ? document.documentElement
+                : document.body;
+        if (behavior === 'instant') {
+            scrollContainer.scrollTop = scrollContainer.scrollHeight;
+        } else {
+            scrollContainer.scrollTo({
+                top: scrollContainer.scrollHeight,
+                behavior: behavior
+            });
+        }
+    })
 }
 
 export const delayScrollToBottom = (behavior: 'smooth' | 'auto' | 'instant' = 'instant', milliseconds: number = 100) => {

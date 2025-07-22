@@ -58,7 +58,7 @@ const initVisibleMessages = async () => {
     loading.value = false
     hasMoreMessages.value = true
     await loadMoreMessages()
-    delayScrollToBottom('instant', 300)
+    // delayScrollToBottom('instant', 300)
 }
 
 watch(() => route.params.id, async () => {
@@ -89,7 +89,7 @@ const loadMoreMessages = async () => {
 onMounted(async () => {
     // 添加滚动事件监听器
     await loadMoreMessages()
-    delayScrollToBottom('instant', 500)
+    // delayScrollToBottom('instant', 1000)
     window.addEventListener('scroll', handleScroll)
 })
 

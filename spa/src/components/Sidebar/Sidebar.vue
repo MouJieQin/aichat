@@ -35,7 +35,7 @@
                 <el-icon>
                     <Setting />
                 </el-icon>
-                <span>系统配置</span>
+                <span>设置</span>
             </el-menu-item>
 
             <el-sub-menu index="chats">

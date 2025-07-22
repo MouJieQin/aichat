@@ -28,7 +28,7 @@ if ! ps -ef | grep voichai-server.py | grep -v grep; then
     cd - >/dev/null
 fi
 
-if ! ps -ef | grep ./voichai-client | grep -v grep; then
+if ! curl http://localhost:3999/ >/dev/null 2>&1 && ! ps -ef | grep ./voichai-client | grep -v grep; then
     cd "$SCRIPT_DIR"
     nohup ./voichai-client >>/tmp/voichai-client.log 2>&1 &
     cd - >/dev/null

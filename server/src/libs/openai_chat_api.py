@@ -4,6 +4,7 @@ import ast
 import time
 from datetime import datetime
 from typing import List, Dict, Any, Optional, Callable, Union
+from functools import partial
 from libs.chat_database import ChatDatabase
 from libs.log_config import logger
 from libs.config import UtilsBase
@@ -198,7 +199,6 @@ class OpenAIChatAPI:
         user_message_callback_async: Callable,
         assistant_response_callback_async: Callable,
     ) -> Dict:
-        """处理用户聊天请求，支持流式响应"""
         # 保存用户消息到数据库
         message_id = self.db.add_message(
             session_id=session_id,
@@ -207,6 +207,44 @@ class OpenAIChatAPI:
             parsed_text=parsed_text,
         )
         await user_message_callback_async(message_id)
+
+        message_id = self.add_assistant_message(
+            session_id, "", json.dumps({"sentences": [], "html": ""})
+        )
+
+        if message_id is None:
+            await assistant_response_callback_async(
+                message_id, "Error: Acquire message id failed", True, True
+            )
+            return {}
+
+        assistant_response_callback_async = partial(
+            assistant_response_callback_async, message_id
+        )
+
+        try:
+            response_dict = await self._chat_imple(
+                with_system_prompt,
+                session_id,
+                assistant_response_callback_async,
+            )
+            response_dict["message_id"] = message_id
+            return response_dict
+        except Exception as e:
+            logger.error(f"聊天错误: {e}", exc_info=True)
+            self.db.delete_message(message_id)
+            await assistant_response_callback_async(
+                message_id, f"Error: {e}", True, True
+            )
+            return {}
+
+    async def _chat_imple(
+        self,
+        with_system_prompt: bool,
+        session_id: int,
+        assistant_response_callback_async: Callable,
+    ) -> Dict:
+        """处理用户聊天请求，支持流式响应"""
 
         # 获取会话配置
         ai_config = self.get_session_ai_config(session_id)

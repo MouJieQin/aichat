@@ -293,12 +293,8 @@ class MessageHandler:
             }
             await websocket.send_text(json.dumps(msg))
 
-        message_id = thread_api.add_assistant_message(
-            session_id, "", json.dumps({"sentences": [], "html": ""})
-        )
-
         async def assistant_response_callback(
-            response: str, is_streaming: bool, error: bool = False
+            message_id: int, response: str, is_streaming: bool, error: bool = False
         ):
             msg = {
                 "type": "stream_response",
@@ -311,30 +307,21 @@ class MessageHandler:
             }
             await websocket.send_text(json.dumps(msg))
 
-        if message_id is None:
-            await assistant_response_callback(
-                "Error: Acquire message id failed", True, True
-            )
-            return
-
         WITH_SYSTEM_PROMPT = True
 
-        try:
-            response_dict = await thread_api.chat(
-                WITH_SYSTEM_PROMPT,
-                session_id,
-                user_message,
-                json.dumps({"sentences": [], "html": ""}),
-                user_message_callback,
-                assistant_response_callback,
-            )
-        except Exception as e:
-            logger.error(f"聊天错误: {e}")
-            thread_api.delete_message(message_id)
-            await assistant_response_callback(f"Error: {e}", True, True)
+        response_dict = await thread_api.chat(
+            WITH_SYSTEM_PROMPT,
+            session_id,
+            user_message,
+            json.dumps({"sentences": [], "html": ""}),
+            user_message_callback,
+            assistant_response_callback,
+        )
+        if not response_dict:
             return
 
         response = response_dict["response"]
+        message_id = response_dict["message_id"]
 
         msg = {
             "type": "parse_request",

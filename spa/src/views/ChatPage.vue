@@ -26,7 +26,7 @@
         :systemPrompt="chatMessages[0]" @update-config="updateSessionAiConfig" />
 
     <el-dialog v-model="statisticDialogVisible" fullscreen>
-        <StatisticDialog :messages="chatMessages" />
+        <StatisticDialog class="statistic-dialog" :messages="chatMessages" :language="sessionAiConfig?.language" />
         <template #footer>
             <div class="dialog-footer">
                 <el-button @click="statisticDialogVisible = false">Cancel</el-button>

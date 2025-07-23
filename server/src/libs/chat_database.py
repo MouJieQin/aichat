@@ -142,10 +142,15 @@ class ChatDatabase:
         return row["title"] if row else None
 
     def add_message(
-        self, session_id: int, role: str, raw_text: str, parsed_text: str
+        self,
+        session_id: int,
+        role: str,
+        raw_text: str,
+        parsed_text: str,
+        timestamp: Optional[str] = None,
     ) -> Optional[int]:
         """添加消息到会话"""
-        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        timestamp = timestamp or datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         with self.conn:
             cursor = self.conn.cursor()
             cursor.execute(

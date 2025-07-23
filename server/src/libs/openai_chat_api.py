@@ -196,31 +196,38 @@ class OpenAIChatAPI:
         session_id: int,
         user_message: str,
         parsed_text: str,
-        user_message_callback_async: Callable,
-        assistant_response_callback_async: Callable,
+        user_message_callback_async_: Callable,
+        assistant_response_callback_async_: Callable,
     ) -> Dict:
         # 保存用户消息到数据库
-        message_id = self.db.add_message(
+        user_message_id = self.db.add_message(
             session_id=session_id,
             role="user",
             raw_text=user_message,
             parsed_text=parsed_text,
         )
-        await user_message_callback_async(message_id)
+        await user_message_callback_async_(user_message_id)
 
-        message_id = self.add_assistant_message(
-            session_id, "", json.dumps({"sentences": [], "html": ""})
-        )
+        message_id = -1
 
-        if message_id is None:
-            await assistant_response_callback_async(
-                message_id, "Error: Acquire message id failed", True, True
+        async def assistant_response_callback_async(
+            response: str, is_streaming: bool, error: bool = False
+        ):
+            nonlocal message_id
+            if message_id == -1:
+                message_id = self.add_assistant_message(
+                    session_id, "", json.dumps({"sentences": [], "html": ""})
+                )
+
+                if message_id is None:
+                    await assistant_response_callback_async_(
+                        message_id, "Error: Acquire message id failed", True, True
+                    )
+                    raise Exception("Error: Acquire message id failed")
+
+            await assistant_response_callback_async_(
+                message_id, response, is_streaming, error
             )
-            return {}
-
-        assistant_response_callback_async = partial(
-            assistant_response_callback_async, message_id
-        )
 
         try:
             response_dict = await self._chat_imple(
@@ -233,7 +240,7 @@ class OpenAIChatAPI:
         except Exception as e:
             logger.error(f"聊天错误: {e}", exc_info=True)
             self.db.delete_message(message_id)
-            await assistant_response_callback_async(
+            await assistant_response_callback_async_(
                 message_id, f"Error: {e}", True, True
             )
             return {}

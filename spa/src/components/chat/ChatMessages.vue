@@ -160,6 +160,8 @@ const handleUpdateMessage = (messageId: number, rawText: string) => {
         const result = processMarkdown(rawText, messageId)
         props.websocket.sendUpdateMessage(messageId, rawText, result.html, result.sentences)
     } else {
+        console.log('maxUserMessageId.value:', maxUserMessageId.value)
+        console.log('maxAssistantMessageId.value:', maxAssistantMessageId.value)
         if (maxAssistantMessageId.value > maxUserMessageId.value) {
             deleteMessage(maxAssistantMessageId.value)
         }

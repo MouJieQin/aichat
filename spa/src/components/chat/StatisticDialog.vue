@@ -69,19 +69,71 @@ const messagesByDate = computed(() => {
     return groups;
 });
 
-// 计算文本中各类字符数量
+// // 计算文本中各类字符数量
+// const countCharacters = (text: string) => {
+//     const englishWords = text.match(/[a-zA-Z]+/g)?.length || 0;
+//     const chineseChars = text.match(/[\u4e00-\u9fa5]/g)?.length || 0;
+//     const japaneseKana = text.match(/[\u3040-\u309F\u30A0-\u30FF]/g)?.length || 0;
+//     const japaneseKanji = text.match(/[\u4E00-\u9FFF]/g)?.length || 0;
+
+//     return { englishWords, chineseChars, japaneseKana, japaneseKanji };
+// };
+
 const countCharacters = (text: string) => {
+    // 英文单词及标点符号（仅包含ASCII范围）
     const englishWords = text.match(/[a-zA-Z]+/g)?.length || 0;
+    const englishPunctuation = text.match(/[!"#$%&'()*+,-./:;<=>?@[\]^_`{|}~]/g)?.length || 0;
+    
+    // 中文字符及标点符号（独立范围，不考虑重叠）
     const chineseChars = text.match(/[\u4e00-\u9fa5]/g)?.length || 0;
+    const chinesePunctuation = text.match(/[\u3000-\u303F\uFF00-\uFFEF]/g)?.length || 0;
+    
+    // 日语字符及标点符号（独立范围，不考虑重叠）
     const japaneseKana = text.match(/[\u3040-\u309F\u30A0-\u30FF]/g)?.length || 0;
     const japaneseKanji = text.match(/[\u4E00-\u9FFF]/g)?.length || 0;
-
-    return { englishWords, chineseChars, japaneseKana, japaneseKanji };
+    // 修正日语标点符号范围，排除与英文重复的半角符号
+    const japanesePunctuation = text.match(/[\u3000-\u303F\u30FB-\u30FC\uFF01-\uFF5E]/g)?.length || 0;
+    
+    // 合并日语统计
+    const japaneseTotal = japaneseKana + japaneseKanji + japanesePunctuation;
+    
+    return { 
+        englishWords, 
+        englishPunctuation,
+        chineseChars, 
+        chinesePunctuation,
+        japaneseTotal,
+        japanesePunctuation,
+        // 保留单独统计项
+        japaneseKana,
+        japaneseKanji
+    };
 };
 
-// 计算字符总数
-const countTotalChars = (text: string) => {
-    return text.length;
+// 获取指定语言的字符数
+const getLanguageChars = (text: string, language: string) => {
+    // const { englishWords, chineseChars, japaneseKana, japaneseKanji } = countCharacters(text);
+    const {
+        englishWords,
+        englishPunctuation,
+        chineseChars,
+        chinesePunctuation,
+        japaneseTotal,
+        // 保留单独统计项
+        japaneseKana,
+        japaneseKanji
+    } = countCharacters(text);
+
+    switch (language) {
+        case 'English':
+            return englishWords + englishPunctuation;
+        case '中文':
+            return chineseChars + chinesePunctuation;
+        case '日本語':
+            return japaneseTotal;
+        default:
+            return text.length;
+    }
 };
 
 // 准备消息图表数据
@@ -89,11 +141,11 @@ const prepareMessageChartData = () => {
     const dates = Object.keys(messagesByDate.value).sort();
     const userCharCounts = dates.map(date => {
         const userMessages = messagesByDate.value[date].filter(m => m.role === 'user');
-        return userMessages.reduce((total, msg) => total + countTotalChars(msg.raw_text), 0);
+        return userMessages.reduce((total, msg) => total + getLanguageChars(msg.raw_text, props.language), 0);
     });
 
     const totalCharCounts = dates.map(date => {
-        return messagesByDate.value[date].reduce((total, msg) => total + countTotalChars(msg.raw_text), 0);
+        return messagesByDate.value[date].reduce((total, msg) => total + getLanguageChars(msg.raw_text, props.language), 0);
     });
 
     return { dates, userCharCounts, totalCharCounts };
@@ -102,14 +154,15 @@ const prepareMessageChartData = () => {
 // 准备回复时间图表数据
 const prepareResponseTimeChartData = () => {
     const dates = Object.keys(messagesByDate.value).sort();
-    const avgResponseTimes: number[] = [];
+    let avgResponseTimes: number[] = [];
 
     dates.forEach(date => {
         const messages = messagesByDate.value[date];
         const userMessages = messages.filter(m => m.role === 'user');
         const assistantMessages = messages.filter(m => m.role === 'assistant');
+        const reversedAssistantMsg = assistantMessages.reverse();
 
-        if (userMessages.length === 0 || assistantMessages.length === 0) {
+        if (userMessages.length === 0 || reversedAssistantMsg.length === 0) {
             avgResponseTimes.push(0);
             return;
         }
@@ -118,14 +171,14 @@ const prepareResponseTimeChartData = () => {
         let responseCount = 0;
 
         userMessages.forEach(userMsg => {
-            // 查找该用户消息之后最近的assistant回复
-            const nextAssistantMsg = assistantMessages.find(
-                msg => new Date(msg.time) > new Date(userMsg.time)
+            // 查找该用户消息之前最近的assistant回复
+            const prevAssistantMsg = reversedAssistantMsg.find(
+                msg => new Date(msg.time) < new Date(userMsg.time)
             );
 
-            if (nextAssistantMsg) {
+            if (prevAssistantMsg) {
                 const timeDiff =
-                    (new Date(nextAssistantMsg.time).getTime() - new Date(userMsg.time).getTime()) / 1000 / 60; // 分钟
+                    (new Date(userMsg.time).getTime() - new Date(prevAssistantMsg.time).getTime()) / 1000 / 60; // 分钟
 
                 // 如果间隔不超过10分钟，视作同一会话
                 if (timeDiff <= 10) {
@@ -136,6 +189,41 @@ const prepareResponseTimeChartData = () => {
         });
 
         avgResponseTimes.push(responseCount > 0 ? totalResponseTime / responseCount : 0);
+    });
+
+    // 处理0值：使用前后平均值
+    avgResponseTimes = avgResponseTimes.map((time, index) => {
+        if (time !== 0) return time;
+
+        // 查找前一个非零值
+        let prevIndex = index - 1;
+        while (prevIndex >= 0 && avgResponseTimes[prevIndex] === 0) {
+            prevIndex--;
+        }
+
+        // 查找后一个非零值
+        let nextIndex = index + 1;
+        while (nextIndex < avgResponseTimes.length && avgResponseTimes[nextIndex] === 0) {
+            nextIndex++;
+        }
+
+        // 如果前后都有非零值，取平均值
+        if (prevIndex >= 0 && nextIndex < avgResponseTimes.length) {
+            return (avgResponseTimes[prevIndex] + avgResponseTimes[nextIndex]) / 2;
+        }
+
+        // 如果只有前一个非零值
+        if (prevIndex >= 0) {
+            return avgResponseTimes[prevIndex];
+        }
+
+        // 如果只有后一个非零值
+        if (nextIndex < avgResponseTimes.length) {
+            return avgResponseTimes[nextIndex];
+        }
+
+        // 没有非零值，保持0
+        return 0;
     });
 
     return { dates, avgResponseTimes };
@@ -161,14 +249,14 @@ const createMessageChart = () => {
             labels: dates,
             datasets: [
                 {
-                    label: '用户发送字符数',
+                    label: '用户发送字数',
                     data: userCharCounts,
                     backgroundColor: '#3b82f6',
                     borderColor: '#2563eb',
                     borderWidth: 1
                 },
                 {
-                    label: '总字符数',
+                    label: '总字数',
                     data: totalCharCounts,
                     backgroundColor: '#f97316',
                     borderColor: '#ea580c',
@@ -199,14 +287,11 @@ const createMessageChart = () => {
 
                             // 合并所有消息文本
                             const allText = filteredMessages.map(m => m.raw_text).join('');
-                            const { englishWords, chineseChars, japaneseKana, japaneseKanji } = countCharacters(allText);
+                            const charCount = getLanguageChars(allText, props.language);
 
                             return [
                                 `消息条数: ${filteredMessages.length}`,
-                                `英文单词: ${englishWords}`,
-                                `中文: ${chineseChars}`,
-                                `日语: ${japaneseKana + japaneseKanji}`,
-                                `总字符数: ${countTotalChars(allText)}`
+                                `${props.language}字数: ${charCount}`
                             ];
                         }
                     }
@@ -216,7 +301,7 @@ const createMessageChart = () => {
                 },
                 title: {
                     display: true,
-                    text: '每日字符数量统计'
+                    text: `每日${props.language}字数统计`
                 }
             },
             scales: {
@@ -229,7 +314,7 @@ const createMessageChart = () => {
                 y: {
                     title: {
                         display: true,
-                        text: '字符数量'
+                        text: `${props.language}字数`
                     },
                     beginAtZero: true
                 }
@@ -252,6 +337,10 @@ const createResponseTimeChart = () => {
         window.responseTimeChartInstance.destroy();
     }
 
+    // 过滤掉0值，但保留x轴标签
+    const filteredDates = dates.filter((_, index) => avgResponseTimes[index] > 0);
+    const filteredTimes = avgResponseTimes.filter(time => time > 0);
+
     window.responseTimeChartInstance = new Chart(ctx, {
         type: 'line',
         data: {
@@ -262,7 +351,10 @@ const createResponseTimeChart = () => {
                 borderColor: '#8b5cf6',
                 backgroundColor: 'rgba(139, 92, 246, 0.1)',
                 tension: 0.3,
-                fill: true
+                fill: true,
+                pointRadius: avgResponseTimes.map(time => time > 0 ? 4 : 0),
+                pointHoverRadius: avgResponseTimes.map(time => time > 0 ? 6 : 0),
+                spanGaps: true
             }]
         },
         options: {

@@ -32,7 +32,7 @@ if ! curl http://localhost:3999/ >/dev/null 2>&1 && ! ps -ef | grep ./voichai-cl
     cd "$SCRIPT_DIR"
     nohup ./voichai-client >>/tmp/voichai-client.log 2>&1 &
     cd - >/dev/null
-    TOTAL=5
+    TOTAL=10
     count=0
     while ! curl http://localhost:3999/ >/dev/null 2>&1; do
         ((count++))

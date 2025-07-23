@@ -44,10 +44,11 @@ export const highlightPlayingSentence = (messageId: number, sentenceId: number) 
 
 export const scrollToBottom = (behavior: 'smooth' | 'auto' | 'instant' = 'instant') => {
     nextTick(() => {
-        const scrollContainer =
-            document.documentElement.scrollTop > 0
-                ? document.documentElement
-                : document.body;
+        // const scrollContainer =
+        //     document.documentElement.scrollTop > 0
+        //         ? document.documentElement
+        //         : document.body;
+        const scrollContainer = document.documentElement;
         if (behavior === 'instant') {
             scrollContainer.scrollTop = scrollContainer.scrollHeight;
         } else {

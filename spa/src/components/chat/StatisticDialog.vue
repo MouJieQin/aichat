@@ -69,38 +69,29 @@ const messagesByDate = computed(() => {
     return groups;
 });
 
-// // 计算文本中各类字符数量
-// const countCharacters = (text: string) => {
-//     const englishWords = text.match(/[a-zA-Z]+/g)?.length || 0;
-//     const chineseChars = text.match(/[\u4e00-\u9fa5]/g)?.length || 0;
-//     const japaneseKana = text.match(/[\u3040-\u309F\u30A0-\u30FF]/g)?.length || 0;
-//     const japaneseKanji = text.match(/[\u4E00-\u9FFF]/g)?.length || 0;
-
-//     return { englishWords, chineseChars, japaneseKana, japaneseKanji };
-// };
-
+// 计算文本中各类字符数量
 const countCharacters = (text: string) => {
     // 英文单词及标点符号（仅包含ASCII范围）
     const englishWords = text.match(/[a-zA-Z]+/g)?.length || 0;
     const englishPunctuation = text.match(/[!"#$%&'()*+,-./:;<=>?@[\]^_`{|}~]/g)?.length || 0;
-    
+
     // 中文字符及标点符号（独立范围，不考虑重叠）
     const chineseChars = text.match(/[\u4e00-\u9fa5]/g)?.length || 0;
     const chinesePunctuation = text.match(/[\u3000-\u303F\uFF00-\uFFEF]/g)?.length || 0;
-    
+
     // 日语字符及标点符号（独立范围，不考虑重叠）
     const japaneseKana = text.match(/[\u3040-\u309F\u30A0-\u30FF]/g)?.length || 0;
     const japaneseKanji = text.match(/[\u4E00-\u9FFF]/g)?.length || 0;
     // 修正日语标点符号范围，排除与英文重复的半角符号
     const japanesePunctuation = text.match(/[\u3000-\u303F\u30FB-\u30FC\uFF01-\uFF5E]/g)?.length || 0;
-    
+
     // 合并日语统计
     const japaneseTotal = japaneseKana + japaneseKanji + japanesePunctuation;
-    
-    return { 
-        englishWords, 
+
+    return {
+        englishWords,
         englishPunctuation,
-        chineseChars, 
+        chineseChars,
         chinesePunctuation,
         japaneseTotal,
         japanesePunctuation,
@@ -112,16 +103,12 @@ const countCharacters = (text: string) => {
 
 // 获取指定语言的字符数
 const getLanguageChars = (text: string, language: string) => {
-    // const { englishWords, chineseChars, japaneseKana, japaneseKanji } = countCharacters(text);
     const {
         englishWords,
         englishPunctuation,
         chineseChars,
         chinesePunctuation,
         japaneseTotal,
-        // 保留单独统计项
-        japaneseKana,
-        japaneseKanji
     } = countCharacters(text);
 
     switch (language) {
@@ -155,6 +142,7 @@ const prepareMessageChartData = () => {
 const prepareResponseTimeChartData = () => {
     const dates = Object.keys(messagesByDate.value).sort();
     let avgResponseTimes: number[] = [];
+    let avgWordsPerMinute: number[] = [];
 
     dates.forEach(date => {
         const messages = messagesByDate.value[date];
@@ -164,10 +152,12 @@ const prepareResponseTimeChartData = () => {
 
         if (userMessages.length === 0 || reversedAssistantMsg.length === 0) {
             avgResponseTimes.push(0);
+            avgWordsPerMinute.push(0);
             return;
         }
 
         let totalResponseTime = 0;
+        let totalWords = 0;
         let responseCount = 0;
 
         userMessages.forEach(userMsg => {
@@ -181,52 +171,66 @@ const prepareResponseTimeChartData = () => {
                     (new Date(userMsg.time).getTime() - new Date(prevAssistantMsg.time).getTime()) / 1000 / 60; // 分钟
 
                 // 如果间隔不超过10分钟，视作同一会话
-                if (timeDiff <= 10) {
+                if (timeDiff <= 10 && timeDiff > 0) {
                     totalResponseTime += timeDiff;
+                    // 计算阅读的字数（上一条AI回复）和用户回复的字数
+                    const readWords = getLanguageChars(prevAssistantMsg.raw_text, props.language);
+                    const replyWords = getLanguageChars(userMsg.raw_text, props.language);
+                    totalWords += readWords + replyWords;
                     responseCount++;
                 }
             }
         });
 
         avgResponseTimes.push(responseCount > 0 ? totalResponseTime / responseCount : 0);
+        // 计算平均每分钟读说字数
+        avgWordsPerMinute.push(responseCount > 0 && totalResponseTime > 0
+            ? totalWords / totalResponseTime
+            : 0);
     });
 
     // 处理0值：使用前后平均值
-    avgResponseTimes = avgResponseTimes.map((time, index) => {
-        if (time !== 0) return time;
+    const processZeroValues = (values: number[]) => {
+        return values.map((value, index) => {
+            if (value !== 0) return value;
 
-        // 查找前一个非零值
-        let prevIndex = index - 1;
-        while (prevIndex >= 0 && avgResponseTimes[prevIndex] === 0) {
-            prevIndex--;
-        }
+            // 查找前一个非零值
+            let prevIndex = index - 1;
+            while (prevIndex >= 0 && values[prevIndex] === 0) {
+                prevIndex--;
+            }
 
-        // 查找后一个非零值
-        let nextIndex = index + 1;
-        while (nextIndex < avgResponseTimes.length && avgResponseTimes[nextIndex] === 0) {
-            nextIndex++;
-        }
+            // 查找后一个非零值
+            let nextIndex = index + 1;
+            while (nextIndex < values.length && values[nextIndex] === 0) {
+                nextIndex++;
+            }
 
-        // 如果前后都有非零值，取平均值
-        if (prevIndex >= 0 && nextIndex < avgResponseTimes.length) {
-            return (avgResponseTimes[prevIndex] + avgResponseTimes[nextIndex]) / 2;
-        }
+            // 如果前后都有非零值，取平均值
+            if (prevIndex >= 0 && nextIndex < values.length) {
+                return (values[prevIndex] + values[nextIndex]) / 2;
+            }
 
-        // 如果只有前一个非零值
-        if (prevIndex >= 0) {
-            return avgResponseTimes[prevIndex];
-        }
+            // 如果只有前一个非零值
+            if (prevIndex >= 0) {
+                return values[prevIndex];
+            }
 
-        // 如果只有后一个非零值
-        if (nextIndex < avgResponseTimes.length) {
-            return avgResponseTimes[nextIndex];
-        }
+            // 如果只有后一个非零值
+            if (nextIndex < values.length) {
+                return values[nextIndex];
+            }
 
-        // 没有非零值，保持0
-        return 0;
-    });
+            // 没有非零值，保持0
+            return 0;
+        });
+    };
 
-    return { dates, avgResponseTimes };
+    return {
+        dates,
+        avgResponseTimes: processZeroValues(avgResponseTimes),
+        avgWordsPerMinute: processZeroValues(avgWordsPerMinute)
+    };
 };
 
 // 创建消息图表
@@ -327,7 +331,7 @@ const createMessageChart = () => {
 const createResponseTimeChart = () => {
     if (!responseTimeChartRef.value) return;
 
-    const { dates, avgResponseTimes } = prepareResponseTimeChartData();
+    const { dates, avgResponseTimes, avgWordsPerMinute } = prepareResponseTimeChartData();
 
     const ctx = responseTimeChartRef.value.getContext('2d');
     if (!ctx) return;
@@ -337,25 +341,34 @@ const createResponseTimeChart = () => {
         window.responseTimeChartInstance.destroy();
     }
 
-    // 过滤掉0值，但保留x轴标签
-    const filteredDates = dates.filter((_, index) => avgResponseTimes[index] > 0);
-    const filteredTimes = avgResponseTimes.filter(time => time > 0);
-
     window.responseTimeChartInstance = new Chart(ctx, {
         type: 'line',
         data: {
             labels: dates,
-            datasets: [{
-                label: '平均回复间隔时间(分钟)',
-                data: avgResponseTimes,
-                borderColor: '#8b5cf6',
-                backgroundColor: 'rgba(139, 92, 246, 0.1)',
-                tension: 0.3,
-                fill: true,
-                pointRadius: avgResponseTimes.map(time => time > 0 ? 4 : 0),
-                pointHoverRadius: avgResponseTimes.map(time => time > 0 ? 6 : 0),
-                spanGaps: true
-            }]
+            datasets: [
+                {
+                    label: '平均回复间隔时间(分钟)',
+                    data: avgResponseTimes,
+                    borderColor: '#8b5cf6',
+                    backgroundColor: 'rgba(139, 92, 246, 0.1)',
+                    tension: 0.3,
+                    fill: true,
+                    pointRadius: avgResponseTimes.map(time => time > 0 ? 4 : 0),
+                    pointHoverRadius: avgResponseTimes.map(time => time > 0 ? 6 : 0),
+                    yAxisID: 'y'
+                },
+                {
+                    label: '平均每分钟读说字数',
+                    data: avgWordsPerMinute,
+                    borderColor: '#10b981',
+                    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                    tension: 0.3,
+                    fill: true,
+                    pointRadius: avgWordsPerMinute.map(words => words > 0 ? 4 : 0),
+                    pointHoverRadius: avgWordsPerMinute.map(words => words > 0 ? 6 : 0),
+                    yAxisID: 'y1'
+                }
+            ]
         },
         options: {
             responsive: true,
@@ -366,7 +379,11 @@ const createResponseTimeChart = () => {
                 },
                 title: {
                     display: true,
-                    text: '平均回复间隔时间趋势'
+                    text: '平均回复间隔时间与读说速度趋势'
+                },
+                tooltip: {
+                    mode: 'index',
+                    intersect: false,
                 }
             },
             scales: {
@@ -381,7 +398,19 @@ const createResponseTimeChart = () => {
                         display: true,
                         text: '平均回复间隔时间(分钟)'
                     },
-                    beginAtZero: true
+                    beginAtZero: true,
+                    position: 'left',
+                },
+                y1: {
+                    title: {
+                        display: true,
+                        text: '平均每分钟读说字数'
+                    },
+                    beginAtZero: true,
+                    position: 'right',
+                    grid: {
+                        drawOnChartArea: false, // 只在自己的轴区域绘制网格线
+                    },
                 }
             }
         }

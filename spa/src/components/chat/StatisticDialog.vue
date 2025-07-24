@@ -69,20 +69,52 @@ const messagesByDate = computed(() => {
     return groups;
 });
 
+// 生成从开始日期到结束日期的所有日期
+const generateDateRange = (startDate: string, endDate: string): string[] => {
+    const dates: string[] = [];
+    const currentDate = new Date(startDate);
+    const finalDate = new Date(endDate);
+
+    while (currentDate <= finalDate) {
+        // 格式化日期为 YYYY-MM-DD
+        const year = currentDate.getFullYear();
+        const month = String(currentDate.getMonth() + 1).padStart(2, '0');
+        const day = String(currentDate.getDate()).padStart(2, '0');
+        dates.push(`${year}-${month}-${day}`);
+
+        currentDate.setDate(currentDate.getDate() + 1);
+    }
+
+    return dates;
+};
+
+// 获取完整日期范围（从最早有数据日期到今天）
+const getFullDateRange = (): string[] => {
+    const existingDates = Object.keys(messagesByDate.value);
+    if (existingDates.length === 0) {
+        // 如果没有数据，只显示今天
+        const today = new Date().toISOString().split('T')[0];
+        return [today];
+    }
+
+    const earliestDate = existingDates.reduce((a, b) => (new Date(a) < new Date(b) ? a : b));
+    const today = new Date().toISOString().split('T')[0]; // 今天的日期（YYYY-MM-DD）
+    return generateDateRange(earliestDate, today);
+};
+
 // 计算文本中各类字符数量
 const countCharacters = (text: string) => {
-    // 英文单词及标点符号（仅包含ASCII范围）
+    // 英文单词及标点符号
     const englishWords = text.match(/[a-zA-Z]+/g)?.length || 0;
     const englishPunctuation = text.match(/[!"#$%&'()*+,-./:;<=>?@[\]^_`{|}~]/g)?.length || 0;
 
-    // 中文字符及标点符号（独立范围，不考虑重叠）
+    // 中文字符及标点符号
     const chineseChars = text.match(/[\u4e00-\u9fa5]/g)?.length || 0;
     const chinesePunctuation = text.match(/[\u3000-\u303F\uFF00-\uFFEF]/g)?.length || 0;
 
-    // 日语字符及标点符号（独立范围，不考虑重叠）
+    // 日语字符及标点符号
     const japaneseKana = text.match(/[\u3040-\u309F\u30A0-\u30FF]/g)?.length || 0;
     const japaneseKanji = text.match(/[\u4E00-\u9FFF]/g)?.length || 0;
-    // 修正日语标点符号范围，排除与英文重复的半角符号
     const japanesePunctuation = text.match(/[\u3000-\u303F\u30FB-\u30FC\uFF01-\uFF5E]/g)?.length || 0;
 
     // 合并日语统计
@@ -93,11 +125,7 @@ const countCharacters = (text: string) => {
         englishPunctuation,
         chineseChars,
         chinesePunctuation,
-        japaneseTotal,
-        japanesePunctuation,
-        // 保留单独统计项
-        japaneseKana,
-        japaneseKanji
+        japaneseTotal
     };
 };
 
@@ -123,45 +151,46 @@ const getLanguageChars = (text: string, language: string) => {
     }
 };
 
-// 准备消息图表数据
+// 准备消息图表数据（无数据日期用0填充）
 const prepareMessageChartData = () => {
-    const dates = Object.keys(messagesByDate.value).sort();
-    const userCharCounts = dates.map(date => {
-        const userMessages = messagesByDate.value[date].filter(m => m.role === 'user');
-        return userMessages.reduce((total, msg) => total + getLanguageChars(msg.raw_text, props.language), 0);
+    const fullDates = getFullDateRange();
+    const userCharCounts: number[] = [];
+    const totalCharCounts: number[] = [];
+
+    fullDates.forEach(date => {
+        const messages = messagesByDate.value[date] || [];
+        // 用户发送字数（无数据则为0）
+        const userMsgs = messages.filter(m => m.role === 'user');
+        const userCount = userMsgs.reduce((total, msg) => total + getLanguageChars(msg.raw_text, props.language), 0);
+        userCharCounts.push(userCount);
+
+        // 总字数（无数据则为0）
+        const totalCount = messages.reduce((total, msg) => total + getLanguageChars(msg.raw_text, props.language), 0);
+        totalCharCounts.push(totalCount);
     });
 
-    const totalCharCounts = dates.map(date => {
-        return messagesByDate.value[date].reduce((total, msg) => total + getLanguageChars(msg.raw_text, props.language), 0);
-    });
-
-    return { dates, userCharCounts, totalCharCounts };
+    return { dates: fullDates, userCharCounts, totalCharCounts };
 };
 
-// 准备回复时间图表数据
+// 准备回复时间图表数据（无数据日期用前后平均值填充）
 const prepareResponseTimeChartData = () => {
-    const dates = Object.keys(messagesByDate.value).sort();
-    let avgResponseTimes: number[] = [];
-    let avgWordsPerMinute: number[] = [];
+    const fullDates = getFullDateRange();
+    // 先收集有数据的日期及其对应值
+    const rawResponseTimes: Record<string, number> = {};
+    const rawWordsPerMinute: Record<string, number> = {};
 
-    dates.forEach(date => {
-        const messages = messagesByDate.value[date];
+    // 初始化原始数据
+    fullDates.forEach(date => {
+        const messages = messagesByDate.value[date] || [];
         const userMessages = messages.filter(m => m.role === 'user');
         const assistantMessages = messages.filter(m => m.role === 'assistant');
-        const reversedAssistantMsg = assistantMessages.reverse();
-
-        if (userMessages.length === 0 || reversedAssistantMsg.length === 0) {
-            avgResponseTimes.push(0);
-            avgWordsPerMinute.push(0);
-            return;
-        }
+        const reversedAssistantMsg = [...assistantMessages].reverse(); // 复制后反转，避免修改原数组
 
         let totalResponseTime = 0;
         let totalWords = 0;
         let responseCount = 0;
 
         userMessages.forEach(userMsg => {
-            // 查找该用户消息之前最近的assistant回复
             const prevAssistantMsg = reversedAssistantMsg.find(
                 msg => new Date(msg.time) < new Date(userMsg.time)
             );
@@ -170,10 +199,8 @@ const prepareResponseTimeChartData = () => {
                 const timeDiff =
                     (new Date(userMsg.time).getTime() - new Date(prevAssistantMsg.time).getTime()) / 1000 / 60; // 分钟
 
-                // 如果间隔不超过10分钟，视作同一会话
                 if (timeDiff <= 10 && timeDiff > 0) {
                     totalResponseTime += timeDiff;
-                    // 计算阅读的字数（上一条AI回复）和用户回复的字数
                     const readWords = getLanguageChars(prevAssistantMsg.raw_text, props.language);
                     const replyWords = getLanguageChars(userMsg.raw_text, props.language);
                     totalWords += readWords + replyWords;
@@ -182,55 +209,56 @@ const prepareResponseTimeChartData = () => {
             }
         });
 
-        avgResponseTimes.push(responseCount > 0 ? totalResponseTime / responseCount : 0);
-        // 计算平均每分钟读说字数
-        avgWordsPerMinute.push(responseCount > 0 && totalResponseTime > 0
-            ? totalWords / totalResponseTime
-            : 0);
+        // 只有有有效数据时才记录（避免0值干扰后续计算）
+        if (responseCount > 0) {
+            rawResponseTimes[date] = totalResponseTime / responseCount;
+            rawWordsPerMinute[date] = totalWords / totalResponseTime;
+        }
     });
 
-    // 处理0值：使用前后平均值
-    const processZeroValues = (values: number[]) => {
-        return values.map((value, index) => {
-            if (value !== 0) return value;
-
-            // 查找前一个非零值
-            let prevIndex = index - 1;
-            while (prevIndex >= 0 && values[prevIndex] === 0) {
-                prevIndex--;
+    // 处理空数据：用前后最近的非空值的平均值填充
+    const fillMissingValues = (rawData: Record<string, number>, dates: string[]): number[] => {
+        return dates.map((date, index) => {
+            if (rawData[date] !== undefined) {
+                return rawData[date]; // 有数据直接返回
             }
 
-            // 查找后一个非零值
-            let nextIndex = index + 1;
-            while (nextIndex < values.length && values[nextIndex] === 0) {
-                nextIndex++;
+            // 查找前一个有数据的日期
+            let prevValue: number | null = null;
+            for (let i = index - 1; i >= 0; i--) {
+                if (rawData[dates[i]] !== undefined) {
+                    prevValue = rawData[dates[i]];
+                    break;
+                }
             }
 
-            // 如果前后都有非零值，取平均值
-            if (prevIndex >= 0 && nextIndex < values.length) {
-                return (values[prevIndex] + values[nextIndex]) / 2;
+            // 查找后一个有数据的日期
+            let nextValue: number | null = null;
+            for (let i = index + 1; i < dates.length; i++) {
+                if (rawData[dates[i]] !== undefined) {
+                    nextValue = rawData[dates[i]];
+                    break;
+                }
             }
 
-            // 如果只有前一个非零值
-            if (prevIndex >= 0) {
-                return values[prevIndex];
+            // 计算填充值
+            if (prevValue !== null && nextValue !== null) {
+                return (prevValue + nextValue) / 2; // 前后都有数据，取平均
+            } else if (prevValue !== null) {
+                return prevValue; // 只有前有数据，用前值
+            } else if (nextValue !== null) {
+                return nextValue; // 只有后有数据，用后值
+            } else {
+                return 0; // 完全没有数据，用0
             }
-
-            // 如果只有后一个非零值
-            if (nextIndex < values.length) {
-                return values[nextIndex];
-            }
-
-            // 没有非零值，保持0
-            return 0;
         });
     };
 
-    return {
-        dates,
-        avgResponseTimes: processZeroValues(avgResponseTimes),
-        avgWordsPerMinute: processZeroValues(avgWordsPerMinute)
-    };
+    // 填充空值
+    const avgResponseTimes = fillMissingValues(rawResponseTimes, fullDates);
+    const avgWordsPerMinute = fillMissingValues(rawWordsPerMinute, fullDates);
+
+    return { dates: fullDates, avgResponseTimes, avgWordsPerMinute };
 };
 
 // 创建消息图表
@@ -277,25 +305,17 @@ const createMessageChart = () => {
                         afterLabel: (context) => {
                             const dateIndex = context.dataIndex;
                             const datasetIndex = context.datasetIndex;
-
-                            if (dateIndex === undefined || !dates[dateIndex]) return [];
-
                             const date = dates[dateIndex];
                             const messages = messagesByDate.value[date] || [];
+
                             const isUserDataset = datasetIndex === 0;
                             const filteredMessages = isUserDataset
                                 ? messages.filter(m => m.role === 'user')
                                 : messages;
 
-                            if (!filteredMessages.length) return [];
-
-                            // 合并所有消息文本
-                            const allText = filteredMessages.map(m => m.raw_text).join('');
-                            const charCount = getLanguageChars(allText, props.language);
-
                             return [
                                 `消息条数: ${filteredMessages.length}`,
-                                `${props.language}字数: ${charCount}`
+                                `${props.language}字数: ${context.raw}`
                             ];
                         }
                     }
@@ -313,6 +333,11 @@ const createMessageChart = () => {
                     title: {
                         display: true,
                         text: '日期'
+                    },
+                    ticks: {
+                        // 日期较多时自动旋转标签，避免重叠
+                        maxRotation: 45,
+                        minRotation: 45
                     }
                 },
                 y: {
@@ -353,8 +378,8 @@ const createResponseTimeChart = () => {
                     backgroundColor: 'rgba(139, 92, 246, 0.1)',
                     tension: 0.3,
                     fill: true,
-                    pointRadius: avgResponseTimes.map(time => time > 0 ? 4 : 0),
-                    pointHoverRadius: avgResponseTimes.map(time => time > 0 ? 6 : 0),
+                    pointRadius: 4,
+                    pointHoverRadius: 6,
                     yAxisID: 'y'
                 },
                 {
@@ -364,8 +389,8 @@ const createResponseTimeChart = () => {
                     backgroundColor: 'rgba(16, 185, 129, 0.1)',
                     tension: 0.3,
                     fill: true,
-                    pointRadius: avgWordsPerMinute.map(words => words > 0 ? 4 : 0),
-                    pointHoverRadius: avgWordsPerMinute.map(words => words > 0 ? 6 : 0),
+                    pointRadius: 4,
+                    pointHoverRadius: 6,
                     yAxisID: 'y1'
                 }
             ]
@@ -391,6 +416,10 @@ const createResponseTimeChart = () => {
                     title: {
                         display: true,
                         text: '日期'
+                    },
+                    ticks: {
+                        maxRotation: 45,
+                        minRotation: 45
                     }
                 },
                 y: {
@@ -409,7 +438,7 @@ const createResponseTimeChart = () => {
                     beginAtZero: true,
                     position: 'right',
                     grid: {
-                        drawOnChartArea: false, // 只在自己的轴区域绘制网格线
+                        drawOnChartArea: false,
                     },
                 }
             }

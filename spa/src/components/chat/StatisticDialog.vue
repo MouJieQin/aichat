@@ -69,7 +69,7 @@
                         </div>
                     </el-col>
 
-                    <el-col :span="6">
+                    <el-col :span="4">
                         <div class="statistic-card">
                             <el-statistic :value="totalDays">
                                 <template #title>
@@ -80,13 +80,13 @@
                             </el-statistic>
                             <div class="statistic-footer">
                                 <div class="footer-item">
-                                    <span>平均每天发送消息条数</span>
+                                    <span>平均发送消息条数</span>
                                     <span class="green">
                                         {{ (totalUserMessageCounts / totalDays).toFixed(0) }}
                                     </span>
                                 </div>
                                 <div class="footer-item">
-                                    <span>平均每天消息条数</span>
+                                    <span>平均消息条数</span>
                                     <span class="green">
                                         {{ (totalMessageCounts / totalDays).toFixed(0) }}
                                     </span>
@@ -95,7 +95,7 @@
                         </div>
                     </el-col>
 
-                    <el-col :span="4">
+                    <el-col :span="5">
                         <div class="statistic-card">
                             <el-statistic :value="totalTodayCharCounts" title="New transactions today">
                                 <template #title>
@@ -115,15 +115,18 @@
                                     <span>比平均</span>
                                     <span :class="diffTodayCharCountsThanAverage > 0 ? 'green' : 'red'">
                                         {{ diffTodayCharCountsThanAverage.toFixed(0) }}
-                                        <el-icon>
+                                        <el-icon v-if="diffTodayCharCountsThanAverage >= 0">
                                             <CaretTop />
+                                        </el-icon>
+                                        <el-icon v-else>
+                                            <CaretBottom />
                                         </el-icon>
                                     </span>
                                 </div>
                             </div>
                         </div>
                     </el-col>
-                    <el-col :span="4">
+                    <el-col :span="5">
                         <div class="statistic-card">
                             <el-statistic :value="totalTodayUserCharCounts" title="New transactions today">
                                 <template #title>
@@ -143,8 +146,11 @@
                                     <span>比平均</span>
                                     <span :class="diffTodayUserCharCountsThanAverage > 0 ? 'green' : 'red'">
                                         {{ diffTodayUserCharCountsThanAverage.toFixed(0) }}
-                                        <el-icon>
+                                        <el-icon v-if="diffTodayUserCharCountsThanAverage >= 0">
                                             <CaretTop />
+                                        </el-icon>
+                                        <el-icon v-else>
+                                            <CaretBottom />
                                         </el-icon>
                                     </span>
                                 </div>

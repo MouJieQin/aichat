@@ -1,4 +1,5 @@
 <template>
+
     <div class="p-6 bg-white rounded-lg shadow-lg">
         <h2 class="text-2xl font-bold mb-6 text-center">聊天数据分析</h2>
 
@@ -8,6 +9,151 @@
 
         <div class="mb-10">
             <h3 class="text-xl font-semibold mb-4">每日字符数量统计</h3>
+
+            <div class="card-container">
+                <el-row :gutter="16">
+
+                    <el-col :span="5">
+                        <div class="statistic-card">
+                            <el-statistic :value="totalCharCounts_">
+                                <template #title>
+                                    <div style="display: inline-flex; align-items: center">
+                                        总对话字数
+                                        <el-tooltip effect="dark" content="所有用户发送的字数和AI回复的字数和" placement="top">
+                                            <el-icon style="margin-left: 4px" :size="12">
+                                                <Warning />
+                                            </el-icon>
+                                        </el-tooltip>
+                                    </div>
+                                </template>
+                            </el-statistic>
+                            <div class="statistic-footer">
+                                <div class="footer-item">
+                                    <span>总消息条数</span>
+                                    <span class="green">
+                                        {{ totalMessageCounts }}
+                                    </span>
+                                </div>
+                                <div class="footer-item">
+                                    <span>平均每天</span>
+                                    <span class="green">
+                                        {{ (totalCharCounts_ / totalDays).toFixed(0) }}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </el-col>
+                    <el-col :span="5">
+                        <div class="statistic-card">
+                            <el-statistic :value="totalUserCharCounts">
+                                <template #title>
+                                    <div style="display: inline-flex; align-items: center">
+                                        用户发送总字数
+                                    </div>
+                                </template>
+                            </el-statistic>
+                            <div class="statistic-footer">
+                                <div class="footer-item">
+                                    <span>总消息条数</span>
+                                    <span class="green">
+                                        {{ totalUserMessageCounts }}
+                                    </span>
+                                </div>
+                                <div class="footer-item">
+                                    <span>平均每天</span>
+                                    <span class="green">
+                                        {{ (totalUserCharCounts / totalDays).toFixed(0) }}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </el-col>
+
+                    <el-col :span="6">
+                        <div class="statistic-card">
+                            <el-statistic :value="totalDays">
+                                <template #title>
+                                    <div style="display: inline-flex; align-items: center">
+                                        总天数
+                                    </div>
+                                </template>
+                            </el-statistic>
+                            <div class="statistic-footer">
+                                <div class="footer-item">
+                                    <span>平均每天发送消息条数</span>
+                                    <span class="green">
+                                        {{ (totalUserMessageCounts / totalDays).toFixed(0) }}
+                                    </span>
+                                </div>
+                                <div class="footer-item">
+                                    <span>平均每天消息条数</span>
+                                    <span class="green">
+                                        {{ (totalMessageCounts / totalDays).toFixed(0) }}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </el-col>
+
+                    <el-col :span="4">
+                        <div class="statistic-card">
+                            <el-statistic :value="totalTodayCharCounts" title="New transactions today">
+                                <template #title>
+                                    <div style="display: inline-flex; align-items: center">
+                                        今日总对话字数
+                                    </div>
+                                </template>
+                            </el-statistic>
+                            <div class="statistic-footer">
+                                <div class="footer-item">
+                                    <span>总消息条数</span>
+                                    <span class="green">
+                                        {{ totalTodayMessageCounts }}
+                                    </span>
+                                </div>
+                                <div class="footer-item">
+                                    <span>比平均</span>
+                                    <span :class="diffTodayCharCountsThanAverage > 0 ? 'green' : 'red'">
+                                        {{ diffTodayCharCountsThanAverage.toFixed(0) }}
+                                        <el-icon>
+                                            <CaretTop />
+                                        </el-icon>
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </el-col>
+                    <el-col :span="4">
+                        <div class="statistic-card">
+                            <el-statistic :value="totalTodayUserCharCounts" title="New transactions today">
+                                <template #title>
+                                    <div style="display: inline-flex; align-items: center">
+                                        今日用户发送总字数
+                                    </div>
+                                </template>
+                            </el-statistic>
+                            <div class="statistic-footer">
+                                <div class="footer-item">
+                                    <span>总消息条数</span>
+                                    <span class="green">
+                                        {{ totalTodayUserMessageCounts }}
+                                    </span>
+                                </div>
+                                <div class="footer-item">
+                                    <span>比平均</span>
+                                    <span :class="diffTodayUserCharCountsThanAverage > 0 ? 'green' : 'red'">
+                                        {{ diffTodayUserCharCountsThanAverage.toFixed(0) }}
+                                        <el-icon>
+                                            <CaretTop />
+                                        </el-icon>
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </el-col>
+
+                </el-row>
+            </div>
             <div class="bg-gray-50 p-4 rounded-lg" style="height: 80vh">
                 <canvas ref="messageChartRef" class="w-full"></canvas>
             </div>
@@ -26,10 +172,28 @@
 import { ref, onMounted, onUnmounted, computed, watch, nextTick } from 'vue';
 import Chart from 'chart.js/auto';
 import type { Message } from '@/common/type-interface';
+import { ArrowRight, CaretBottom, CaretTop, Warning } from '@element-plus/icons-vue'
 
 const dateRange: Record<string, number> = { "最近7天": 7, "最近30天": 30, "全部": -1 };
 const dateRangeOptions = Object.keys(dateRange);
 const lastPeriod = ref<number>(7);
+const totalUserCharCounts = ref<number>(0);
+const totalCharCounts_ = ref<number>(0);
+const totalUserMessageCounts = ref<number>(0);
+const totalMessageCounts = ref<number>(0);
+const totalTodayUserCharCounts = ref<number>(0);
+const totalTodayUserMessageCounts = ref<number>(0);
+const totalTodayCharCounts = ref<number>(0);
+const totalTodayMessageCounts = ref<number>(0);
+const totalDays = ref<number>(0);
+
+const diffTodayUserCharCountsThanAverage = computed(() => {
+    return (totalTodayUserCharCounts.value - (totalUserCharCounts.value / totalDays.value));
+})
+
+const diffTodayCharCountsThanAverage = computed(() => {
+    return (totalTodayCharCounts.value - (totalCharCounts_.value / totalDays.value));
+})
 
 declare global {
     interface Window {
@@ -76,6 +240,13 @@ const messagesByDate = computed(() => {
     return groups;
 });
 
+const formatDataToLocalString = (date: Date) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0'); // 月份从 0 开始
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`; // 本地日期
+}
+
 // 生成从开始日期到结束日期的所有日期
 const generateDateRange = (startDate: string, endDate: string): string[] => {
     const dates: string[] = [];
@@ -84,11 +255,7 @@ const generateDateRange = (startDate: string, endDate: string): string[] => {
 
     while (currentDate <= finalDate) {
         // 格式化日期为 YYYY-MM-DD
-        const year = currentDate.getFullYear();
-        const month = String(currentDate.getMonth() + 1).padStart(2, '0');
-        const day = String(currentDate.getDate()).padStart(2, '0');
-        dates.push(`${year}-${month}-${day}`);
-
+        dates.push(formatDataToLocalString(currentDate));
         currentDate.setDate(currentDate.getDate() + 1);
     }
 
@@ -98,15 +265,15 @@ const generateDateRange = (startDate: string, endDate: string): string[] => {
 // 获取完整日期范围（从最早有数据日期到今天）
 const getFullDateRange = (): string[] => {
     const existingDates = Object.keys(messagesByDate.value);
-    const today = new Date().toISOString().split('T')[0]; // 今天的日期（YYYY-MM-DD）
+    const today = formatDataToLocalString(new Date()); // 今天的日期（YYYY-MM-DD）
     let startData: string = today
     if (lastPeriod.value === -1) {
         const earliestDate = existingDates.reduce((a, b) => (new Date(a) < new Date(b) ? a : b));
         startData = earliestDate
     } else {
         const lastDate = new Date();
-        lastDate.setDate(lastDate.getDate() - lastPeriod.value);
-        startData = lastDate.toISOString().split('T')[0]
+        lastDate.setDate(lastDate.getDate() - lastPeriod.value + 1);
+        startData = formatDataToLocalString(lastDate)
     }
     return generateDateRange(startData, today);
 };
@@ -163,20 +330,31 @@ const getLanguageChars = (text: string, language: string) => {
 // 准备消息图表数据（无数据日期用0填充）
 const prepareMessageChartData = () => {
     const fullDates = getFullDateRange();
+    totalDays.value = fullDates.length;
     const userCharCounts: number[] = [];
     const totalCharCounts: number[] = [];
+
+    totalMessageCounts.value = 0;
+    totalUserMessageCounts.value = 0;
+    totalTodayMessageCounts.value = 0;
+    totalTodayUserMessageCounts.value = 0;
 
     fullDates.forEach(date => {
         const messages = messagesByDate.value[date] || [];
         // 用户发送字数（无数据则为0）
         const userMsgs = messages.filter(m => m.role === 'user');
+        totalUserMessageCounts.value += userMsgs.length;
         const userCount = userMsgs.reduce((total, msg) => total + getLanguageChars(msg.raw_text, props.language), 0);
         userCharCounts.push(userCount);
 
         // 总字数（无数据则为0）
         const totalCount = messages.reduce((total, msg) => total + getLanguageChars(msg.raw_text, props.language), 0);
+        totalMessageCounts.value += messages.length;
         totalCharCounts.push(totalCount);
     });
+
+    totalTodayUserMessageCounts.value = messagesByDate.value[fullDates[fullDates.length - 1]]?.filter(m => m.role === 'user').length || 0;
+    totalTodayMessageCounts.value = messagesByDate.value[fullDates[fullDates.length - 1]]?.length || 0;
 
     return { dates: fullDates, userCharCounts, totalCharCounts };
 };
@@ -275,6 +453,10 @@ const createMessageChart = () => {
     if (!messageChartRef.value) return;
 
     const { dates, userCharCounts, totalCharCounts } = prepareMessageChartData();
+    totalUserCharCounts.value = userCharCounts.reduce((total, count) => total + count, 0);
+    totalCharCounts_.value = totalCharCounts.reduce((total, count) => total + count, 0);
+    totalTodayUserCharCounts.value = userCharCounts[userCharCounts.length - 1];
+    totalTodayCharCounts.value = totalCharCounts[totalCharCounts.length - 1];
 
     const ctx = messageChartRef.value.getContext('2d');
     if (!ctx) return;
@@ -324,7 +506,6 @@ const createMessageChart = () => {
 
                             return [
                                 `消息条数: ${filteredMessages.length}`,
-                                `${props.language}字数: ${context.raw}`
                             ];
                         }
                     }
@@ -482,3 +663,5 @@ onUnmounted(() => {
     }
 });
 </script>
+
+<style scoped></style>

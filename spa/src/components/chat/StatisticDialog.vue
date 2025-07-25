@@ -2,6 +2,10 @@
     <div class="p-6 bg-white rounded-lg shadow-lg">
         <h2 class="text-2xl font-bold mb-6 text-center">聊天数据分析</h2>
 
+        <el-select v-model="lastPeriod" placeholder="请选择时间范围" @change="initCharts" style="max-width: 150px;">
+            <el-option v-for="item in dateRangeOptions" :key="item" :label="item" :value="dateRange[item]" />
+        </el-select>
+
         <div class="mb-10">
             <h3 class="text-xl font-semibold mb-4">每日字符数量统计</h3>
             <div class="bg-gray-50 p-4 rounded-lg">
@@ -22,6 +26,10 @@
 import { ref, onMounted, onUnmounted, computed, watch, nextTick } from 'vue';
 import Chart from 'chart.js/auto';
 import type { Message } from '@/common/type-interface';
+
+const dateRange: Record<string, number> = { "最近7天": 7, "最近30天": 30, "全部": -1 };
+const dateRangeOptions = Object.keys(dateRange);
+const lastPeriod = ref<number>(7);
 
 declare global {
     interface Window {
@@ -59,7 +67,6 @@ const responseTimeChartRef = ref<HTMLCanvasElement | null>(null);
 // 按日期分组消息
 const messagesByDate = computed(() => {
     const groups: Record<string, Message[]> = {};
-
     chatMessage.value.forEach(message => {
         const date = message.time.split(' ')[0];
         if (!groups[date]) groups[date] = [];
@@ -91,15 +98,17 @@ const generateDateRange = (startDate: string, endDate: string): string[] => {
 // 获取完整日期范围（从最早有数据日期到今天）
 const getFullDateRange = (): string[] => {
     const existingDates = Object.keys(messagesByDate.value);
-    if (existingDates.length === 0) {
-        // 如果没有数据，只显示今天
-        const today = new Date().toISOString().split('T')[0];
-        return [today];
-    }
-
-    const earliestDate = existingDates.reduce((a, b) => (new Date(a) < new Date(b) ? a : b));
     const today = new Date().toISOString().split('T')[0]; // 今天的日期（YYYY-MM-DD）
-    return generateDateRange(earliestDate, today);
+    let startData: string = today
+    if (lastPeriod.value === -1) {
+        const earliestDate = existingDates.reduce((a, b) => (new Date(a) < new Date(b) ? a : b));
+        startData = earliestDate
+    } else {
+        const lastDate = new Date();
+        lastDate.setDate(lastDate.getDate() - lastPeriod.value);
+        startData = lastDate.toISOString().split('T')[0]
+    }
+    return generateDateRange(startData, today);
 };
 
 // 计算文本中各类字符数量
@@ -454,7 +463,7 @@ const initCharts = () => {
 
 // 监听窗口大小变化，调整图表
 const handleResize = () => {
-    initCharts();
+    // initCharts();
 };
 
 onMounted(() => {

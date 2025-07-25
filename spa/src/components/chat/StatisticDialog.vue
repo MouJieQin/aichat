@@ -8,14 +8,14 @@
 
         <div class="mb-10">
             <h3 class="text-xl font-semibold mb-4">每日字符数量统计</h3>
-            <div class="bg-gray-50 p-4 rounded-lg">
+            <div class="bg-gray-50 p-4 rounded-lg" style="height: 80vh">
                 <canvas ref="messageChartRef" class="w-full"></canvas>
             </div>
         </div>
 
         <div>
             <h3 class="text-xl font-semibold mb-4">平均回复间隔时间趋势</h3>
-            <div class="bg-gray-50 p-4 rounded-lg">
+            <div class="bg-gray-50 p-4 rounded-lg" style="height: 80vh">
                 <canvas ref="responseTimeChartRef" class="w-full"></canvas>
             </div>
         </div>
@@ -463,7 +463,7 @@ const initCharts = () => {
 
 // 监听窗口大小变化，调整图表
 const handleResize = () => {
-    // initCharts();
+    initCharts();
 };
 
 onMounted(() => {

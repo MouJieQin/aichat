@@ -464,6 +464,7 @@ const prepareResponseTimeChartData = () => {
     // 先收集有数据的日期及其对应值
     const rawResponseTimes: Record<string, number> = {};
     const rawWordsPerMinute: Record<string, number> = {};
+    const readAndWriteTimeCounts: Record<string, number> = {};
 
     totalResponseTime_.value = 0;
     totalResponseTimeCounts.value = 0;
@@ -499,19 +500,20 @@ const prepareResponseTimeChartData = () => {
                     const replyWords = getLanguageChars(userMsg.raw_text, props.language);
                     totalWords += readWords + replyWords;
                     responseCount++;
-
-                    totalResponseTime_.value += timeDiff;
-                    totalResponseTimeCounts.value += 1;
-                    totalCharReadAndWriteCounts.value += readWords + replyWords;
-                    if (date === todayDate) {
-                        todayTotalResponseTime_.value += timeDiff;
-                        todayTotalResponseTimeCounts.value += 1;
-                        todayTotalCharReadAndWriteCounts.value += readWords + replyWords;
-                    }
                 }
             }
         });
 
+        totalResponseTime_.value += totalResponseTime;
+        totalResponseTimeCounts.value += responseCount;
+        totalCharReadAndWriteCounts.value += totalWords;
+        if (date === todayDate) {
+            todayTotalResponseTime_.value = totalResponseTime;
+            todayTotalResponseTimeCounts.value = responseCount;
+            todayTotalCharReadAndWriteCounts.value = totalWords;
+        }
+
+        readAndWriteTimeCounts[date] = totalResponseTime;
         // 只有有有效数据时才记录（避免0值干扰后续计算）
         if (responseCount > 0) {
             rawResponseTimes[date] = totalResponseTime / responseCount;
@@ -561,7 +563,7 @@ const prepareResponseTimeChartData = () => {
     const avgResponseTimes = fillMissingValues(rawResponseTimes, fullDates);
     const avgWordsPerMinute = fillMissingValues(rawWordsPerMinute, fullDates);
 
-    return { dates: fullDates, avgResponseTimes, avgWordsPerMinute };
+    return { dates: fullDates, avgResponseTimes, avgWordsPerMinute, readAndWriteTimeCounts };
 };
 
 // 创建消息图表
@@ -662,7 +664,7 @@ const createMessageChart = () => {
 const createResponseTimeChart = () => {
     if (!responseTimeChartRef.value) return;
 
-    const { dates, avgResponseTimes, avgWordsPerMinute } = prepareResponseTimeChartData();
+    const { dates, avgResponseTimes, avgWordsPerMinute, readAndWriteTimeCounts } = prepareResponseTimeChartData();
 
     const ctx = responseTimeChartRef.value.getContext('2d');
     if (!ctx) return;
@@ -715,6 +717,16 @@ const createResponseTimeChart = () => {
                 tooltip: {
                     mode: 'index',
                     intersect: false,
+                    callbacks: {
+                        afterLabel: (context) => {
+                            const dateIndex = context.dataIndex;
+                            const date = dates[dateIndex];
+
+                            return [
+                                `总读写时间: ${formatMinutesToHHMM(readAndWriteTimeCounts[date])}`,
+                            ];
+                        }
+                    }
                 }
             },
             scales: {

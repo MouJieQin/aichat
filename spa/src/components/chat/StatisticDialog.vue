@@ -161,6 +161,80 @@
 
         <div>
             <h3 class="text-xl font-semibold mb-4">平均回复间隔时间趋势</h3>
+            <div class="card-container">
+                <el-row :gutter="16">
+
+                    <el-col :span="8">
+                        <div class="statistic-card">
+                            <el-statistic :value="totalResponseTimeHHMM">
+                                <template #title>
+                                    <div style="display: inline-flex; align-items: center">
+                                        总读写时间
+                                        <el-tooltip effect="dark" content="所有用户发送的字数和AI回复的字数和" placement="top">
+                                            <el-icon style="margin-left: 4px" :size="12">
+                                                <Warning />
+                                            </el-icon>
+                                        </el-tooltip>
+                                    </div>
+                                </template>
+                            </el-statistic>
+                            <div class="statistic-footer">
+                                <div class="footer-item">
+                                    <span>平均回复间隔时间</span>
+                                    <span class="green">
+                                        {{ (totalResponseTime_ / totalResponseTimeCounts).toFixed(2) }}
+                                    </span>
+                                </div>
+                                <div class="footer-item">
+                                    <span>平均每分钟读写字数</span>
+                                    <span class="green">
+                                        {{ (totalCharReadAndWriteCounts / totalResponseTime_).toFixed(2) }}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </el-col>
+
+                    <el-col :span="8">
+                        <div class="statistic-card">
+                            <el-statistic :value="responseTimeHHMMperDay">
+                                <template #title>
+                                    <div style="display: inline-flex; align-items: center">
+                                        平均每天读写时间
+                                    </div>
+                                </template>
+                            </el-statistic>
+                        </div>
+                    </el-col>
+
+
+                    <el-col :span="8">
+                        <div class="statistic-card">
+                            <el-statistic :value="todayTotalResponseTimeHHMM">
+                                <template #title>
+                                    <div style="display: inline-flex; align-items: center">
+                                        今日读写时间
+                                    </div>
+                                </template>
+                            </el-statistic>
+                            <div class="statistic-footer">
+                                <div class="footer-item">
+                                    <span>平均回复间隔时间</span>
+                                    <span class="green">
+                                        {{ (todayTotalResponseTime_ / todayTotalResponseTimeCounts).toFixed(2) }}
+                                    </span>
+                                </div>
+                                <div class="footer-item">
+                                    <span>平均每分钟读写字数</span>
+                                    <span class="green">
+                                        {{ (todayTotalCharReadAndWriteCounts / todayTotalResponseTime_).toFixed(2) }}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </el-col>
+                </el-row>
+            </div>
             <div class="bg-gray-50 p-4 rounded-lg" style="height: 80vh">
                 <canvas ref="responseTimeChartRef" class="w-full"></canvas>
             </div>
@@ -186,6 +260,13 @@ const totalTodayUserMessageCounts = ref<number>(0);
 const totalTodayCharCounts = ref<number>(0);
 const totalTodayMessageCounts = ref<number>(0);
 const totalDays = ref<number>(0);
+
+const totalResponseTime_ = ref<number>(0);
+const totalResponseTimeCounts = ref<number>(0);
+const totalCharReadAndWriteCounts = ref<number>(0);
+const todayTotalResponseTime_ = ref<number>(0);
+const todayTotalResponseTimeCounts = ref<number>(0);
+const todayTotalCharReadAndWriteCounts = ref<number>(0);
 
 const diffTodayUserCharCountsThanAverage = computed(() => {
     return (totalTodayUserCharCounts.value - (totalUserCharCounts.value / totalDays.value));
@@ -246,6 +327,24 @@ const formatDataToLocalString = (date: Date) => {
     const day = String(date.getDate()).padStart(2, '0');
     return `${year}-${month}-${day}`; // 本地日期
 }
+
+const formatMinutesToHHMM = (minutes: number) => {
+    const hours = Math.floor(minutes / 60);
+    const minutes_ = (minutes % 60).toFixed(0);
+    return `${hours.toString().padStart(2, '0')} 小时 ${minutes_.toString().padStart(2, '0')} 分钟`;
+}
+
+const totalResponseTimeHHMM = computed(() => {
+    return formatMinutesToHHMM(totalResponseTime_.value);
+})
+
+const responseTimeHHMMperDay = computed(() => {
+    return formatMinutesToHHMM(totalResponseTime_.value / totalDays.value);
+})
+
+const todayTotalResponseTimeHHMM = computed(() => {
+    return formatMinutesToHHMM(todayTotalResponseTime_.value);
+})
 
 // 生成从开始日期到结束日期的所有日期
 const generateDateRange = (startDate: string, endDate: string): string[] => {
@@ -366,6 +465,14 @@ const prepareResponseTimeChartData = () => {
     const rawResponseTimes: Record<string, number> = {};
     const rawWordsPerMinute: Record<string, number> = {};
 
+    totalResponseTime_.value = 0;
+    totalResponseTimeCounts.value = 0;
+    totalCharReadAndWriteCounts.value = 0;
+    todayTotalResponseTime_.value = 0;
+    todayTotalResponseTimeCounts.value = 0;
+    todayTotalCharReadAndWriteCounts.value = 0;
+    const todayDate = fullDates[fullDates.length - 1];
+
     // 初始化原始数据
     fullDates.forEach(date => {
         const messages = messagesByDate.value[date] || [];
@@ -392,6 +499,15 @@ const prepareResponseTimeChartData = () => {
                     const replyWords = getLanguageChars(userMsg.raw_text, props.language);
                     totalWords += readWords + replyWords;
                     responseCount++;
+
+                    totalResponseTime_.value += timeDiff;
+                    totalResponseTimeCounts.value += 1;
+                    totalCharReadAndWriteCounts.value += readWords + replyWords;
+                    if (date === todayDate) {
+                        todayTotalResponseTime_.value += timeDiff;
+                        todayTotalResponseTimeCounts.value += 1;
+                        todayTotalCharReadAndWriteCounts.value += readWords + replyWords;
+                    }
                 }
             }
         });

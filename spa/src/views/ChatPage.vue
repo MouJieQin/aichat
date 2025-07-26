@@ -25,17 +25,9 @@
     <AIConfigDrawer v-if="sessionAiConfig !== null" v-model="drawerVisible" :config="sessionAiConfig" :chatId="chatId"
         :systemPrompt="chatMessages[0]" @update-config="updateSessionAiConfig" />
 
-    <el-dialog v-model="statisticDialogVisible" fullscreen>
-        <StatisticDialog class="statistic-dialog" :messages="chatMessages" :language="sessionAiConfig?.language" />
-        <template #footer>
-            <div class="dialog-footer">
-                <el-button @click="statisticDialogVisible = false">Cancel</el-button>
-                <el-button type="primary" @click="statisticDialogVisible = false">
-                    Confirm
-                </el-button>
-            </div>
-        </template>
-    </el-dialog>
+    <!-- 统计弹窗 -->
+    <StatisticDialog :visible="statisticDialogVisible" :messages="chatMessages" :language="sessionAiConfig?.language"
+        @update:visible="(value) => { statisticDialogVisible = value }" />
 </template>
 
 <script lang="ts" setup>
@@ -46,8 +38,8 @@ import MessageStream from '@/components/Chat/MessageStream.vue'
 import SuggestionsList from '@/components/Chat/SuggestionsList.vue'
 import ChatInput from '@/components/Chat/ChatInput.vue'
 import AIConfigDrawer from '@/components/Chat/AIConfigDrawer.vue'
-import StatisticDialog from '@/components/Chat/StatisticDialog.vue'
 import ThreeDotsLoader from '@/components/Svgs/ThreeDotsLoader.vue'
+import StatisticDialog from '@/components/Dialogs/StatisticDialog.vue'
 import { ChatWebSocketService, useChatWebSocket } from '@/common/chat-websocket-client'
 import { processMarkdown } from '@/common/markdown-processor'
 import { formatTimeNow, highlightPlayingSentence, scrollToBottom, delayScrollToBottom } from '@/common/utils'

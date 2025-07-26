@@ -252,7 +252,7 @@
 import { ref, onMounted, onUnmounted, computed, watch, nextTick } from 'vue';
 import Chart from 'chart.js/auto';
 import type { Message } from '@/common/type-interface';
-import { ArrowRight, CaretBottom, CaretTop, Warning } from '@element-plus/icons-vue'
+import { CaretBottom, CaretTop, Warning } from '@element-plus/icons-vue'
 
 const dateRange: Record<string, number> = { "最近7天": 7, "最近30天": 30, "全部": -1 };
 const dateRangeOptions = Object.keys(dateRange);
@@ -290,6 +290,11 @@ declare global {
 }
 
 const props = defineProps({
+    visible: {
+        type: Boolean,
+        required: true,
+        default: false
+    },
     messages: {
         type: Array as () => Message[],
         required: true,
@@ -304,10 +309,18 @@ const props = defineProps({
 
 const chatMessage = ref<Message[]>(props.messages);
 
-watch(() => props.messages, async () => {
-    chatMessage.value = props.messages;
-    await nextTick();
-    initCharts();
+// watch(() => props.messages, async () => {
+//     chatMessage.value = props.messages;
+//     await nextTick();
+//     initCharts();
+// })
+
+watch(() => props.visible, async (newVal) => {
+    if (newVal) {
+        chatMessage.value = props.messages;
+        await nextTick();
+        initCharts();
+    }
 })
 
 // 消息图表引用

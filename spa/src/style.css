@@ -576,6 +576,7 @@ el-tabs__item {
     padding: 20px;
     border-radius: 10px;
     background-color: var(--el-fill-color);
+    margin-bottom: 20px;
 }
 
 .el-statistic {

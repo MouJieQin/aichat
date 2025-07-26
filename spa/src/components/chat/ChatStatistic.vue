@@ -8,7 +8,6 @@
         </el-select>
 
         <div class="chart-container">
-            <h3 class="text-xl font-semibold mb-4">每日字符数量统计</h3>
 
             <div class="card-container">
                 <el-row :gutter="16">
@@ -160,13 +159,8 @@
 
                 </el-row>
             </div>
-            <div class="bg-gray-50 p-4 rounded-lg" style="height: 80vh">
-                <canvas ref="messageChartRef" class="w-full"></canvas>
-            </div>
-        </div>
 
-        <div class="chart-container">
-            <h3 class="text-xl font-semibold mb-4">平均回复间隔时间趋势</h3>
+
             <div class="card-container">
                 <el-row :gutter="16">
 
@@ -214,6 +208,32 @@
                     </el-col>
 
 
+                    <!-- <el-col :span="8">
+                        <div class="statistic-card">
+                            <el-statistic :value="todayTotalResponseTime_" :formatter="formatMinutesToHHMM">
+                                <template #title>
+                                    <div style="display: inline-flex; align-items: center">
+                                        今日读写时间
+                                    </div>
+                                </template>
+                            </el-statistic>
+                            <div class="statistic-footer">
+                                <div class="footer-item">
+                                    <span>平均回复间隔时间</span>
+                                    <span class="green">
+                                        {{ (todayTotalResponseTime_ / todayTotalResponseTimeCounts).toFixed(2) }}
+                                    </span>
+                                </div>
+                                <div class="footer-item">
+                                    <span>平均每分钟读写字数</span>
+                                    <span class="green">
+                                        {{ (todayTotalCharReadAndWriteCounts / todayTotalResponseTime_).toFixed(2) }}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </el-col> -->
+
                     <el-col :span="8">
                         <div class="statistic-card">
                             <el-statistic :value="todayTotalResponseTime_" :formatter="formatMinutesToHHMM">
@@ -241,6 +261,17 @@
                     </el-col>
                 </el-row>
             </div>
+        </div>
+
+        <div class="chart-container">
+            <h3 class="text-xl font-semibold mb-4">每日字符数量统计</h3>
+            <div class="bg-gray-50 p-4 rounded-lg" style="height: 80vh">
+                <canvas ref="messageChartRef" class="w-full"></canvas>
+            </div>
+        </div>
+
+        <div class="chart-container">
+            <h3 class="text-xl font-semibold mb-4">平均回复间隔时间趋势</h3>
             <div class="bg-gray-50 p-4 rounded-lg" style="height: 80vh">
                 <canvas ref="responseTimeChartRef" class="w-full"></canvas>
             </div>

@@ -65,7 +65,7 @@ class OpenAIChatAPI:
     ) -> List[Dict[str, str]]:
         """获取用于提示的消息列表，考虑token限制和消息顺序"""
         messages = self.db.get_session_messages(session_id, max_messages)
-        messages = sorted(messages, key=lambda x: x["timestamp"])
+        messages = self._sort_messages(messages)
 
         system_messages = []
         user_assistant_messages = []
@@ -456,12 +456,17 @@ class OpenAIChatAPI:
         """获取会话标题"""
         return self.db.get_session_title(session_id)
 
+    def _sort_messages(self, messages: List[Dict]) -> List[Dict]:
+        """对消息进行排序"""
+        # 先比较时间，时间相同比较id
+        return sorted(messages, key=lambda x: (x["timestamp"], x["id"]))
+
     def get_session_messages(
         self, session_id: int, limit: int = -1
     ) -> Optional[List[Dict]]:
         """获取会话消息"""
         messages = self.db.get_session_messages(session_id, limit)
-        return sorted(messages, key=lambda x: x["timestamp"]) if messages else []
+        return self._sort_messages(messages) if messages else []
 
     def get_session_ai_config(self, session_id: int) -> dict:
         """获取会话AI配置"""

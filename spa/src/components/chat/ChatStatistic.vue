@@ -309,12 +309,6 @@ const props = defineProps({
 
 const chatMessage = ref<Message[]>(props.messages);
 
-// watch(() => props.messages, async () => {
-//     chatMessage.value = props.messages;
-//     await nextTick();
-//     initCharts();
-// })
-
 watch(() => props.visible, async (newVal) => {
     if (newVal) {
         chatMessage.value = props.messages;
@@ -475,7 +469,7 @@ const prepareResponseTimeChartData = () => {
     // 先收集有数据的日期及其对应值
     const rawResponseTimes: Record<string, number> = {};
     const rawWordsPerMinute: Record<string, number> = {};
-    const readAndWriteTimeCounts: Record<string, number> = {};
+    const readAndWriteTime: Record<string, number> = {};
 
     totalResponseTime_.value = 0;
     totalResponseTimeCounts.value = 0;
@@ -524,7 +518,7 @@ const prepareResponseTimeChartData = () => {
             todayTotalCharReadAndWriteCounts.value = totalWords;
         }
 
-        readAndWriteTimeCounts[date] = totalResponseTime;
+        readAndWriteTime[date] = totalResponseTime;
         // 只有有有效数据时才记录（避免0值干扰后续计算）
         if (responseCount > 0) {
             rawResponseTimes[date] = totalResponseTime / responseCount;
@@ -574,7 +568,7 @@ const prepareResponseTimeChartData = () => {
     const avgResponseTimes = fillMissingValues(rawResponseTimes, fullDates);
     const avgWordsPerMinute = fillMissingValues(rawWordsPerMinute, fullDates);
 
-    return { dates: fullDates, avgResponseTimes, avgWordsPerMinute, readAndWriteTimeCounts };
+    return { dates: fullDates, avgResponseTimes, avgWordsPerMinute, readAndWriteTime };
 };
 
 // 创建消息图表
@@ -586,6 +580,10 @@ const createMessageChart = () => {
     totalCharCounts_.value = totalCharCounts.reduce((total, count) => total + count, 0);
     totalTodayUserCharCounts.value = userCharCounts[userCharCounts.length - 1];
     totalTodayCharCounts.value = totalCharCounts[totalCharCounts.length - 1];
+
+    const { avgResponseTimes, avgWordsPerMinute, readAndWriteTime } = prepareResponseTimeChartData();
+    const readAndWriteTimeValues = Object.values(readAndWriteTime)
+
 
     const ctx = messageChartRef.value.getContext('2d');
     if (!ctx) return;
@@ -605,14 +603,24 @@ const createMessageChart = () => {
                     data: userCharCounts,
                     backgroundColor: '#3b82f6',
                     borderColor: '#2563eb',
-                    borderWidth: 1
+                    borderWidth: 1,
+                    yAxisID: 'y'
                 },
                 {
                     label: '总字数',
                     data: totalCharCounts,
                     backgroundColor: '#f97316',
                     borderColor: '#ea580c',
-                    borderWidth: 1
+                    borderWidth: 1,
+                    yAxisID: 'y'
+                },
+                {
+                    label: '读写时间(分钟)',
+                    data: readAndWriteTimeValues,
+                    backgroundColor: '#10b981',
+                    borderColor: '#10b981',
+                    borderWidth: 1,
+                    yAxisID: 'y1'
                 }
             ]
         },
@@ -626,8 +634,12 @@ const createMessageChart = () => {
                             const dateIndex = context.dataIndex;
                             const datasetIndex = context.datasetIndex;
                             const date = dates[dateIndex];
-                            const messages = messagesByDate.value[date] || [];
 
+                            if (datasetIndex === 2) {
+                                return [`读写时间: ${formatMinutesToHHMM(readAndWriteTimeValues[dateIndex])}`];
+                            }
+
+                            const messages = messagesByDate.value[date] || [];
                             const isUserDataset = datasetIndex === 0;
                             const filteredMessages = isUserDataset
                                 ? messages.filter(m => m.role === 'user')
@@ -665,6 +677,17 @@ const createMessageChart = () => {
                         text: `${props.language}字数`
                     },
                     beginAtZero: true
+                },
+                y1: {
+                    title: {
+                        display: true,
+                        text: '每日读说时间'
+                    },
+                    beginAtZero: true,
+                    position: 'right',
+                    grid: {
+                        drawOnChartArea: false,
+                    },
                 }
             }
         }
@@ -675,7 +698,7 @@ const createMessageChart = () => {
 const createResponseTimeChart = () => {
     if (!responseTimeChartRef.value) return;
 
-    const { dates, avgResponseTimes, avgWordsPerMinute, readAndWriteTimeCounts } = prepareResponseTimeChartData();
+    const { dates, avgResponseTimes, avgWordsPerMinute, readAndWriteTime } = prepareResponseTimeChartData();
 
     const ctx = responseTimeChartRef.value.getContext('2d');
     if (!ctx) return;
@@ -734,7 +757,7 @@ const createResponseTimeChart = () => {
                             const date = dates[dateIndex];
 
                             return [
-                                `总读写时间: ${formatMinutesToHHMM(readAndWriteTimeCounts[date])}`,
+                                `总读写时间: ${formatMinutesToHHMM(readAndWriteTime[date])}`,
                             ];
                         }
                     }

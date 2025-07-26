@@ -16,7 +16,6 @@ import MessageBubble from '@/components/Chat/MessageBubble.vue'
 import { processMarkdown } from '@/common/markdown-processor'
 import { ChatWebSocketService } from '@/common/chat-websocket-client'
 import { Message } from '@/common/type-interface'
-import { delayScrollToBottom } from '@/common/utils'
 
 // 消息ID跟踪
 const maxUserMessageId = ref(-1)
@@ -58,7 +57,6 @@ const initVisibleMessages = async () => {
     loading.value = false
     hasMoreMessages.value = true
     await loadMoreMessages()
-    // delayScrollToBottom('instant', 300)
 }
 
 watch(() => route.params.id, async () => {
@@ -89,7 +87,6 @@ const loadMoreMessages = async () => {
 onMounted(async () => {
     // 添加滚动事件监听器
     await loadMoreMessages()
-    // delayScrollToBottom('instant', 1000)
     window.addEventListener('scroll', handleScroll)
 })
 

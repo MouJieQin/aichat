@@ -293,9 +293,16 @@ class MessageHandler:
             }
             await websocket.send_text(json.dumps(msg))
 
+        is_streaming_closed = False
+
         async def assistant_response_callback(
             message_id: int, response: str, is_streaming: bool, error: bool = False
         ):
+            nonlocal is_streaming_closed
+            if is_streaming_closed:
+                return
+            if not is_streaming:
+                is_streaming_closed = True
             msg = {
                 "type": "stream_response",
                 "data": {
@@ -323,14 +330,15 @@ class MessageHandler:
         response = response_dict["response"]
         message_id = response_dict["message_id"]
 
-        msg = {
-            "type": "parse_request",
-            "data": {
-                "type": "ai_response",
-                "data": {"message_id": message_id, "response": response},
-            },
-        }
-        await websocket.send_text(json.dumps(msg))
+        # if not is_streaming_closed:
+        #     msg = {
+        #         "type": "parse_request",
+        #         "data": {
+        #             "type": "ai_response",
+        #             "data": {"message_id": message_id, "response": response},
+        #         },
+        #     }
+        #     await websocket.send_text(json.dumps(msg))
 
         if response is None:
             return

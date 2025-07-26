@@ -239,11 +239,7 @@ const handleChatMessagesForResponse = (data: any, result: ProcessResult) => {
     }
 }
 
-// 添加助手消息
-const addAssistantMessage = (data: any) => {
-    const result = processMarkdown(data.response, data.message_id)
-    handleChatMessagesForResponse(data, result)
-    data.sentences = result.sentences
+const handleResponseClosed = (data: any, result: ProcessResult) => {
     webSocket?.value?.sendParsedAiResponse(data.message_id, result.html, result.sentences, data.response)
 
     // 自动播放
@@ -253,7 +249,14 @@ const addAssistantMessage = (data: any) => {
             webSocket?.value?.sendPlayMessage(data.message_id);
         }, 1000)
     }
+}
 
+// 添加助手消息
+const addAssistantMessage = (data: any) => {
+    const result = processMarkdown(data.response, data.message_id)
+    handleChatMessagesForResponse(data, result)
+    data.sentences = result.sentences
+    handleResponseClosed(data, result)
 }
 
 const handleChatMessagesForStreaming = (data: any) => {
@@ -263,6 +266,9 @@ const handleChatMessagesForStreaming = (data: any) => {
     if (lastIndex >= 0 && chatMessages.value[lastIndex].message_id === message_id) {
         chatMessages.value[lastIndex].processed_html = result.html
         chatMessages.value[lastIndex].raw_text = data.response
+        if (!streaming.value) {
+            handleResponseClosed(data, result)
+        }
     }
     else {
         isScrolledWhenStreaming.value = false

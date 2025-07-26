@@ -77,6 +77,7 @@ const ttsVoices = ref<Record<string, any[]>>({})
 const activeMenuId = ref('')
 
 const updateTheme = (theme: string) => {
+    // It's sent only for electron app
     webSocket.send({
         type: 'update_theme',
         data: {

@@ -7,7 +7,7 @@
             <el-option v-for="item in dateRangeOptions" :key="item" :label="item" :value="dateRange[item]" />
         </el-select>
 
-        <div class="mb-10">
+        <div class="chart-container">
             <h3 class="text-xl font-semibold mb-4">每日字符数量统计</h3>
 
             <div class="card-container">
@@ -165,7 +165,7 @@
             </div>
         </div>
 
-        <div>
+        <div class="chart-container">
             <h3 class="text-xl font-semibold mb-4">平均回复间隔时间趋势</h3>
             <div class="card-container">
                 <el-row :gutter="16">

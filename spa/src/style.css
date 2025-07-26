@@ -559,7 +559,18 @@ el-tabs__item {
 
 /*  */
 /* 统计弹窗 */
-/*  */
+/* */
+
+.chart-container {
+    box-shadow: var(--el-box-shadow);
+
+    border: 1px solid #909399;
+    /* border: 1px solid var(--el-border-color); */
+    border-radius: 10px;
+    margin-top: 50px;
+    margin-bottom: 100px;
+    padding: 20px;
+}
 
 .card-container {
     padding: 20px;
@@ -575,7 +586,13 @@ el-tabs__item {
     height: 100%;
     padding: 20px;
     border-radius: 4px;
+    transition: all 0.3s ease;
     background-color: var(--el-bg-color-overlay);
+}
+
+.statistic-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
 }
 
 .statistic-footer {

@@ -172,7 +172,7 @@
 
                     <el-col :span="8">
                         <div class="statistic-card">
-                            <el-statistic :value="totalResponseTimeHHMM">
+                            <el-statistic :value="totalResponseTime_" :formatter="formatMinutesToHHMM">
                                 <template #title>
                                     <div style="display: inline-flex; align-items: center">
                                         总读写时间
@@ -203,7 +203,7 @@
 
                     <el-col :span="8">
                         <div class="statistic-card">
-                            <el-statistic :value="responseTimeHHMMperDay">
+                            <el-statistic :value="responseTimePerDay" :formatter="formatMinutesToHHMM">
                                 <template #title>
                                     <div style="display: inline-flex; align-items: center">
                                         平均每天读写时间
@@ -216,7 +216,7 @@
 
                     <el-col :span="8">
                         <div class="statistic-card">
-                            <el-statistic :value="todayTotalResponseTimeHHMM">
+                            <el-statistic :value="todayTotalResponseTime_" :formatter="formatMinutesToHHMM">
                                 <template #title>
                                     <div style="display: inline-flex; align-items: center">
                                         今日读写时间
@@ -353,16 +353,8 @@ const formatMinutesToHHMM = (minutes: number) => {
     return `${hours.toString().padStart(2, '0')} 小时 ${minutes_.toString().padStart(2, '0')} 分钟`;
 }
 
-const totalResponseTimeHHMM = computed(() => {
-    return formatMinutesToHHMM(totalResponseTime_.value);
-})
-
-const responseTimeHHMMperDay = computed(() => {
-    return formatMinutesToHHMM(totalResponseTime_.value / totalDays.value);
-})
-
-const todayTotalResponseTimeHHMM = computed(() => {
-    return formatMinutesToHHMM(todayTotalResponseTime_.value);
+const responseTimePerDay = computed(() => {
+    return totalResponseTime_.value / totalDays.value;
 })
 
 // 生成从开始日期到结束日期的所有日期

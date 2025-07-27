@@ -636,3 +636,28 @@ el-tabs__item {
 .red {
     color: var(--el-color-error);
 }
+
+/*  */
+/* MarkdownViewer */
+/*  */
+
+.markdown-viewer-container {
+    margin: 0 auto;
+    max-width: clamp(300px, 80vw, 800px);
+    padding: 20px;
+    /* border: 1px solid #909399; */
+    /* border-radius: var(--el-border-radius-base); */
+    /* box-shadow: var(--el-box-shadow); */
+    text-align: left;
+    font-size: 16px;    
+    color: #333333;
+    background-color: #f5f5f5;
+    line-height: 1.6;
+}
+
+.markdown-content h1 {
+    text-align: center;
+    margin-bottom: 0.5rem;
+}
+
+

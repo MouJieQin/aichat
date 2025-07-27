@@ -2,7 +2,7 @@
     <div class="fixed-input-area">
         <div class="input-container">
             <el-input id="chat-input" v-model="inputVal" ref="inputRef" type="textarea"
-                placeholder="输入对话内容（Shift + Enter 发送）" :autosize="{ minRows: 2, maxRows: 9 }"
+                placeholder="输入对话内容（Shift + Enter 发送, Option + Command 触发语音识别）" :autosize="{ minRows: 2, maxRows: 9 }"
                 @input="updateCursorPosition" @keydown="handleKeyDown" @click="updateCursorPosition" />
             <div class="button-group">
 

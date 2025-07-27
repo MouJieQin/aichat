@@ -259,6 +259,7 @@ const handleChatMessagesForStreaming = (data: any) => {
         chatMessages.value[lastIndex].processed_html = result.html
         chatMessages.value[lastIndex].raw_text = data.response
         if (!streaming.value) {
+            chatMessages.value[lastIndex].sentences = result.sentences
             handleResponseClosed(data, result)
         }
     }

@@ -699,7 +699,7 @@ const createMessageChart = () => {
                     ticks: {
                         // 日期较多时自动旋转标签，避免重叠
                         maxRotation: 45,
-                        minRotation: 45
+                        minRotation: 0
                     }
                 },
                 y: {
@@ -802,7 +802,7 @@ const createResponseTimeChart = () => {
                     },
                     ticks: {
                         maxRotation: 45,
-                        minRotation: 45
+                        minRotation: 0
                     }
                 },
                 y: {

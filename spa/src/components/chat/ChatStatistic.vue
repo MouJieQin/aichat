@@ -195,7 +195,7 @@
                         </div>
                     </el-col>
 
-                    <el-col :span="8">
+                    <el-col :span="4">
                         <div class="statistic-card">
                             <el-statistic :value="responseTimePerDay" :formatter="formatMinutesToHHMM">
                                 <template #title>
@@ -208,33 +208,60 @@
                     </el-col>
 
 
-                    <!-- <el-col :span="8">
+                    <el-col :span="4">
                         <div class="statistic-card">
-                            <el-statistic :value="todayTotalResponseTime_" :formatter="formatMinutesToHHMM">
+                            <el-statistic :value="(todayTotalResponseTime_ / todayTotalResponseTimeCounts).toFixed(2)">
                                 <template #title>
                                     <div style="display: inline-flex; align-items: center">
-                                        今日读写时间
+                                        今日平均回复间隔时间
                                     </div>
                                 </template>
                             </el-statistic>
                             <div class="statistic-footer">
                                 <div class="footer-item">
-                                    <span>平均回复间隔时间</span>
-                                    <span class="green">
-                                        {{ (todayTotalResponseTime_ / todayTotalResponseTimeCounts).toFixed(2) }}
-                                    </span>
-                                </div>
-                                <div class="footer-item">
-                                    <span>平均每分钟读写字数</span>
-                                    <span class="green">
-                                        {{ (todayTotalCharReadAndWriteCounts / todayTotalResponseTime_).toFixed(2) }}
+                                    <span>比平均</span>
+                                    <span :class="diffTodayResponseTimeThanAverage < 0 ? 'green' : 'red'">
+                                        {{ diffTodayResponseTimeThanAverage.toFixed(2) }} %
+                                        <el-icon v-if="diffTodayResponseTimeThanAverage > 0">
+                                            <CaretTop />
+                                        </el-icon>
+                                        <el-icon v-else>
+                                            <CaretBottom />
+                                        </el-icon>
                                     </span>
                                 </div>
                             </div>
                         </div>
-                    </el-col> -->
+                    </el-col>
 
-                    <el-col :span="8">
+                    <el-col :span="4">
+                        <div class="statistic-card">
+                            <el-statistic
+                                :value="(todayTotalCharReadAndWriteCounts / todayTotalResponseTime_).toFixed(2)">
+                                <template #title>
+                                    <div style="display: inline-flex; align-items: center">
+                                        今日平均每分钟读写字数
+                                    </div>
+                                </template>
+                            </el-statistic>
+                            <div class="statistic-footer">
+                                <div class="footer-item">
+                                    <span>比平均</span>
+                                    <span :class="diffTodayCharReadAndWriteCountsThanAverage > 0 ? 'green' : 'red'">
+                                        {{ diffTodayCharReadAndWriteCountsThanAverage.toFixed(2) }} %
+                                        <el-icon v-if="diffTodayCharReadAndWriteCountsThanAverage >= 0">
+                                            <CaretTop />
+                                        </el-icon>
+                                        <el-icon v-else>
+                                            <CaretBottom />
+                                        </el-icon>
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </el-col>
+
+                    <el-col :span="4">
                         <div class="statistic-card">
                             <el-statistic :value="todayTotalResponseTime_" :formatter="formatMinutesToHHMM">
                                 <template #title>
@@ -245,15 +272,15 @@
                             </el-statistic>
                             <div class="statistic-footer">
                                 <div class="footer-item">
-                                    <span>平均回复间隔时间</span>
-                                    <span class="green">
-                                        {{ (todayTotalResponseTime_ / todayTotalResponseTimeCounts).toFixed(2) }}
-                                    </span>
-                                </div>
-                                <div class="footer-item">
-                                    <span>平均每分钟读写字数</span>
-                                    <span class="green">
-                                        {{ (todayTotalCharReadAndWriteCounts / todayTotalResponseTime_).toFixed(2) }}
+                                    <span>比平均</span>
+                                    <span :class="todayTotalResponseTime_ - responseTimePerDay >= 0 ? 'green' : 'red'">
+                                        {{ formatMinutesToHHMM(todayTotalResponseTime_ - responseTimePerDay) }}
+                                        <el-icon v-if="todayTotalResponseTime_ - responseTimePerDay >= 0">
+                                            <CaretTop />
+                                        </el-icon>
+                                        <el-icon v-else>
+                                            <CaretBottom />
+                                        </el-icon>
                                     </span>
                                 </div>
                             </div>
@@ -311,6 +338,14 @@ const diffTodayUserCharCountsThanAverage = computed(() => {
 
 const diffTodayCharCountsThanAverage = computed(() => {
     return (totalTodayCharCounts.value - (totalCharCounts_.value / totalDays.value));
+})
+
+const diffTodayResponseTimeThanAverage = computed(() => {
+    return ((todayTotalResponseTime_.value / todayTotalResponseTimeCounts.value) - (totalResponseTime_.value / totalResponseTimeCounts.value)) / (totalResponseTime_.value / totalResponseTimeCounts.value);
+})
+
+const diffTodayCharReadAndWriteCountsThanAverage = computed(() => {
+    return ((todayTotalCharReadAndWriteCounts.value / todayTotalResponseTime_.value) - (totalCharReadAndWriteCounts.value / totalResponseTime_.value)) / (totalCharReadAndWriteCounts.value / totalResponseTime_.value);
 })
 
 declare global {
@@ -373,9 +408,11 @@ const formatDataToLocalString = (date: Date) => {
 }
 
 const formatMinutesToHHMM = (minutes: number) => {
+    const isNegative = minutes < 0;
+    if (isNegative) minutes = -minutes
     const hours = Math.floor(minutes / 60);
     const minutes_ = (minutes % 60).toFixed(0);
-    return `${hours.toString().padStart(2, '0')} 小时 ${minutes_.toString().padStart(2, '0')} 分钟`;
+    return (isNegative ? '-' : '') + `${hours.toString().padStart(2, '0')} 小时 ${minutes_.toString().padStart(2, '0')} 分钟`;
 }
 
 const responseTimePerDay = computed(() => {

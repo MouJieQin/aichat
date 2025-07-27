@@ -484,6 +484,16 @@ body::-webkit-scrollbar-thumb {
     padding-bottom: 50px;
 }
 
+.setting-footer-button-group {
+    position: fixed;
+    bottom: 0;
+    right: 20px;
+    margin-bottom: 20px;
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
 /*  */
 /* config */
 /*  */
@@ -593,7 +603,8 @@ el-tabs__item {
 
 .statistic-card:hover {
     transform: translateY(-5px);
-    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1),
+        0 10px 10px -5px rgba(0, 0, 0, 0.04);
 }
 
 .statistic-footer {

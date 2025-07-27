@@ -159,9 +159,16 @@
                 </div>
             </el-form>
         </div>
-        <el-affix position="bottom" :offset="20" style="text-align: right;">
-            <el-button type="" @click="updateSystemConfig">保存</el-button>
-        </el-affix>
+
+        <div class="setting-footer-button-group">
+            <el-affix position="bottom" :offset="20" style="text-align: right;">
+                <el-button type="" @click="handleCancel">取消</el-button>
+            </el-affix>
+
+            <el-affix position="bottom" :offset="20" style="text-align: right;">
+                <el-button type="primary" @click="handleConfirm">保存</el-button>
+            </el-affix>
+        </div>
     </div>
 </template>
 
@@ -206,7 +213,12 @@ watch(() => systemConfigStore.systemConfig, (newVal) => {
     initApis()
 })
 
-const updateSystemConfig = () => {
+const handleCancel = () => {
+    localSystemConfig.value = JSON.parse(JSON.stringify(systemConfigStore.systemConfig))
+    initApis()
+}
+
+const handleConfirm = () => {
     systemConfigStore.updateSystemConfig?.(localSystemConfig.value)
 }
 

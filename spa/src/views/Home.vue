@@ -1,6 +1,6 @@
 <template>
     <Logo class="logo" />
-    <MarkdownViewer filePath="public/markdowns/README.md" />
+    <MarkdownViewer filePath="/markdowns/README.md" />
 </template>
 
 <script lang="ts" setup>

@@ -646,7 +646,7 @@ el-tabs__item {
     max-width: clamp(300px, 80vw, 800px);
     padding: 20px;
     /* border: 1px solid #909399; */
-    /* border-radius: var(--el-border-radius-base); */
+    border-radius: 10px;
     /* box-shadow: var(--el-box-shadow); */
     text-align: left;
     font-size: 16px;    

@@ -182,14 +182,14 @@
                                 <div class="footer-item">
                                     <span>平均回复间隔时间</span>
                                     <span class="green">
-                                        {{ (totalResponseTime_ / totalResponseTimeCounts).toFixed(2) }}
-                                    </span>
+                                        {{ totalResponseTimeCounts <= 0 ? 0 : (totalResponseTime_ /
+                                            totalResponseTimeCounts).toFixed(2) }} </span>
                                 </div>
                                 <div class="footer-item">
                                     <span>平均每分钟读写字数</span>
                                     <span class="green">
-                                        {{ (totalCharReadAndWriteCounts / totalResponseTime_).toFixed(2) }}
-                                    </span>
+                                        {{ totalResponseTimeCounts <= 0 ? 0 : (totalCharReadAndWriteCounts /
+                                            totalResponseTime_).toFixed(2) }} </span>
                                 </div>
                             </div>
                         </div>
@@ -210,7 +210,9 @@
 
                     <el-col :span="4">
                         <div class="statistic-card">
-                            <el-statistic :value="(todayTotalResponseTime_ / todayTotalResponseTimeCounts).toFixed(2)">
+                            <el-statistic
+                                :value="Number(todayTotalResponseTimeCounts <= 0 ? 0 : (todayTotalResponseTime_ / todayTotalResponseTimeCounts).toFixed(2))"
+                                :formatter="(value: Number) => { return value; }">
                                 <template #title>
                                     <div style="display: inline-flex; align-items: center">
                                         今日平均回复间隔时间
@@ -237,7 +239,8 @@
                     <el-col :span="4">
                         <div class="statistic-card">
                             <el-statistic
-                                :value="(todayTotalCharReadAndWriteCounts / todayTotalResponseTime_).toFixed(2)">
+                                :value="Number(todayTotalResponseTimeCounts <= 0 ? 0 : (todayTotalCharReadAndWriteCounts / todayTotalResponseTime_).toFixed(2))"
+                                :formatter="(value: Number) => { return value; }">
                                 <template #title>
                                     <div style="display: inline-flex; align-items: center">
                                         今日平均每分钟读写字数
@@ -341,11 +344,11 @@ const diffTodayCharCountsThanAverage = computed(() => {
 })
 
 const diffTodayResponseTimeThanAverage = computed(() => {
-    return ((todayTotalResponseTime_.value / todayTotalResponseTimeCounts.value) - (totalResponseTime_.value / totalResponseTimeCounts.value)) / (totalResponseTime_.value / totalResponseTimeCounts.value);
+    return todayTotalResponseTimeCounts.value <= 0 ? 0 : ((todayTotalResponseTime_.value / todayTotalResponseTimeCounts.value) - (totalResponseTime_.value / totalResponseTimeCounts.value)) / (totalResponseTime_.value / totalResponseTimeCounts.value);
 })
 
 const diffTodayCharReadAndWriteCountsThanAverage = computed(() => {
-    return ((todayTotalCharReadAndWriteCounts.value / todayTotalResponseTime_.value) - (totalCharReadAndWriteCounts.value / totalResponseTime_.value)) / (totalCharReadAndWriteCounts.value / totalResponseTime_.value);
+    return todayTotalResponseTime_.value <= 0 ? 0 : ((todayTotalCharReadAndWriteCounts.value / todayTotalResponseTime_.value) - (totalCharReadAndWriteCounts.value / totalResponseTime_.value)) / (totalCharReadAndWriteCounts.value / totalResponseTime_.value);
 })
 
 declare global {

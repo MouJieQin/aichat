@@ -380,7 +380,8 @@ const chatMessage = ref<Message[]>(props.messages);
 
 watch(() => props.visible, async (newVal) => {
     if (newVal) {
-        chatMessage.value = props.messages;
+        //过滤掉所有的系统消息
+        chatMessage.value = props.messages.filter(message => message.role !== 'system');
         await nextTick();
         initCharts();
     }

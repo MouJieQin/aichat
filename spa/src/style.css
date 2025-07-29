@@ -522,7 +522,7 @@ body::-webkit-scrollbar-thumb {
 .config-class {
     margin: 0 auto;
     max-width: clamp(300px, 80vw, 800px);
-    padding: 10px;
+    padding: 20px;
     border-radius: var(--el-border-radius-base);
     box-shadow: var(--el-box-shadow);
     margin-bottom: 30px;
@@ -575,7 +575,6 @@ el-tabs__item {
     box-shadow: var(--el-box-shadow);
 
     border: 1px solid #909399;
-    /* border: 1px solid var(--el-border-color); */
     border-radius: 10px;
     margin-top: 50px;
     margin-bottom: 100px;

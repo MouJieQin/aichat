@@ -239,7 +239,7 @@ const handleResponseClosed = (data: any, result: ProcessResult) => {
         webSocket?.value?.sendGenerateAudioFiles(data.message_id, 0, 0)
         setTimeout(() => {
             webSocket?.value?.sendPlayMessage(data.message_id);
-        }, 1000)
+        }, sessionAiConfig.value.language === 'English' ? 3000 : 1000)
     }
 }
 

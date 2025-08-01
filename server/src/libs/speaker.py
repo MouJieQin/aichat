@@ -5,6 +5,7 @@ os.environ["PYGAME_HIDE_SUPPORT_PROMPT"] = "1"
 import asyncio
 import threading
 import shutil
+import time
 from collections import deque
 from typing import Dict, Callable, Awaitable, Optional, List
 from libs.log_config import logger
@@ -43,6 +44,8 @@ class Speaker(metaclass=SingletonMeta):
         self.speaker_config = self.config["speaker"]
         self._init_audio_system()
         self._audio_generation_lock = threading.Lock()
+        self._generate_id = 0
+        self._is_stop_generating = False
 
     def _init_audio_system(self) -> None:
         """初始化Pygame音频系统"""
@@ -144,6 +147,7 @@ class Speaker(metaclass=SingletonMeta):
 
     def pregenerate_audio_files(
         self,
+        generate_id: int,
         session_id: int,
         message_id: int,
         sentences: List[Dict],
@@ -152,6 +156,7 @@ class Speaker(metaclass=SingletonMeta):
     ) -> None:
         """预生成一系列音频文件"""
         with self._audio_generation_lock:
+            self._generate_id = generate_id
             self.audio_queue.clear()
             for sentence in sentences:
                 sentence_id = sentence.get("sentenceId", -1)
@@ -166,6 +171,9 @@ class Speaker(metaclass=SingletonMeta):
                         speech_rate,
                     )
                     self.audio_queue.append((sentence_id, sound))
+                    if self._is_stop_generating:
+                        self._is_stop_generating = False
+                        break
 
     def pause_playback(self) -> None:
         """暂停语音播放"""
@@ -183,6 +191,10 @@ class Speaker(metaclass=SingletonMeta):
         """停止语音播放"""
         self.audio_queue.clear()
         self.assistant_channel.stop()
+
+    def stop_generating(self) -> None:
+        """停止生成音频"""
+        self._is_stop_generating = True
 
     async def play_sentence(
         self,
@@ -225,11 +237,12 @@ class Speaker(metaclass=SingletonMeta):
     ) -> None:
         """连续播放多个句子"""
         self.stop_playback()
-
+        generate_id = int(time.time() * 1000)
         # 生成并排队所有音频
         threading.Thread(
             target=self.pregenerate_audio_files,
             args=(
+                generate_id,
                 session_id,
                 message_id,
                 sentences[start_id:],
@@ -239,7 +252,7 @@ class Speaker(metaclass=SingletonMeta):
             daemon=True,
         ).start()
 
-        while len(self.audio_queue) == 0:
+        while self._generate_id != generate_id or len(self.audio_queue) == 0:
             await asyncio.sleep(0.1)
         current_id, current_sound = self.audio_queue.popleft()
         sentence_id_playing = current_id
@@ -289,7 +302,9 @@ class Speaker(metaclass=SingletonMeta):
         # )
 
         # 生成音频文件
+        generate_id = int(time.time() * 1000)
         self.pregenerate_audio_files(
+            generate_id,
             session_id,
             message_id,
             [{"sentenceId": sentence_id, "text": text}],

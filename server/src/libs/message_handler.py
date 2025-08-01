@@ -650,7 +650,23 @@ class MessageHandler:
         voice_name: str,
         speech_rate: float,
     ):
+        last_played_sentence_id = -1
+        end_sentence_id = sentences[-1]["sentenceId"]
+
         async def play_sentence_callback(sentence_id: int):
+            nonlocal last_played_sentence_id
+            is_need_to_continue_playing = False
+            if sentence_id == -2:
+                # 播放开始
+                pass
+            elif sentence_id == -1:
+                # 播放结束
+                if last_played_sentence_id != end_sentence_id:
+                    is_need_to_continue_playing = True
+            else:
+                # 正在播放句子
+                last_played_sentence_id = sentence_id
+
             msg = {
                 "type": "the_sentence_playing",
                 "data": {
@@ -660,6 +676,22 @@ class MessageHandler:
             }
             try:
                 await websocket.send_text(json.dumps(msg))
+
+                if is_need_to_continue_playing:
+                    Utils.speaker.stop_playback()
+                    logger.warning(
+                        f"播放未完成，接着播放，sentenceId={last_played_sentence_id + 1}"
+                    )
+                    Utils.speaker.stop_generating()
+                    await MessageHandler._play_sentences_impl(
+                        websocket,
+                        session_id,
+                        message_id,
+                        last_played_sentence_id + 1,
+                        sentences,
+                        voice_name,
+                        speech_rate,
+                    )
             except Exception as e:
                 Utils.speaker.stop_playback()
                 logger.error(f"播放回调错误: {e}")

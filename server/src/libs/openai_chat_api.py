@@ -343,7 +343,9 @@ class OpenAIChatAPI:
                 full_response += content
 
                 if response_ended:
-                    await callback(response_content, False)
+                    unescaped = self.unescape_string(response_content)
+                    if unescaped:
+                        await callback(unescaped, False)
                     continue
 
                 # 状态机解析"response"字段内容

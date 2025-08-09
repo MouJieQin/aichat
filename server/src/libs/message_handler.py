@@ -517,9 +517,11 @@ class MessageHandler:
             logger.warning(f"消息ID:{message_id} 未找到句子")
             return
 
+        generate_id = int(time.time() * 1000)
         threading.Thread(
             target=Utils.speaker.pregenerate_audio_files,
             args=(
+                generate_id,
                 session_id,
                 message_id,
                 sentences[sentence_id_start : sentence_id_end + 1],

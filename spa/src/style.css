@@ -229,10 +229,22 @@ body::-webkit-scrollbar-thumb {
     align-items: flex-start;
 }
 
-.message-role {
-    width: 0px;
+.message-role-system {
     font-size: 14px;
     color: #666666;
+    position: absolute;
+    left: calc(((100% - clamp(300px, 80vw, 800px)) / 2) - 70px);
+}
+
+.message-role-assistant {
+    position: absolute;
+    top: 0;
+    left: calc(((100% - clamp(300px, 80vw, 800px)) / 2) - 70px);
+}
+
+.message-role-user {
+    width: 0;
+
 }
 
 .message-content-container {
@@ -665,7 +677,7 @@ el-tabs__item {
     border-radius: 10px;
     /* box-shadow: var(--el-box-shadow); */
     text-align: left;
-    font-size: 16px;    
+    font-size: 16px;
     color: #333333;
     background-color: #f5f5f5;
     line-height: 1.6;
@@ -675,5 +687,3 @@ el-tabs__item {
     text-align: center;
     margin-bottom: 0.5rem;
 }
-
-

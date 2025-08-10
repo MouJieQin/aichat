@@ -3,7 +3,7 @@
         <el-skeleton v-if="loading" :rows="5" animated />
         <div v-if="!loading" class="chat-message" v-for="message in visibleMessages" :key="message.message_id">
             <MessageBubble :websocket="websocket" :message="message"
-                :showRefreshButton="message.message_id === maxAssistantMessageId" @regenerate="handleRegenerate"
+                :showRefreshButton="message.message_id === maxAssistantMessageId" :config="config" @regenerate="handleRegenerate"
                 @update-message="handleUpdateMessage" />
         </div>
     </div>
@@ -15,7 +15,7 @@ import { useRoute } from 'vue-router'
 import MessageBubble from '@/components/Chat/MessageBubble.vue'
 import { processMarkdown } from '@/common/markdown-processor'
 import { ChatWebSocketService } from '@/common/chat-websocket-client'
-import { Message } from '@/common/type-interface'
+import { Message, AIConfig } from '@/common/type-interface'
 
 // 消息ID跟踪
 const maxUserMessageId = ref(-1)
@@ -42,7 +42,11 @@ const props = defineProps({
         type: Array as () => Message[],
         required: true,
         default: () => []
-    }
+    },
+    config: {
+        type: Object as () => AIConfig,
+        required: true
+    },
 })
 
 // 定义组件输出事件

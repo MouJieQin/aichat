@@ -1,9 +1,15 @@
 <template>
     <div class="message-bubble" @mouseenter="showControls = true" @mouseleave="showControls = false">
-    <!-- 消息内容区域 -->
+        <!-- 消息内容区域 -->
         <div class="message-container">
-            <div class="message-role" v-if="message.role === 'system' || message.role === 'assistant'">
-                {{ message.role }}
+            <div v-if="message.role === 'system'" class="message-role-system">
+                <!-- {{ message.role }} -->
+            </div>
+            <div v-if="message.role === 'assistant'" class="message-role-assistant">
+                <el-avatar v-if="props.config.ai_avatar_url" :src="aiAvatarUrl" fit="cover" size="large"
+                    @click="showPreview = true" />
+                <el-image-viewer v-if="showPreview" :url-list="[aiAvatarUrl]" show-progress :initial-index="0"
+                    @close="showPreview = false" />
             </div>
             <div class="message-content-container">
                 <div class="message-content" :class="messageRoleClass">
@@ -21,8 +27,11 @@
                     <div class="message-time">{{ message.time }}</div>
                 </div>
             </div>
-            <p class="message-role" v-if="message.role === 'user'">{{
-                message.role }}
+            <p class="message-role-user" v-if="message.role === 'user'">
+                <el-avatar v-if="props.config.ai_avatar_url" :src="aiAvatarUrl" fit="cover" size="large"
+                    @click="showPreview = true" />
+                <el-image-viewer v-if="showPreview" :url-list="[aiAvatarUrl]" show-progress :initial-index="0"
+                    @close="showPreview = false" />
             </p>
         </div>
 
@@ -106,8 +115,9 @@ import {
     More
 } from '@element-plus/icons-vue'
 import { VscStopCircle } from 'vue-icons-plus/vsc'
-import { Message } from '@/common/type-interface'
+import { Message, AIConfig } from '@/common/type-interface'
 import { ChatWebSocketService } from '@/common/chat-websocket-client'
+import { getAiAvatarUrl } from '@/common/utils'
 
 const props = defineProps({
     websocket: {
@@ -122,7 +132,11 @@ const props = defineProps({
         type: Boolean,
         required: true,
         default: false
-    }
+    },
+    config: {
+        type: Object as () => AIConfig,
+        required: true
+    },
 })
 
 // 定义组件输出事件
@@ -138,6 +152,9 @@ const editContent = ref('') // 编辑框内容
 const copySuccess = ref(false) // 复制成功状态
 const isPaused = ref(false) // 播放暂停状态
 const showDeleteConfirm = ref(false) // 是否显示删除确认弹窗
+const showPreview = ref(false) // 是否显示头像预览弹窗
+
+const aiAvatarUrl = computed(() => getAiAvatarUrl(props.config.ai_avatar_url))
 
 // 计算属性：根据消息角色返回对应的样式类
 const messageRoleClass = computed(() => ({

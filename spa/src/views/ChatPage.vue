@@ -3,8 +3,10 @@
         <!-- 聊天消息区域 -->
         <div class="chat-container">
             <!-- 只有当 webSocket 不为 null 时才渲染 ChatMessages 组件 -->
-            <ChatMessages v-if="webSocket !== null" :websocket="webSocket" :messages="chatMessages"
-                @send-message="sendMessage" @scroll-up="isScrolledWhenStreaming = true" />
+            <ChatMessages v-if="webSocket !== null && sessionAiConfig !== null" :websocket="webSocket"
+                :messages="chatMessages" :config="sessionAiConfig" @send-message="sendMessage"
+                @scroll-up="isScrolledWhenStreaming = true" />
+
             <div v-if="isSentNoStream" class="loader-container">
                 <ThreeDotsLoader class="threeDotsLoader" />
             </div>

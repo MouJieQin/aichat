@@ -27,6 +27,7 @@ const loading = ref(false)
 const hasMoreMessages = ref(true)
 const pageSize = ref(20) // 每页显示的消息数量
 const currentPage = ref(1)
+const leftSize = ref(0)
 const bodyScrollTimeoutId = ref<NodeJS.Timeout | null>(null)
 const scrollTimeoutId = ref<NodeJS.Timeout | null>(null)
 const lastScrollTop = ref(0)
@@ -58,6 +59,7 @@ const emits = defineEmits<{
 const initVisibleMessages = async () => {
     visibleMessages.value = []
     currentPage.value = 1
+    leftSize.value = 0
     loading.value = false
     hasMoreMessages.value = true
     await loadMoreMessages()
@@ -69,10 +71,16 @@ watch(() => route.params.id, async () => {
     }
 }, { immediate: true })
 
+watch(() => props.messages.length, (newVal, oldVal) => {
+    if (newVal - oldVal === 1) {
+        leftSize.value += 1
+    }
+})
+
 // 计算当前可见的消息
 const updateVisibleMessages = () => {
     if (currentPage.value === 1) currentPage.value = 2;
-    const startIndex = - ((currentPage.value - 1) * pageSize.value)
+    const startIndex = - ((currentPage.value - 1) * pageSize.value + leftSize.value)
     const endIndex = props.messages.length
 
     visibleMessages.value = props.messages.slice(startIndex, endIndex)

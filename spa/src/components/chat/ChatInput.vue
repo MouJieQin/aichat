@@ -113,7 +113,6 @@ const updateCursorPosition = () => {
             const textarea = inputRef.value.$refs.textarea; // @ts-ignore
             if (textarea) {
                 cursorPosition.value = textarea.selectionStart;
-                console.log('cursor_position.value:', cursorPosition.value)
                 if (!isSttChangingInputBox.value && props.isSpeechRecognizing) {
                     // if (is_speech_recognizing.value) { 
                     props.webSocket.sendUpdateCursorPosition(inputVal.value, cursorPosition.value)
@@ -193,8 +192,6 @@ watch(() => props.sttText, (newVal) => {
 const adjustFixedInputAreaPaddingTop = () => {
     const textarea = document.querySelector('#chat-input') as HTMLTextAreaElement;
     if (textarea) {
-        console.log("textarea.clientHeight:", textarea.clientHeight)
-        console.log("textAreaHeight.value:", textAreaHeight.value)
         if (textAreaHeight.value !== textarea.clientHeight) {
             document.documentElement.style.setProperty('--fixed-input-area-padding-top', textarea.clientHeight + 'px');
             const scrollContainer =

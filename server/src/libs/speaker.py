@@ -162,15 +162,18 @@ class Speaker(metaclass=SingletonMeta):
                 sentence_id = sentence.get("sentenceId", -1)
                 text = sentence.get("text", "")
                 if sentence_id != -1 and text:
-                    sound = self._generate_audio_file(
-                        session_id,
-                        message_id,
-                        sentence_id,
-                        text,
-                        voice_name,
-                        speech_rate,
-                    )
-                    self.audio_queue.append((sentence_id, sound))
+                    try:
+                        sound = self._generate_audio_file(
+                            session_id,
+                            message_id,
+                            sentence_id,
+                            text,
+                            voice_name,
+                            speech_rate,
+                        )
+                        self.audio_queue.append((sentence_id, sound))
+                    except Exception as e:
+                        logger.error(f"生成音频文件失败: {e}")
                     if self._is_stop_generating:
                         self._is_stop_generating = False
                         break
@@ -289,17 +292,6 @@ class Speaker(metaclass=SingletonMeta):
     ) -> None:
         """内部方法：播放单个音频文件"""
         self.stop_playback()
-
-        # # 生成音频文件
-        # sound = await asyncio.to_thread(
-        #     self._generate_audio_file,
-        #     session_id,
-        #     message_id,
-        #     sentence_id,
-        #     text,
-        #     voice_name,
-        #     speech_rate,
-        # )
 
         # 生成音频文件
         generate_id = int(time.time() * 1000)

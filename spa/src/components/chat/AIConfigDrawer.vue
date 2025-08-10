@@ -11,7 +11,7 @@
                 <p class="config-class-title">Chat</p>
                 <el-form-item label="头像">
                     <div>
-                        <el-upload class="upload-demo" drag action="http://localhost:4999/api/upload/avatar"
+                        <el-upload drag action="http://localhost:4999/api/upload/avatar"
                             :show-file-list="false" :data="{ 'session_id': chatId }">
                             <el-icon class="el-icon--upload"><upload-filled /></el-icon>
                             <div class="el-upload__text">

@@ -3,8 +3,8 @@
         <el-skeleton v-if="loading" :rows="5" animated />
         <div v-if="!loading" class="chat-message" v-for="message in visibleMessages" :key="message.message_id">
             <MessageBubble :websocket="websocket" :message="message"
-                :showRefreshButton="message.message_id === maxAssistantMessageId" :config="config" @regenerate="handleRegenerate"
-                @update-message="handleUpdateMessage" />
+                :showRefreshButton="message.message_id === maxAssistantMessageId" :config="props.config"
+                @regenerate="handleRegenerate" @update-message="handleUpdateMessage" />
         </div>
     </div>
 </template>
@@ -71,6 +71,7 @@ watch(() => route.params.id, async () => {
 
 // 计算当前可见的消息
 const updateVisibleMessages = () => {
+    if (currentPage.value === 1) currentPage.value = 2;
     const startIndex = - ((currentPage.value - 1) * pageSize.value)
     const endIndex = props.messages.length
 
@@ -82,7 +83,7 @@ const updateVisibleMessages = () => {
 const loadMoreMessages = async () => {
     if (loading.value || !hasMoreMessages.value) return
     loading.value = true
-    currentPage.value++
+    currentPage.value += 1
     // await new Promise(resolve => setTimeout(resolve, 3000))
     updateVisibleMessages()
     loading.value = false

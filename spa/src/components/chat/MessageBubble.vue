@@ -1,19 +1,29 @@
 <template>
     <div class="message-bubble" @mouseenter="showControls = true" @mouseleave="showControls = false">
-        <!-- 消息内容区域 -->
-        <div class="message-content" :class="messageRoleClass">
-            <!-- 正常显示模式 -->
-            <div v-show="!isEditing" class="markdown-container" @click="handleSentenceClick">
-                <p v-html="message.processed_html"></p>
+    <!-- 消息内容区域 -->
+        <div class="message-container">
+            <div class="message-role" v-if="message.role === 'system' || message.role === 'assistant'">
+                {{ message.role }}
             </div>
+            <div class="message-content-container">
+                <div class="message-content" :class="messageRoleClass">
+                    <!-- 正常显示模式 -->
+                    <div v-show="!isEditing" class="markdown-container" @click="handleSentenceClick">
+                        <p v-html="message.processed_html"></p>
+                    </div>
 
-            <!-- 编辑模式 -->
-            <div v-if="isEditing" class="edit-input-container">
-                <el-input v-model="editContent" type="textarea" autosize placeholder="编辑消息内容..." />
+                    <!-- 编辑模式 -->
+                    <div v-if="isEditing" class="edit-input-container">
+                        <el-input v-model="editContent" type="textarea" autosize placeholder="编辑消息内容..." />
+                    </div>
+
+                    <!-- 时间显示 -->
+                    <div class="message-time">{{ message.time }}</div>
+                </div>
             </div>
-
-            <!-- 时间显示 -->
-            <div class="message-time">{{ message.time }}</div>
+            <p class="message-role" v-if="message.role === 'user'">{{
+                message.role }}
+            </p>
         </div>
 
         <!-- 操作按钮组 -->

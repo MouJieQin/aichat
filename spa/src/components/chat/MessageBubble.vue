@@ -27,12 +27,12 @@
                     <div class="message-time">{{ message.time }}</div>
                 </div>
             </div>
-            <p class="message-role-user" v-if="message.role === 'user'">
-                <el-avatar v-if="props.config.ai_avatar_url" :src="aiAvatarUrl" fit="cover" size="large"
-                    @click="showPreview = true" />
-                <el-image-viewer v-if="showPreview" :url-list="[aiAvatarUrl]" show-progress :initial-index="0"
+            <div class="message-role-user" v-if="message.role === 'user'">
+                <el-avatar v-if="systemConfigStore.systemConfig?.appearance.user_avatar_url" :src="userAvatarUrl"
+                    fit="cover" @click="showPreview = true" />
+                <el-image-viewer v-if="showPreview" :url-list="[userAvatarUrl]" show-progress :initial-index="0"
                     @close="showPreview = false" />
-            </p>
+            </div>
         </div>
 
         <!-- 操作按钮组 -->
@@ -117,7 +117,9 @@ import {
 import { VscStopCircle } from 'vue-icons-plus/vsc'
 import { Message, AIConfig } from '@/common/type-interface'
 import { ChatWebSocketService } from '@/common/chat-websocket-client'
-import { getAiAvatarUrl } from '@/common/utils'
+import { getAiAvatarUrl, getUserAvatarUrl } from '@/common/utils'
+import { useSystemConfigStore } from '@/stores/sidebarStore'
+
 
 const props = defineProps({
     websocket: {
@@ -153,8 +155,16 @@ const copySuccess = ref(false) // 复制成功状态
 const isPaused = ref(false) // 播放暂停状态
 const showDeleteConfirm = ref(false) // 是否显示删除确认弹窗
 const showPreview = ref(false) // 是否显示头像预览弹窗
+const systemConfigStore = useSystemConfigStore()
+
 
 const aiAvatarUrl = computed(() => getAiAvatarUrl(props.config.ai_avatar_url))
+const userAvatarUrl = computed(() => {
+    if (!systemConfigStore.systemConfig) {
+        return ''
+    }
+    return getUserAvatarUrl(systemConfigStore.systemConfig.appearance.user_avatar_url)
+})
 
 // 计算属性：根据消息角色返回对应的样式类
 const messageRoleClass = computed(() => ({

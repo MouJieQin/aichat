@@ -29,6 +29,37 @@ class Utils(UtilsBase):
         Utils.recognizer = Recognizer(UtilsBase.CONFIG)
 
     class Avatar:
+
+        @staticmethod
+        def get_user_avatar_dir():
+            return UtilsBase.AVATARS_PATH + f"/user"
+
+        @staticmethod
+        def get_user_avatar_path(filename: Optional[str]):
+            return Utils.Avatar.get_user_avatar_dir() + f"/{filename}"
+
+        @staticmethod
+        def get_user_avatar_url(filename: Optional[str]):
+            return f"{UtilsBase.AVATAR_BASE_URL}/user/{filename}"
+
+        @staticmethod
+        def get_filename_from_user_avatar_url(user_avatar_url: str) -> str:
+            return user_avatar_url.split("/")[-1]
+        
+        @staticmethod
+        def update_user_avatar_url(user_avatar_url: str):
+            UtilsBase.CONFIG["appearance"]["user_avatar_url"] = user_avatar_url
+            UtilsBase.Config.syncConfig()
+
+        @staticmethod
+        def delete_user_avatar():
+            old_avatar_url = UtilsBase.CONFIG["appearance"]["user_avatar_url"]
+            if old_avatar_url:
+                filename = Utils.Avatar.get_filename_from_user_avatar_url(
+                    old_avatar_url
+                )
+                Utils.removeFileIfExists(Utils.Avatar.get_user_avatar_path(filename))
+
         @staticmethod
         def get_ai_avatar_dir(session_id: int):
             return UtilsBase.AVATARS_PATH + f"/{session_id}"

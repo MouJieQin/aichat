@@ -6,36 +6,11 @@ from fastapi import WebSocket
 from typing import Dict
 from libs.log_config import logger
 
-# # 路径配置
-# SERVER_SRC_ABS_PATH = os.path.abspath(os.getcwd())
-# APP_SUPPORT_PATH = app_support_path = appdirs.user_data_dir()[0:-1]
-# VOICHAI_SUPPORT_PATH = f"{APP_SUPPORT_PATH}/voichai"
-# VOICHAI_STORAGE_PATH = f"{VOICHAI_SUPPORT_PATH}/Voichai-Storage"
-# USER_CONFIG_DIR = VOICHAI_STORAGE_PATH + "/config"
-# CONFIG_FILE = USER_CONFIG_DIR + "/config.json"
-# DEFAULT_CONFIG_FILE = SERVER_SRC_ABS_PATH + "/config.json"
-# DATA_PATH = VOICHAI_STORAGE_PATH + "/data"
-# AVATARS_PATH = DATA_PATH + "/avatars"
-# DATABASE_PATH = DATA_PATH + "/chat-history.db"
-# AVATAR_BASE_URL = "/api/download?path=/avatars"
-
-# DEFAULT_CONFIG = {}
-# CONFIG = {}
-# AI_CONFIG = {}
-# AI_CONFIG_DEFAULT = {}
-# APIS = []
-# DEFAULT_AI_CONFIG = {}
-# SYSTEM_AI_CONFIG = {}
-
-# # WebSocket 连接管理
-# spa_websockets: Dict[int, WebSocket] = {}
-# session_websockets: Dict[int, Dict[int, WebSocket]] = {}
-
 
 class UtilsBase:
     # 路径配置
     SERVER_SRC_ABS_PATH = os.path.abspath(os.getcwd())
-    APP_SUPPORT_PATH = app_support_path = appdirs.user_data_dir()[0:-1]
+    APP_SUPPORT_PATH = appdirs.user_data_dir()[0:-1]
     VOICHAI_SUPPORT_PATH = f"{APP_SUPPORT_PATH}/voichai"
     VOICHAI_STORAGE_PATH = f"{VOICHAI_SUPPORT_PATH}/Voichai-Storage"
     USER_CONFIG_DIR = VOICHAI_STORAGE_PATH + "/config"

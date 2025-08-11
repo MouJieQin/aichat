@@ -1,6 +1,7 @@
 {
     "appearance": {
-        "theme": "auto"
+        "theme": "auto",
+        "user_avatar_url": ""
     },
     "speaker": {
         "audio_dir": "data/voice/audio"

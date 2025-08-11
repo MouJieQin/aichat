@@ -7,6 +7,31 @@
             <el-form v-if="localSystemConfig" :model="localSystemConfig" label-width="150px" class="config-form">
 
                 <div class="config-class">
+                    <p class="config-class-title">Avatar</p>
+                    <p class="config-class-desc">
+                        自定义头像
+                    </p>
+                    <el-avatar v-if="localSystemConfig.appearance.user_avatar_url" :src="userAvatarUrl" fit="cover"
+                        size="large" @click="showUserPreview = true" />
+                    <el-image-viewer v-if="showUserPreview" :url-list="[userAvatarUrl]" show-progress :initial-index="0"
+                        @close="showUserPreview = false" />
+
+                    <div>
+                        <el-upload drag action="http://localhost:4999/api/upload/user_avatar" :show-file-list="false">
+                            <el-icon class="el-icon--upload"><upload-filled /></el-icon>
+                            <div class="el-upload__text">
+                                Drop file here or <em>click to upload</em>
+                            </div>
+                            <template #tip>
+                                <div class="el-upload__tip">
+                                    jpg/png files with a size less than 10MB
+                                </div>
+                            </template>
+                        </el-upload>
+                    </div>
+                </div>
+
+                <div class="config-class">
                     <p class="config-class-title">Appearance</p>
                     <el-form-item label="主题">
                         <el-radio-group v-model="appTheme" size="large" fill="#6cf">
@@ -43,7 +68,8 @@
                     <p class="config-class-desc">
                         该配置用于语音合成和语音识别，
                         请参考 <a href="https://portal.azure.com/#create/Microsoft.CognitiveServicesAIFoundry"
-                            target="_blank">Azure</a> 了解如何获取 Azure 语音服务的 API Key 和 Region。
+                            target="_blank">Azure</a>
+                        了解如何获取 Azure 语音服务的 API Key 和 Region。
                     </p>
                     <el-form-item label="azure key">
                         <el-input v-model="localSystemConfig.azure.key" />
@@ -177,7 +203,8 @@ import { ref, watch, onMounted, computed } from 'vue'
 import type { SystemConfig } from '@/common/type-interface'
 import { useSystemConfigStore, useTtsVoiceStore } from '@/stores/sidebarStore'
 import type { TabPaneName } from 'element-plus'
-import { Sunny, Moon, SwitchFilled } from '@element-plus/icons-vue'
+import { Sunny, Moon, SwitchFilled, UploadFilled } from '@element-plus/icons-vue'
+import { getUserAvatarUrl } from '@/common/utils'
 import short from 'short-uuid';
 
 
@@ -186,6 +213,7 @@ const systemConfigStore = useSystemConfigStore()
 const ttsVoicesStore = useTtsVoiceStore()
 const localSystemConfig = ref<SystemConfig>(JSON.parse(JSON.stringify(systemConfigStore.systemConfig)))
 const editableTabsValue = ref('')
+const showUserPreview = ref(false)
 
 const initApis = () => {
     editableTabsValue.value = apis.value?.[0]?.id
@@ -193,6 +221,11 @@ const initApis = () => {
 
 onMounted(() => {
     initApis()
+})
+
+
+const userAvatarUrl = computed(() => {
+    return getUserAvatarUrl(localSystemConfig.value?.appearance.user_avatar_url)
 })
 
 const apis = computed({

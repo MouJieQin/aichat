@@ -6,6 +6,10 @@ export const getAiAvatarUrl = (ai_avatar_url: string) => {
     return ServerUrl + ai_avatar_url
 }
 
+export const getUserAvatarUrl = (user_avatar_url: string) => {
+    return ServerUrl + user_avatar_url
+}
+
 // 格式化时间
 export const formatTimeNow = () => {
     const time = new Date()

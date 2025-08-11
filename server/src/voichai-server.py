@@ -103,6 +103,49 @@ async def upload_avatar(
         )
 
 
+@app.post("/api/upload/user_avatar", response_model=UploadResponse)
+async def upload_user_avatar(file: UploadFile = File(...)):
+    try:
+        # 检查文件类型
+        if file.content_type is None or not file.content_type.startswith(
+            ("image/jpeg", "image/png")
+        ):
+            raise HTTPException(status_code=400, detail="仅支持JPG/PNG格式的图片")
+
+        # 检查文件大小
+        contents = await file.read()
+        if len(contents) > 10 * 1024 * 1024:
+            raise HTTPException(status_code=400, detail="文件大小不能超过10MB")
+
+        # 生成唯一文件名
+        Utils.createDirIfnotExists(Utils.Avatar.get_user_avatar_dir())
+        file_path = Utils.Avatar.get_user_avatar_path(file.filename)
+        file_url = Utils.Avatar.get_user_avatar_url(file.filename)
+
+        # 删除旧文件
+        Utils.Avatar.delete_user_avatar()
+
+        # 保存文件
+        with open(file_path, "wb") as f:
+            f.write(contents)
+
+        # 更新配置
+        Utils.Avatar.update_user_avatar_url(file_url)
+
+        # 返回成功响应
+        await SessionManager.send_system_config()
+        return {"success": True, "file_url": file_url}
+
+    except HTTPException as e:
+        return JSONResponse(
+            status_code=e.status_code, content={"success": False, "detail": e.detail}
+        )
+    except Exception as e:
+        return JSONResponse(
+            status_code=500, content={"success": False, "detail": f"上传失败: {str(e)}"}
+        )
+
+
 # WebSocket 端点
 @app.websocket("/ws/aichat/electron")
 async def electron_websocket_endpoint(websocket: WebSocket):

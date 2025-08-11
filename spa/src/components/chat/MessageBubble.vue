@@ -6,7 +6,7 @@
                 <!-- {{ message.role }} -->
             </div>
             <div v-if="message.role === 'assistant'" class="message-role-assistant">
-                <el-avatar v-if="props.config.ai_avatar_url" :src="aiAvatarUrl" fit="cover" size="large"
+                <el-avatar v-if="props.config.ai_avatar_url" :src="aiAvatarUrl" fit="cover"
                     @click="showPreview = true" />
                 <el-image-viewer v-if="showPreview" :url-list="[aiAvatarUrl]" show-progress :initial-index="0"
                     @close="showPreview = false" />

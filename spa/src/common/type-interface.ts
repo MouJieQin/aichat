@@ -46,6 +46,7 @@ export interface AIConfig {
 
 export interface AppearanceConfig {
     theme: string;
+    user_avatar_url: string;
 }
 
 export interface SpeakerConfig {

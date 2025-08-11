@@ -3,7 +3,7 @@
         <!-- 消息内容区域 -->
         <div class="message-container">
             <div v-if="message.role === 'system'" class="message-role-system">
-                <!-- {{ message.role }} -->
+                <el-avatar :icon="Setting" fit="cover" style="font-size: 30px;" />
             </div>
             <div v-if="message.role === 'assistant'" class="message-role-assistant">
                 <el-avatar v-if="props.config.ai_avatar_url" :src="aiAvatarUrl" fit="cover"
@@ -112,7 +112,8 @@ import {
     Refresh,
     Close,
     Check,
-    More
+    More,
+    Setting
 } from '@element-plus/icons-vue'
 import { VscStopCircle } from 'vue-icons-plus/vsc'
 import { Message, AIConfig } from '@/common/type-interface'

@@ -233,7 +233,7 @@ body::-webkit-scrollbar-thumb {
     font-size: 14px;
     color: #666666;
     position: absolute;
-    left: calc(((100% - clamp(300px, 80vw, 800px)) / 2) - 70px);
+    left: calc(((100% - clamp(300px, 80vw, 800px)) / 2) - 50px);
 }
 
 .message-role-assistant {

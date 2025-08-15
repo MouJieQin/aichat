@@ -12,7 +12,7 @@
                         自定义头像
                     </p>
                     <el-avatar v-if="localSystemConfig.appearance.user_avatar_url" :src="userAvatarUrl" fit="cover"
-                        size="large" @click="showUserPreview = true" />
+                        size="large" @click="showUserPreview = true" style="cursor: pointer; margin-bottom: 20px;" />
                     <el-image-viewer v-if="showUserPreview" :url-list="[userAvatarUrl]" show-progress :initial-index="0"
                         @close="showUserPreview = false" />
 

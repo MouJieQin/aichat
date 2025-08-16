@@ -132,6 +132,9 @@ const handleWebSocketMessage = (message: any) => {
         case 'stream_response':
             handleStreamResponse(message.data)
             break
+        case 'secondary_response':
+            handleSecondaryResponse(message.data)
+            break
         case 'session_suggestions':
             sessionSuggestions.value = message.data.suggestions
             delayScrollToBottom('smooth')
@@ -173,6 +176,7 @@ const handleSessionMessages = (messages: any[]) => {
         return {
             message_id: msg.id,
             raw_text: msg.raw_text,
+            secondary_response: result.secondary_response || null,
             processed_html: result.html,
             sentences: result.sentences,
             time: msg.timestamp,
@@ -202,6 +206,7 @@ const addUserMessage = (data: any) => {
     chatMessages.value.push({
         message_id: data.message_id,
         raw_text: data.user_message,
+        secondary_response: null,
         processed_html: result.html,
         sentences: result.sentences,
         time: formatTimeNow(),
@@ -224,6 +229,7 @@ const handleChatMessagesForResponse = (data: any, result: ProcessResult) => {
         chatMessages.value.push({
             message_id: data.message_id,
             raw_text: data.response,
+            secondary_response: null,
             processed_html: result.html,
             sentences: result.sentences,
             time: formatTimeNow(),
@@ -270,6 +276,7 @@ const handleChatMessagesForStreaming = (data: any) => {
         chatMessages.value.push({
             message_id: message_id,
             raw_text: data.response,
+            secondary_response: null,
             processed_html: result.html,
             sentences: [],
             time: formatTimeNow(),
@@ -290,6 +297,15 @@ const handleStreamResponse = (data: any) => {
     }
     if (!isScrolledWhenStreaming.value) {
         scrollToBottom('smooth')
+    }
+}
+
+const handleSecondaryResponse = (data: any) => {
+    const message_id = data.message_id
+    const secondary_response = data.secondary_response
+    const lastIndex = chatMessages.value.length - 1
+    if (lastIndex >= 0 && chatMessages.value[lastIndex].message_id === message_id) {
+        chatMessages.value[lastIndex].secondary_response = secondary_response
     }
 }
 

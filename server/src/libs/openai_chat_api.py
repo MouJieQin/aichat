@@ -51,6 +51,7 @@ class OpenAIChatAPI:
         你的回复使用的语言种类要参考上下文对话内容(本条消息使用了中文，但不作为上下文语种参考依据)，并且严格按照以下格式进行回复（请严格保持此纯json格式，不要添加额外文本,不要把回复内容包裹在```json```中）：
         {{
             "response": "针对用户设置和上下文对话内容的问题的详细回答",
+            "secondary_response": "纠正用户信息中的语法错误。",
             "title": "问题的简短标题",
             "suggestions": ["用户可能接下来问的问题或回应1", "用户可能接下来问的问题或回应2", "用户可能接下来问的问题或回应3"],
         }}
@@ -548,6 +549,15 @@ class OpenAIChatAPI:
     ) -> None:
         """更新消息内容"""
         self.db.update_message(message_id, parsed_text, raw_text)
+
+    def get_parsed_text(self, message_id: int) -> Optional[Dict]:
+        parsed_text = self.db.get_parsed_text(message_id)
+        if parsed_text:
+            try:
+                return json.loads(parsed_text)
+            except (json.JSONDecodeError, KeyError):
+                return None
+        return None
 
     def get_sentences(self, message_id: int) -> Optional[List[Dict]]:
         """获取消息的句子列表"""

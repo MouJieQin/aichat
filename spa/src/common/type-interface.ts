@@ -18,6 +18,7 @@ export interface ProcessResult {
 export interface Message {
     message_id: number;
     raw_text: string;
+    secondary_response: string | null;
     processed_html: string;
     sentences: Array<SentenceInfo>;
     time: string;

@@ -367,6 +367,23 @@ class MessageHandler:
             if auto_gen_title:
                 await SessionManager.update_title(session_id, title, thread_api)
 
+            if "secondary_response" in system_info:
+                secondary_response = system_info["secondary_response"]
+                message = {
+                    "type": "secondary_response",
+                    "data": {
+                        "message_id": message_id,
+                        "secondary_response": secondary_response,
+                    },
+                }
+                await websocket.send_text(json.dumps(message))
+                parsed_text = thread_api.get_parsed_text(message_id)
+                if parsed_text:
+                    parsed_text["secondary_response"] = secondary_response
+                    thread_api.update_message(
+                        message_id, parsed_text=json.dumps(parsed_text)
+                    )
+
             msg = {
                 "type": "session_suggestions",
                 "data": {

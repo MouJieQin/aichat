@@ -23,6 +23,11 @@
                         <el-input v-model="editContent" type="textarea" autosize placeholder="编辑消息内容..." />
                     </div>
 
+                    <!-- 辅助回复显示 -->
+                    <div v-if="message.secondary_response" class="secondary-response">
+                        <div class="markdown-container" v-html="md.render(message.secondary_response)" style="opacity: 0.5;"></div>
+                    </div>
+
                     <!-- 时间显示 -->
                     <div class="message-time">{{ message.time }}</div>
                 </div>
@@ -120,6 +125,13 @@ import { Message, AIConfig } from '@/common/type-interface'
 import { ChatWebSocketService } from '@/common/chat-websocket-client'
 import { getAiAvatarUrl, getUserAvatarUrl } from '@/common/utils'
 import { useSystemConfigStore } from '@/stores/sidebarStore'
+import MarkdownIt from 'markdown-it';
+
+const md = new MarkdownIt({
+    html: true,
+    linkify: true,
+    typographer: true,
+})
 
 
 const props = defineProps({

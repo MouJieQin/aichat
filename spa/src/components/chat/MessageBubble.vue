@@ -23,9 +23,9 @@
                         <el-input v-model="editContent" type="textarea" autosize placeholder="编辑消息内容..." />
                     </div>
 
-                    <!-- 辅助回复显示 -->
+                    <!-- 次级回复显示 -->
                     <div v-if="message.secondary_response" class="secondary-response">
-                        <div class="markdown-container" v-html="md.render(message.secondary_response)" style="opacity: 0.5;"></div>
+                        <div class="markdown-container" v-html="md.render(message.secondary_response)"></div>
                     </div>
 
                     <!-- 时间显示 -->

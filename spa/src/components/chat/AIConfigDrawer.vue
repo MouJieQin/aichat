@@ -11,8 +11,8 @@
                 <p class="config-class-title">Chat</p>
                 <el-form-item label="头像">
                     <div>
-                        <el-upload drag action="http://localhost:4999/api/upload/avatar"
-                            :show-file-list="false" :data="{ 'session_id': chatId }">
+                        <el-upload drag action="http://localhost:4999/api/upload/avatar" :show-file-list="false"
+                            :data="{ 'session_id': chatId }">
                             <el-icon class="el-icon--upload"><upload-filled /></el-icon>
                             <div class="el-upload__text">
                                 Drop file here or <em>click to upload</em>
@@ -62,6 +62,19 @@
                 <el-form-item label="自动生成标题">
                     <el-switch v-model="localConfig.auto_gen_title" :active-value="true" :inactive-value="false" />
                 </el-form-item>
+
+                <el-collapse>
+                    <el-collapse-item title="高级" name="1">
+                        <el-form-item label="次级设定开关">
+                            <el-switch v-model="localConfig.secondary_prompt_switch" />
+                        </el-form-item>
+                        <el-form-item label="次级设定">
+                            <el-input v-if="systemPromptAutoResize" v-model="localConfig.secondary_prompt"
+                                type="textarea" autosize placeholder="编辑次级提示..." />
+                        </el-form-item>
+                    </el-collapse-item>
+                </el-collapse>
+
             </div>
 
             <div class="config-class">
@@ -70,7 +83,7 @@
                 <el-form-item label="API (可选)">
                     <el-select v-model="selectedApiName" placeholder="选择API(可选)" @change="handleApiChange">
                         <el-option v-for="api in systemConfigStore.systemConfig?.ai_assistant.apis" :key="api.id"
-                        :label="api.name" :value="api.name" />
+                            :label="api.name" :value="api.name" />
                     </el-select>
                 </el-form-item>
 

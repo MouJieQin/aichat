@@ -41,6 +41,8 @@ export interface AIConfig {
     auto_gen_title: boolean;
     speech_rate: number;
     suggestions?: string[];
+    secondary_prompt?: string;
+    secondary_prompt_switch?: boolean;
 }
 
 // system config

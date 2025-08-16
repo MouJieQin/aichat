@@ -381,7 +381,8 @@ class MessageHandler:
                 if parsed_text:
                     parsed_text["secondary_response"] = secondary_response
                     thread_api.update_message(
-                        message_id, parsed_text=json.dumps(parsed_text)
+                        message_id,
+                        parsed_text=json.dumps(parsed_text, ensure_ascii=False),
                     )
 
             msg = {

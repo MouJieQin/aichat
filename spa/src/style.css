@@ -288,6 +288,18 @@ body::-webkit-scrollbar-thumb {
     margin: 0 auto;
 }
 
+.secondary-response {
+    border-top: 1px solid var(--el-border-color);
+    padding-top: 8px;
+}
+
+.secondary-response .markdown-container{
+    opacity: 0.7;
+    font-size: 14px;
+    line-height: 1.6;
+    text-align: left;
+}
+
 /* 基础护眼背景 */
 .fatigue-reducing-bg {
     background-color: #f5f0e6;

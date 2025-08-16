@@ -40,18 +40,25 @@ class OpenAIChatAPI:
         self._stop_response = True
 
     def _create_system_prompt(
-        self, user_system_prompt: str, with_system_prompt: bool
+        self,
+        user_system_prompt: str,
+        with_system_prompt: bool,
+        secondary_prompt: Optional[str] = None,
     ) -> str:
         """创建系统提示词，根据是否需要系统提示词包装"""
         if not with_system_prompt:
             return user_system_prompt
+
+        secondary_response_prompt = ""
+        if secondary_prompt:
+            secondary_response_prompt = f'secondary_response: "{secondary_prompt}"'
 
         return f"""
         用户设置：{ {user_system_prompt} }
         你的回复使用的语言种类要参考上下文对话内容(本条消息使用了中文，但不作为上下文语种参考依据)，并且严格按照以下格式进行回复（请严格保持此纯json格式，不要添加额外文本,不要把回复内容包裹在```json```中）：
         {{
             "response": "针对用户设置和上下文对话内容的问题的详细回答",
-            "secondary_response": "纠正用户信息中的语法错误。",
+            {secondary_response_prompt}
             "title": "问题的简短标题",
             "suggestions": ["用户可能接下来问的问题或回应1", "用户可能接下来问的问题或回应2", "用户可能接下来问的问题或回应3"],
         }}
@@ -61,6 +68,7 @@ class OpenAIChatAPI:
         self,
         with_system_prompt: bool,
         session_id: int,
+        config: Dict[str, Any],
         max_tokens: int = 4000,
         max_messages: int = 100,
     ) -> List[Dict[str, str]]:
@@ -82,7 +90,13 @@ class OpenAIChatAPI:
                     {
                         "role": role,
                         "content": self._create_system_prompt(
-                            raw_text, with_system_prompt
+                            raw_text,
+                            with_system_prompt,
+                            (
+                                config.get("secondary_prompt")
+                                if config.get("secondary_prompt_switch")
+                                else None
+                            ),
                         ),
                     }
                 )
@@ -96,7 +110,13 @@ class OpenAIChatAPI:
                 {
                     "role": "system",
                     "content": self._create_system_prompt(
-                        system_prompt or "", with_system_prompt
+                        system_prompt or "",
+                        with_system_prompt,
+                        (
+                            config.get("secondary_prompt")
+                            if config.get("secondary_prompt_switch")
+                            else None
+                        ),
                     ),
                 }
             )
@@ -261,6 +281,7 @@ class OpenAIChatAPI:
         prompt_messages = self.get_messages_for_prompt(
             with_system_prompt,
             session_id,
+            ai_config,
             max_tokens=ai_config.get("context_max_tokens", 4000),
             max_messages=ai_config.get("max_messages", 10),
         )

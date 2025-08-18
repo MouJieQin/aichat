@@ -372,19 +372,27 @@ class OpenAIChatAPI:
 
                 # 状态机解析"response"字段内容
                 if not in_response_field:
-                    response_pos = full_response.find('"response": "')
+                    response_pos = full_response.find('"response":')
                     if response_pos != -1:
-                        in_response_field = True
-                        response_start = response_pos + len('"response": "')
-                        content = full_response[response_start:]
-                        clean_content, escaped, response_ended = (
-                            self._parse_stream_content(content, escaped, response_ended)
+                        response_pos = full_response.find(
+                            '"', response_pos + len('"response":')
                         )
+                        if response_pos != -1:
+                            in_response_field = True
+                            response_start = response_pos + 1
+                            content = full_response[response_start:]
+                            clean_content, escaped, response_ended = (
+                                self._parse_stream_content(
+                                    content, escaped, response_ended
+                                )
+                            )
 
-                        if clean_content:
-                            response_content += clean_content
-                            print(clean_content, end="", flush=True)
-                            await self._send_response_chunk(response_content, callback)
+                            if clean_content:
+                                response_content += clean_content
+                                print(clean_content, end="", flush=True)
+                                await self._send_response_chunk(
+                                    response_content, callback
+                                )
                 else:
                     clean_content, escaped, response_ended = self._parse_stream_content(
                         content, escaped, response_ended

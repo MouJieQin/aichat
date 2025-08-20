@@ -74,13 +74,30 @@ const sttCursorPosition = ref(0)
 // WebSocket连接
 const webSocket = ref<ChatWebSocketService | null>(null)
 
+const handleKeydown = (e: KeyboardEvent) => {
+    if (e.key === '/' && e.metaKey) {
+        // 打开统计面板
+        e.preventDefault();
+        statisticDialogVisible.value = !statisticDialogVisible.value;
+        return;
+    }
+    if (e.key === '.' && e.metaKey) {
+        // 打开AI配置抽屉
+        e.preventDefault()
+        drawerVisible.value = !drawerVisible.value
+        return
+    }
+}
+
 // 初始化
 onMounted(() => {
     watchRouteChange()
+    window.addEventListener('keydown', handleKeydown)
 })
 
 onBeforeUnmount(() => {
     document.title = 'Voichai'
+
 })
 
 router.beforeEach(async (to, from, next) => {

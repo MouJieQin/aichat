@@ -87,6 +87,12 @@ const handleKeydown = (e: KeyboardEvent) => {
         drawerVisible.value = !drawerVisible.value
         return
     }
+    if (e.key === "'" && e.metaKey) {
+        // 打开语音识别
+        e.preventDefault()
+        webSocket?.value?.sendPlayMessage(chatMessages.value[chatMessages.value.length - 1].message_id)
+        return
+    }
 }
 
 // 初始化

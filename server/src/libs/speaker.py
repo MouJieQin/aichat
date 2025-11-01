@@ -46,6 +46,7 @@ class Speaker(metaclass=SingletonMeta):
         self._audio_generation_lock = threading.Lock()
         self._generate_id = 0
         self._is_stop_generating = False
+        self._is_stopping = False
 
     def _init_audio_system(self) -> None:
         """初始化Pygame音频系统"""
@@ -190,8 +191,15 @@ class Speaker(metaclass=SingletonMeta):
         """检查是否正在播放语音"""
         return self.assistant_channel.get_busy()
 
+    def is_stopping(self) -> bool:
+        """检查是否正在停止播放"""
+        return self._is_stopping
+
     def stop_playback(self) -> None:
         """停止语音播放"""
+        if not self.is_playing():
+            return
+        self._is_stopping = True
         self.audio_queue.clear()
         self.assistant_channel.stop()
 
@@ -255,8 +263,11 @@ class Speaker(metaclass=SingletonMeta):
             daemon=True,
         ).start()
 
+        self._is_stopping = False
         while self._generate_id != generate_id or len(self.audio_queue) == 0:
             await asyncio.sleep(0.1)
+        if self._is_stopping:
+            return
         current_id, current_sound = self.audio_queue.popleft()
         sentence_id_playing = current_id
         self.assistant_channel.play(current_sound)

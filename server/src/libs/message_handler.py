@@ -681,7 +681,10 @@ class MessageHandler:
                 pass
             elif sentence_id == -1:
                 # 播放结束
-                if last_played_sentence_id != end_sentence_id:
+                if (
+                    last_played_sentence_id != end_sentence_id
+                    and not Utils.speaker.is_stopping()
+                ):
                     is_need_to_continue_playing = True
             else:
                 # 正在播放句子

@@ -432,6 +432,7 @@ class MessageHandler:
     async def _handle_stop_response(
         websocket: WebSocket, session_id: int, message: dict
     ):
+        global thread_api
         if thread_api is not None:
             thread_api.stop_response()
 

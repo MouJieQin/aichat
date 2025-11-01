@@ -88,9 +88,13 @@ const handleKeydown = (e: KeyboardEvent) => {
         return
     }
     if (e.key === "'" && e.metaKey) {
-        // 打开语音识别
+        // 重新从头播放最后一条消息的音频
         e.preventDefault()
-        webSocket?.value?.sendPlayMessage(chatMessages.value[chatMessages.value.length - 1].message_id)
+        webSocket?.value?.sendStopPlayback()
+        // 100ms后再发送播放指令，确保播放能够重新开始
+        setTimeout(() => {
+            webSocket?.value?.sendPlayMessage(chatMessages.value[chatMessages.value.length - 1].message_id)
+        }, 100)
         return
     }
 }

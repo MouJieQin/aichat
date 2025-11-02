@@ -174,7 +174,8 @@
                     <el-col :span="4">
                         <div class="statistic-card">
                             <el-statistic
-                                :value="Number(todayTotalResponseTimeCounts <= 0 ? 0 : (todayTotalResponseTime_ / todayTotalResponseTimeCounts).toFixed(2))">
+                                :value="Number(todayTotalResponseTimeCounts <= 0 ? 0 : (todayTotalResponseTime_ / todayTotalResponseTimeCounts).toFixed(2))"
+                                :formatter="(value: Number) => { return value; }">
                                 <template #title>
                                     <div style="display: inline-flex; align-items: center">今日平均回复间隔时间</div>
                                 </template>
@@ -198,7 +199,8 @@
                     <el-col :span="4">
                         <div class="statistic-card">
                             <el-statistic
-                                :value="Number(todayTotalResponseTimeCounts <= 0 ? 0 : (todayTotalCharReadAndWriteCounts / todayTotalResponseTime_).toFixed(2))">
+                                :value="Number(todayTotalResponseTimeCounts <= 0 ? 0 : (todayTotalCharReadAndWriteCounts / todayTotalResponseTime_).toFixed(2))"
+                                :formatter="(value: Number) => { return value; }">
                                 <template #title>
                                     <div style="display: inline-flex; align-items: center">今日平均每分钟读写字数</div>
                                 </template>

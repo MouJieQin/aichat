@@ -7438,5 +7438,289 @@
             "Status": "GA",
             "WordsPerMinute": "168"
         }
+    ],
+    "한국어": [
+        {
+            "Name": "Microsoft Server Speech Text to Speech Voice (ko-KR, SunHiNeural)",
+            "DisplayName": "Sun-Hi",
+            "LocalName": "선히",
+            "ShortName": "ko-KR-SunHiNeural",
+            "Gender": "Female",
+            "Locale": "ko-KR",
+            "LocaleName": "Korean (Korea)",
+            "SampleRateHertz": "48000",
+            "VoiceType": "Neural",
+            "Status": "GA",
+            "VoiceTag": {
+                "TailoredScenarios": [
+                    "Narration",
+                    "News"
+                ],
+                "VoicePersonalities": [
+                    "Confident",
+                    "Formal"
+                ]
+            },
+            "WordsPerMinute": "274"
+        },
+        {
+            "Name": "Microsoft Server Speech Text to Speech Voice (ko-KR, InJoonNeural)",
+            "DisplayName": "InJoon",
+            "LocalName": "인준",
+            "ShortName": "ko-KR-InJoonNeural",
+            "Gender": "Male",
+            "Locale": "ko-KR",
+            "LocaleName": "Korean (Korea)",
+            "SampleRateHertz": "48000",
+            "VoiceType": "Neural",
+            "Status": "GA",
+            "VoiceTag": {
+                "TailoredScenarios": [
+                    "Chat",
+                    "Narration"
+                ],
+                "VoicePersonalities": [
+                    "Casual",
+                    "Friendly"
+                ]
+            },
+            "WordsPerMinute": "253"
+        },
+        {
+            "Name": "Microsoft Server Speech Text to Speech Voice (ko-KR, HyunsuMultilingualNeural)",
+            "DisplayName": "Hyunsu Multilingual",
+            "LocalName": "Hyunsu Multilingual",
+            "ShortName": "ko-KR-HyunsuMultilingualNeural",
+            "Gender": "Male",
+            "Locale": "ko-KR",
+            "LocaleName": "Korean (Korea)",
+            "SecondaryLocaleList": [
+                "af-ZA",
+                "am-ET",
+                "ar-EG",
+                "ar-SA",
+                "az-AZ",
+                "bg-BG",
+                "bn-BD",
+                "bn-IN",
+                "bs-BA",
+                "ca-ES",
+                "cs-CZ",
+                "cy-GB",
+                "da-DK",
+                "de-AT",
+                "de-CH",
+                "de-DE",
+                "el-GR",
+                "en-AU",
+                "en-CA",
+                "en-GB",
+                "en-IE",
+                "en-IN",
+                "en-US",
+                "es-ES",
+                "es-MX",
+                "et-EE",
+                "eu-ES",
+                "fa-IR",
+                "fi-FI",
+                "fil-PH",
+                "fr-BE",
+                "fr-CA",
+                "fr-CH",
+                "fr-FR",
+                "ga-IE",
+                "gl-ES",
+                "he-IL",
+                "hi-IN",
+                "hr-HR",
+                "hu-HU",
+                "hy-AM",
+                "id-ID",
+                "is-IS",
+                "it-IT",
+                "ja-JP",
+                "jv-ID",
+                "ka-GE",
+                "kk-KZ",
+                "km-KH",
+                "kn-IN",
+                "ko-KR",
+                "lo-LA",
+                "lt-LT",
+                "lv-LV",
+                "mk-MK",
+                "ml-IN",
+                "mn-MN",
+                "ms-MY",
+                "mt-MT",
+                "my-MM",
+                "nb-NO",
+                "ne-NP",
+                "nl-BE",
+                "nl-NL",
+                "pl-PL",
+                "ps-AF",
+                "pt-BR",
+                "pt-PT",
+                "ro-RO",
+                "ru-RU",
+                "si-LK",
+                "sk-SK",
+                "sl-SI",
+                "so-SO",
+                "sq-AL",
+                "sr-RS",
+                "su-ID",
+                "sv-SE",
+                "sw-KE",
+                "ta-IN",
+                "te-IN",
+                "th-TH",
+                "tr-TR",
+                "uk-UA",
+                "ur-PK",
+                "uz-UZ",
+                "vi-VN",
+                "zh-CN",
+                "zh-HK",
+                "zh-TW",
+                "zu-ZA"
+            ],
+            "SampleRateHertz": "24000",
+            "VoiceType": "Neural",
+            "Status": "GA",
+            "VoiceTag": {
+                "TailoredScenarios": [
+                    "Narration",
+                    "News"
+                ],
+                "VoicePersonalities": [
+                    "Formal",
+                    "Clear",
+                    "Confident"
+                ]
+            }
+        },
+        {
+            "Name": "Microsoft Server Speech Text to Speech Voice (ko-KR, BongJinNeural)",
+            "DisplayName": "BongJin",
+            "LocalName": "봉진",
+            "ShortName": "ko-KR-BongJinNeural",
+            "Gender": "Male",
+            "Locale": "ko-KR",
+            "LocaleName": "Korean (Korea)",
+            "SampleRateHertz": "48000",
+            "VoiceType": "Neural",
+            "Status": "GA",
+            "WordsPerMinute": "262"
+        },
+        {
+            "Name": "Microsoft Server Speech Text to Speech Voice (ko-KR, GookMinNeural)",
+            "DisplayName": "GookMin",
+            "LocalName": "국민",
+            "ShortName": "ko-KR-GookMinNeural",
+            "Gender": "Male",
+            "Locale": "ko-KR",
+            "LocaleName": "Korean (Korea)",
+            "SampleRateHertz": "48000",
+            "VoiceType": "Neural",
+            "Status": "GA",
+            "WordsPerMinute": "278"
+        },
+        {
+            "Name": "Microsoft Server Speech Text to Speech Voice (ko-KR, HyunsuNeural)",
+            "DisplayName": "Hyunsu",
+            "LocalName": "현수",
+            "ShortName": "ko-KR-HyunsuNeural",
+            "Gender": "Male",
+            "Locale": "ko-KR",
+            "LocaleName": "Korean (Korea)",
+            "SampleRateHertz": "48000",
+            "VoiceType": "Neural",
+            "Status": "GA",
+            "VoiceTag": {
+                "TailoredScenarios": [
+                    "Chat",
+                    "Narration"
+                ],
+                "VoicePersonalities": [
+                    "Bright",
+                    "Casual"
+                ]
+            }
+        },
+        {
+            "Name": "Microsoft Server Speech Text to Speech Voice (ko-KR, JiMinNeural)",
+            "DisplayName": "JiMin",
+            "LocalName": "지민",
+            "ShortName": "ko-KR-JiMinNeural",
+            "Gender": "Female",
+            "Locale": "ko-KR",
+            "LocaleName": "Korean (Korea)",
+            "SampleRateHertz": "48000",
+            "VoiceType": "Neural",
+            "Status": "GA",
+            "WordsPerMinute": "291"
+        },
+        {
+            "Name": "Microsoft Server Speech Text to Speech Voice (ko-KR, SeoHyeonNeural)",
+            "DisplayName": "SeoHyeon",
+            "LocalName": "서현",
+            "ShortName": "ko-KR-SeoHyeonNeural",
+            "Gender": "Female",
+            "Locale": "ko-KR",
+            "LocaleName": "Korean (Korea)",
+            "SampleRateHertz": "48000",
+            "VoiceType": "Neural",
+            "Status": "GA",
+            "VoiceTag": {
+                "TailoredScenarios": [
+                    "Audiobook",
+                    "Narration"
+                ],
+                "VoicePersonalities": [
+                    "Curious",
+                    "Cheerful"
+                ]
+            },
+            "WordsPerMinute": "258"
+        },
+        {
+            "Name": "Microsoft Server Speech Text to Speech Voice (ko-KR, SoonBokNeural)",
+            "DisplayName": "SoonBok",
+            "LocalName": "순복",
+            "ShortName": "ko-KR-SoonBokNeural",
+            "Gender": "Female",
+            "Locale": "ko-KR",
+            "LocaleName": "Korean (Korea)",
+            "SampleRateHertz": "48000",
+            "VoiceType": "Neural",
+            "Status": "GA",
+            "VoiceTag": {
+                "TailoredScenarios": [
+                    "Assistant",
+                    "Narration"
+                ],
+                "VoicePersonalities": [
+                    "Animated",
+                    "Bright"
+                ]
+            },
+            "WordsPerMinute": "271"
+        },
+        {
+            "Name": "Microsoft Server Speech Text to Speech Voice (ko-KR, YuJinNeural)",
+            "DisplayName": "YuJin",
+            "LocalName": "유진",
+            "ShortName": "ko-KR-YuJinNeural",
+            "Gender": "Female",
+            "Locale": "ko-KR",
+            "LocaleName": "Korean (Korea)",
+            "SampleRateHertz": "48000",
+            "VoiceType": "Neural",
+            "Status": "GA",
+            "WordsPerMinute": "288"
+        }
     ]
 }

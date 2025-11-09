@@ -73,6 +73,7 @@ export const mapLanguageCode = (lang?: string): string => {
         case '日本語': return 'ja-JP'
         case '中文': return 'zh-CN'
         case 'English': return 'en-US'
+        case '한국어': return 'ko-KR'
         default: return 'zh-CN'
     }
 }

@@ -31,3 +31,17 @@ while ps -ef | grep node | grep -i voichai | grep -v grep; do
     fi
     sleep 1
 done
+
+
+
+# Get the directory of the script
+SCRIPT_DIR=$(dirname "$0")
+SCRIPT_PARENT_DIR=$(
+    cd "$SCRIPT_DIR/.."
+    pwd
+)
+
+# Check if voichai-backup script exists and run it
+if [ -f "$SCRIPT_DIR/voichai-backup" ]; then
+    $SCRIPT_DIR/voichai-backup
+fi

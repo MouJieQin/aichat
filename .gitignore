@@ -12,3 +12,5 @@ server/src/configure.json
 
 electron/dist_electron
 *.flag
+
+shell/voichai-backup

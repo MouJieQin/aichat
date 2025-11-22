@@ -1,7 +1,7 @@
 {
   "name": "voichai",
   "private": true,
-  "version": "1.0.0",
+  "version": "0.1.3",
   "author": "qinmoujie",
   "description": "An app to chat with AI using voice",
   "main": "electron/main.js",

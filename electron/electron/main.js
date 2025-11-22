@@ -110,17 +110,42 @@ function saveLastUrl(url) {
     }
 }
 
+// 创建永远置顶的窗口
+function createFixedWindow(url = "http://localhost:3999/") {
+    const { width, height } = screen.getPrimaryDisplay().workAreaSize;
+    const fixedWindow = new BrowserWindow({
+        width: width,
+        height: height,
+        alwaysOnTop: true, // 设置窗口永远置顶
+        webPreferences: {
+            preload: path.join(__dirname, "preload.js"),
+        },
+    });
+
+    fixedWindow.loadURL(url);
+    if (NODE_ENV === "development") {
+        fixedWindow.webContents.openDevTools();
+    }
+
+    // 窗口即将关闭时保存当前 URL
+    fixedWindow.on("close", (e) => {
+        const currentUrl = fixedWindow.webContents.getURL();
+        saveLastUrl(currentUrl);
+    });
+    fixedWindow.webContents.send("theme-changed", true);
+}
+
 // Additional setup for Electron app
 
 const dockMenuTemplate = [
     {
-        label: "File",
+        label: "More",
         submenu: [
             {
-                label: "Custom",
+                label: "Top Window",
                 click() {
-                    // Action to perform when the menu item is clicked
-                    console.log("Custom option clicked");
+                    // 点击时创建置顶窗口
+                    createFixedWindow(getLastUrl());
                 },
             },
             { type: "separator" },
@@ -256,9 +281,19 @@ function setDockMenu() {
     // Add a new option to the dock menu
     dockMenu.append(
         new MenuItem({
-            label: "Open a new Window",
+            label: "Open a New Window",
             click() {
                 createWindow();
+                // Action to be performed when the new menu item is clicked
+            },
+        })
+    );
+
+        dockMenu.append(
+        new MenuItem({
+            label: "Open a Top Window",
+            click() {
+                createFixedWindow(getLastUrl());
                 // Action to be performed when the new menu item is clicked
             },
         })

@@ -21,6 +21,9 @@ for file in $(git ls-files); do
     fi
     cp "$file" "$theResourceDir"
 done
+if [ -f "$VOICHAI_DIR/shell/voichai-backup" ]; then
+    cp "$VOICHAI_DIR/shell/voichai-backup" "$RESOURCE_DIR/shell/"
+fi
 cd -
 
 cd "$RESOURCE_DIR/spa/"

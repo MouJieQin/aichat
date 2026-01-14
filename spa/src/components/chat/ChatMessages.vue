@@ -133,7 +133,7 @@ const handleUpScroll = () => {
             scrolledCount.value = 0
             scrollTimeoutId.value = null
         }, 1000)
-        if (scrolledCount.value >= 10) {
+        if (scrolledCount.value >= 3) {
             emits('scroll-up')
             scrolledCount.value = 0
         }

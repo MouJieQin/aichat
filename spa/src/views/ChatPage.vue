@@ -164,7 +164,9 @@ const handleWebSocketMessage = (message: any) => {
             break
         case 'session_suggestions':
             sessionSuggestions.value = message.data.suggestions
-            delayScrollToBottom('smooth')
+            if (!isScrolledWhenStreaming.value) {
+                delayScrollToBottom('smooth')
+            }
             break
         case 'session_ai_config':
             sessionAiConfig.value = message.data.ai_config

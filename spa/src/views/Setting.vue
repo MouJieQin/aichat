@@ -140,6 +140,12 @@
                                     <el-switch v-model="item.auto_gen_title" :active-value="true"
                                         :inactive-value="false" />
                                 </el-form-item>
+                                <el-form-item label="分句显示">
+                                    <el-switch v-model="item.show_separated_sentences" :active-value="true"
+                                        :inactive-value="false" />
+                                </el-form-item>
+
+
 
                                 <!-- 其他配置项... -->
                                 <el-form-item label="API 地址">

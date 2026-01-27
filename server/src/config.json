@@ -33,6 +33,7 @@
                 "tts_voice": "zh-CN-XiaochenNeural",
                 "auto_play": false,
                 "auto_gen_title": true,
+                "show_separated_sentences": true,
                 "speech_rate": 1.0
             },
             {
@@ -48,6 +49,7 @@
                 "tts_voice": "zh-CN-XiaochenNeural",
                 "auto_play": false,
                 "auto_gen_title": true,
+                "show_separated_sentences": true,
                 "speech_rate": 1.0
             }
         ]

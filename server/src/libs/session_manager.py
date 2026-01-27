@@ -31,6 +31,7 @@ class SessionManager:
                     ("suggestions", []),
                     ("last_active_time", time.time()),
                     ("ai_avatar_url", ""),
+                    ("show_separated_sentences", True),
                 ]:
                     if key not in config:
                         config[key] = default_value

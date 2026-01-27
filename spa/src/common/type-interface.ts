@@ -39,6 +39,7 @@ export interface AIConfig {
     tts_voice: string;
     auto_play: boolean;
     auto_gen_title: boolean;
+    show_separated_sentences: boolean;
     speech_rate: number;
     suggestions?: string[];
     secondary_prompt?: string;
@@ -85,6 +86,7 @@ export interface AiApiConfig {
     tts_voice: string;
     auto_play: boolean;
     auto_gen_title: boolean;
+    show_separated_sentences: boolean;
     speech_rate: number;
     modelsOptional: string[];
 }

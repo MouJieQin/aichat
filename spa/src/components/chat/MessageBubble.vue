@@ -13,9 +13,14 @@
             </div>
             <div class="message-content-container">
                 <div class="message-content" :class="messageRoleClass">
-                    <!-- 正常显示模式 -->
-                    <div v-show="!isEditing" class="markdown-container" @click="handleSentenceClick">
+                    <!-- 分句显示模式 -->
+                    <div v-if="props.config.show_separated_sentences" v-show="!isEditing" class="markdown-container"
+                        @click="handleSentenceClick">
                         <p v-html="message.processed_html"></p>
+                    </div>
+                    <!-- 正常显示模式 -->
+                    <div v-else v-show="!isEditing" class="markdown-container" @click="handleSentenceClick">
+                        <p v-html="md.render(message.raw_text)"></p>
                     </div>
 
                     <!-- 编辑模式 -->

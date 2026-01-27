@@ -63,6 +63,11 @@
                     <el-switch v-model="localConfig.auto_gen_title" :active-value="true" :inactive-value="false" />
                 </el-form-item>
 
+                <el-form-item label="分句显示">
+                    <el-switch v-model="localConfig.show_separated_sentences" :active-value="true"
+                        :inactive-value="false" />
+                </el-form-item>
+
                 <el-collapse>
                     <el-collapse-item title="高级" name="1">
                         <el-form-item label="次级设定开关">

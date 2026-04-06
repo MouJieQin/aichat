@@ -133,6 +133,11 @@ function createFixedWindow(url = "http://localhost:3999/") {
         // 👇 关键修复1：移除 type: 'panel'，避免压住输入法
         // type: 'panel',
 
+        // 核心配置：开启自定义标题栏 + 透明窗口
+        // titleBarStyle: "hiddenInset", // 隐藏原生标题栏，保留红绿灯
+        // transparent: true, // 窗口透明，让自定义控件融入标题栏
+        // vibrancy: "titlebar", // macOS 毛玻璃效果（原生质感）
+
         webPreferences: {
             preload: path.join(__dirname, "preload.js"),
             contextIsolation: true,
@@ -154,9 +159,9 @@ function createFixedWindow(url = "http://localhost:3999/") {
 
         // fixedWindow.setFullScreenable(true); // 允许全屏（但不强制）
 
-        app.on("browser-window-blur", () => {
-            fixedWindow.hide();
-        });
+        // app.on("browser-window-blur", () => {
+        //     fixedWindow.hide();
+        // });
     }
 
     fixedWindow.loadURL(url);
@@ -321,7 +326,7 @@ function createWindow(url = "http://localhost:3999/") {
 
     mainWindow.loadURL(url);
     if (NODE_ENV === "development") {
-        mainWindow.webContents.openDevTools();
+        // mainWindow.webContents.openDevTools();
     }
 
     // 窗口即将关闭时保存当前 URL

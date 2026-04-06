@@ -293,7 +293,7 @@ body::-webkit-scrollbar-thumb {
     padding-top: 8px;
 }
 
-.secondary-response .markdown-container{
+.secondary-response .markdown-container {
     opacity: 0.7;
     font-size: 12px;
     line-height: 1.6;
@@ -353,7 +353,7 @@ body::-webkit-scrollbar-thumb {
 
 .user-controls .edit-controls {
     position: absolute;
-    right: 0;
+    right: 8px;
 }
 
 .assistant-controls,
@@ -466,7 +466,6 @@ body::-webkit-scrollbar-thumb {
 
 .input-container {
     max-width: clamp(300px, 80vw, 800px);
-    width: 100%;
     position: relative;
     margin: 0 auto;
 }
@@ -645,7 +644,8 @@ el-tabs__item {
 
 .statistic-card:hover {
     transform: translateY(-5px);
-    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1),
+    box-shadow:
+        0 10px 25px -5px rgba(0, 0, 0, 0.1),
         0 10px 10px -5px rgba(0, 0, 0, 0.04);
 }
 
@@ -700,4 +700,78 @@ el-tabs__item {
 .markdown-content h1 {
     text-align: center;
     margin-bottom: 0.5rem;
+}
+
+/* 大屏幕：保持原有居中样式（≥768px，你可自行调整） */
+/* @media (min-width: 768px) {
+    .system-message,
+    .assistant-message {
+        margin: 0 auto !important;
+        max-width: clamp(300px, 80vw, 800px) !important;
+    }
+    .message-content-container {
+        margin-left: 8px !important;
+    }
+} */
+
+
+/* 小屏幕：强制贴左，不留空白（<768px） */
+@media (max-width: 767px) {
+    .sidebar {
+        display: none !important;
+    }
+    :root {
+        --main-content-left-margin: 0px !important;
+    }
+    .main-content {
+        padding: 0 !important;
+    }
+    .page-content {
+        padding: 0 !important;
+    }
+
+    .system-message,
+    .user-message,
+    .assistant-message,
+    .message-stream {
+        margin: 0 !important; /* 取消居中，贴左 */
+        max-width: 100% !important; /* 宽度占满 */
+    }
+
+    .suggestions-container {
+        max-width: 100% !important; /* 宽度占满 */
+        padding-bottom: 150px !important;
+    }
+
+    .message-content-container {
+        margin-left: 0 !important; /* 容器也贴左 */
+        margin-right: 0 !important; /* 取消右侧间距 */
+    }
+
+    .input-container {
+        max-width: 100% !important; /* 宽度占满 */
+        margin-left: 0 !important; /* 贴左 */
+        padding: 0 10px !important; /* 添加左右内边距 */
+    }
+
+    .loader-container {
+        max-width: 100% !important; /* 宽度占满 */
+    }
+
+    /* 可选：头像/角色标识*/
+    .message-role-system,
+    .message-role-assistant,
+    .message-role-user {
+        display: none !important;
+    }
+
+    .controls-container {
+        max-width: 100% !important; /* 宽度占满 */
+    }
+    .user-controls {
+        margin-right: 0 !important;
+    }
+    .user-controls .edit-controls {
+        right: 0px !important;
+    }
 }

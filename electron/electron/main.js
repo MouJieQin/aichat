@@ -22,7 +22,7 @@ const configPath = path.join(
     app.getPath("userData"),
     "Voichai-Storage",
     "config",
-    "electron-config.json"
+    "electron-config.json",
 );
 // Access command-line arguments
 const args = process.argv.slice(2);
@@ -114,13 +114,44 @@ function saveLastUrl(url) {
 function createFixedWindow(url = "http://localhost:3999/") {
     const { width, height } = screen.getPrimaryDisplay().workAreaSize;
     const fixedWindow = new BrowserWindow({
-        width: width,
-        height: height,
+        // width: width,
+        width: 300,
+        height: 400,
+        // height: height,
         alwaysOnTop: true, // 设置窗口永远置顶
+        type: "panel",
+        movable: true,
+        // resizable: false,
+        // frame: false, // 可选：无边框更像悬浮面板
         webPreferences: {
             preload: path.join(__dirname, "preload.js"),
+            contextIsolation: true,
+            nodeIntegration: false,
         },
     });
+
+    const mouse = screen.getCursorScreenPoint();
+    fixedWindow.setPosition(mouse.x + 20, mouse.y + 20);
+
+    // 👇 关键2：macOS 全屏穿透核心配置
+    if (process.platform === "darwin") {
+        // 1. 最高层级（覆盖屏保/全屏视频）
+        fixedWindow.setAlwaysOnTop(true, "floating");
+
+        // // 2. 允许在所有空间 + 全屏空间显示（最关键）
+        // fixedWindow.setVisibleOnAllWorkspaces(true, {
+        //     visibleOnFullScreen: true,
+        // });
+
+        // 3. 标记为全屏辅助窗口（允许在全屏应用上方）
+        // fixedWindow.setFullScreenable(false);
+
+        // 4. 失焦时强制重新置顶，防止被挤下去
+        // fixedWindow.on("blur", () => {
+        //     fixedWindow.setAlwaysOnTop(true, "screen-saver");
+        //     fixedWindow.moveTop();
+        // });
+    }
 
     fixedWindow.loadURL(url);
     if (NODE_ENV === "development") {
@@ -175,7 +206,7 @@ async function install() {
         installPath,
         " && sleep 3 && ",
         checkInstallPath,
-        " closed"
+        " closed",
     );
     console.log("installCmd:", installCmd);
     return await runShellCommand(installCmd)
@@ -286,17 +317,17 @@ function setDockMenu() {
                 createWindow();
                 // Action to be performed when the new menu item is clicked
             },
-        })
+        }),
     );
 
-        dockMenu.append(
+    dockMenu.append(
         new MenuItem({
             label: "Open a Top Window",
             click() {
                 createFixedWindow(getLastUrl());
                 // Action to be performed when the new menu item is clicked
             },
-        })
+        }),
     );
 
     // Set the updated dock menu

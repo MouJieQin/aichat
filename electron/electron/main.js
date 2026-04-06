@@ -17,6 +17,9 @@ const startPath = voichaiPath.concat("/shell/voichai-start");
 const stopPath = voichaiPath.concat("/shell/voichai-stop");
 var webSocket = {};
 
+// 👇 全局保存窗口，方便控制
+let fixedWindow = null;
+
 // electron setup
 const configPath = path.join(
     app.getPath("userData"),
@@ -56,6 +59,13 @@ function handleMessage(message) {
             break;
         case "open_top_window":
             createFixedWindow(message.data.url);
+            break;
+        case "toggle_top_window":
+            if (!fixedWindow || fixedWindow.isDestroyed()) {
+                createFixedWindow(message.data.url);
+            } else {
+                toggleFixedWindow();
+            }
             break;
         default:
             break;
@@ -114,47 +124,77 @@ function saveLastUrl(url) {
 }
 
 function createFixedWindow(url = "http://localhost:3999/") {
-  const fixedWindow = new BrowserWindow({
-    width: 700,
-    height: 1000,
-    alwaysOnTop: true,
-    movable: true,
+    fixedWindow = new BrowserWindow({
+        width: 700,
+        height: 1000,
+        alwaysOnTop: true,
+        movable: true,
 
-    // 👇 关键修复1：移除 type: 'panel'，避免压住输入法
-    // type: 'panel',
+        // 👇 关键修复1：移除 type: 'panel'，避免压住输入法
+        // type: 'panel',
 
-    webPreferences: {
-      preload: path.join(__dirname, "preload.js"),
-      contextIsolation: true,
-      nodeIntegration: false,
-    },
-  });
-
-  const mouse = screen.getCursorScreenPoint();
-  fixedWindow.setPosition(mouse.x + 20, mouse.y + 20);
-
-  if (process.platform === "darwin") {
-    // 👇 关键修复2：使用 modal-panel 层级（不压输入法、不压系统UI）
-    fixedWindow.setAlwaysOnTop(true, "modal-panel");
-
-    // 👇 关键修复3：只在当前空间显示，不穿透到其他桌面
-    fixedWindow.setVisibleOnAllWorkspaces(false, {
-      visibleOnFullScreen: true, // 只允许全屏可见
+        webPreferences: {
+            preload: path.join(__dirname, "preload.js"),
+            contextIsolation: true,
+            nodeIntegration: false,
+        },
     });
 
-    fixedWindow.setFullScreenable(true); // 允许全屏（但不强制）
-  }
+    const mouse = screen.getCursorScreenPoint();
+    fixedWindow.setPosition(mouse.x + 20, mouse.y + 20);
 
-  fixedWindow.loadURL(url);
+    if (process.platform === "darwin") {
+        // 👇 关键修复2：使用 modal-panel 层级（不压输入法、不压系统UI）
+        fixedWindow.setAlwaysOnTop(true, "modal-panel");
 
-  fixedWindow.on("close", (e) => {
-    const currentUrl = fixedWindow.webContents.getURL();
-    saveLastUrl(currentUrl);
-  });
+        // 👇 关键修复3：只在当前空间显示，不穿透到其他桌面
+        fixedWindow.setVisibleOnAllWorkspaces(false, {
+            visibleOnFullScreen: true, // 只允许全屏可见
+        });
 
-  fixedWindow.webContents.send("theme-changed", true);
+        // fixedWindow.setFullScreenable(true); // 允许全屏（但不强制）
+
+        app.on("browser-window-blur", () => {
+            fixedWindow.hide();
+        });
+    }
+
+    fixedWindow.loadURL(url);
+
+    fixedWindow.on("close", (e) => {
+        const currentUrl = fixedWindow.webContents.getURL();
+        saveLastUrl(currentUrl);
+    });
+
+    fixedWindow.webContents.send("theme-changed", true);
 }
 
+// 显示窗口
+function showFixedWindow() {
+    if (fixedWindow && !fixedWindow.isDestroyed()) {
+        fixedWindow.show();
+        fixedWindow.focus(); // 可选：让窗口获得焦点
+    }
+}
+
+// 隐藏窗口
+function hideFixedWindow() {
+    if (fixedWindow && !fixedWindow.isDestroyed()) {
+        fixedWindow.hide();
+    }
+}
+
+// 切换显示/隐藏（最常用）
+function toggleFixedWindow() {
+    if (fixedWindow && !fixedWindow.isDestroyed()) {
+        if (fixedWindow.isVisible()) {
+            fixedWindow.hide();
+        } else {
+            fixedWindow.show();
+            fixedWindow.focus();
+        }
+    }
+}
 
 // Additional setup for Electron app
 

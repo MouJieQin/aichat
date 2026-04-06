@@ -176,6 +176,15 @@ async def command_command(request: CommandRequest):
                 }
             )
         )
+    elif request.type == "toggle_top_window":
+        await SessionManager.broadcast_electron(
+            json.dumps(
+                {
+                    "type": "toggle_top_window",
+                    "data": {"url": host + "/float/chat/" + request.data["session_id"]},
+                }
+            )
+        )
 
     return {"success": True}
 

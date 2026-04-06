@@ -27,6 +27,17 @@ const routes: RouteRecordRaw[] = [
             }
         ]
     },
+    {
+        path: '/float',
+        component: () => import('@/views/FloatChatLayout.vue'),
+        children: [
+            {
+                path: 'chat/:id',
+                name: 'FloatChat',
+                component: Chat
+            }
+        ]
+    }
     // 不需要侧边栏的路由可以单独定义
     //   {
     //     path: '/login',

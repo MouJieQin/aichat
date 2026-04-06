@@ -74,7 +74,7 @@ class MessageHandler:
         await SessionManager.send_all_sessions()
 
     @staticmethod
-    async def _handle_create_session(websocket: WebSocket, message: dict):
+    def create_session():
         system_prompt = Utils.AI_CONFIG_DEFAULT["system_prompt"]
         parsed_system_prompt = json.dumps({"sentences": [], "html": ""})
         title = Utils.AI_CONFIG_DEFAULT["chat_title"]
@@ -87,6 +87,11 @@ class MessageHandler:
         session_id, message_id = Utils.api.create_new_session(
             title, config, system_prompt, parsed_system_prompt
         )
+        return session_id, message_id, system_prompt
+
+    @staticmethod
+    async def _handle_create_session(websocket: WebSocket, message: dict):
+        session_id, message_id, system_prompt = MessageHandler.create_session()
 
         response = {
             "type": "parse_create_session",

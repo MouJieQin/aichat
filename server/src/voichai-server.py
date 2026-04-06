@@ -146,6 +146,40 @@ async def upload_user_avatar(file: UploadFile = File(...)):
         )
 
 
+class CommandRequest(BaseModel):
+    type: str
+    data: dict
+
+
+@app.post("/api/command")
+async def command_command(request: CommandRequest):
+    logger.info(f"command command: {request.type}")
+    logger.info(f"command data: {request.data}")
+    host = "http://localhost:3999"
+    if request.type == "open_top_window":
+        await SessionManager.broadcast_electron(
+            json.dumps(
+                {
+                    "type": "open_top_window",
+                    "data": {"url": host + "/float/chat/" + request.data["session_id"]},
+                }
+            )
+        )
+    elif request.type == "create_new_session":
+        session_id, message_id, system_prompt = MessageHandler.create_session()
+        await SessionManager.send_all_sessions()
+        await SessionManager.broadcast_electron(
+            json.dumps(
+                {
+                    "type": "open_top_window",
+                    "data": {"url": host + "/float/chat/" + str(session_id)},
+                }
+            )
+        )
+
+    return {"success": True}
+
+
 # WebSocket 端点
 @app.websocket("/ws/aichat/electron")
 async def electron_websocket_endpoint(websocket: WebSocket):

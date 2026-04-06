@@ -54,6 +54,9 @@ function handleMessage(message) {
                 nativeTheme.themeSource = message.data.theme;
             }
             break;
+        case "open_top_window":
+            createFixedWindow(message.data.url);
+            break;
         default:
             break;
     }
@@ -110,61 +113,48 @@ function saveLastUrl(url) {
     }
 }
 
-// 创建永远置顶的窗口
 function createFixedWindow(url = "http://localhost:3999/") {
-    const { width, height } = screen.getPrimaryDisplay().workAreaSize;
-    const fixedWindow = new BrowserWindow({
-        // width: width,
-        width: 300,
-        height: 400,
-        // height: height,
-        alwaysOnTop: true, // 设置窗口永远置顶
-        type: "panel",
-        movable: true,
-        // resizable: false,
-        // frame: false, // 可选：无边框更像悬浮面板
-        webPreferences: {
-            preload: path.join(__dirname, "preload.js"),
-            contextIsolation: true,
-            nodeIntegration: false,
-        },
+  const fixedWindow = new BrowserWindow({
+    width: 700,
+    height: 1000,
+    alwaysOnTop: true,
+    movable: true,
+
+    // 👇 关键修复1：移除 type: 'panel'，避免压住输入法
+    // type: 'panel',
+
+    webPreferences: {
+      preload: path.join(__dirname, "preload.js"),
+      contextIsolation: true,
+      nodeIntegration: false,
+    },
+  });
+
+  const mouse = screen.getCursorScreenPoint();
+  fixedWindow.setPosition(mouse.x + 20, mouse.y + 20);
+
+  if (process.platform === "darwin") {
+    // 👇 关键修复2：使用 modal-panel 层级（不压输入法、不压系统UI）
+    fixedWindow.setAlwaysOnTop(true, "modal-panel");
+
+    // 👇 关键修复3：只在当前空间显示，不穿透到其他桌面
+    fixedWindow.setVisibleOnAllWorkspaces(false, {
+      visibleOnFullScreen: true, // 只允许全屏可见
     });
 
-    const mouse = screen.getCursorScreenPoint();
-    fixedWindow.setPosition(mouse.x + 20, mouse.y + 20);
+    fixedWindow.setFullScreenable(true); // 允许全屏（但不强制）
+  }
 
-    // 👇 关键2：macOS 全屏穿透核心配置
-    if (process.platform === "darwin") {
-        // 1. 最高层级（覆盖屏保/全屏视频）
-        fixedWindow.setAlwaysOnTop(true, "floating");
+  fixedWindow.loadURL(url);
 
-        // // 2. 允许在所有空间 + 全屏空间显示（最关键）
-        // fixedWindow.setVisibleOnAllWorkspaces(true, {
-        //     visibleOnFullScreen: true,
-        // });
+  fixedWindow.on("close", (e) => {
+    const currentUrl = fixedWindow.webContents.getURL();
+    saveLastUrl(currentUrl);
+  });
 
-        // 3. 标记为全屏辅助窗口（允许在全屏应用上方）
-        // fixedWindow.setFullScreenable(false);
-
-        // 4. 失焦时强制重新置顶，防止被挤下去
-        // fixedWindow.on("blur", () => {
-        //     fixedWindow.setAlwaysOnTop(true, "screen-saver");
-        //     fixedWindow.moveTop();
-        // });
-    }
-
-    fixedWindow.loadURL(url);
-    if (NODE_ENV === "development") {
-        fixedWindow.webContents.openDevTools();
-    }
-
-    // 窗口即将关闭时保存当前 URL
-    fixedWindow.on("close", (e) => {
-        const currentUrl = fixedWindow.webContents.getURL();
-        saveLastUrl(currentUrl);
-    });
-    fixedWindow.webContents.send("theme-changed", true);
+  fixedWindow.webContents.send("theme-changed", true);
 }
+
 
 // Additional setup for Electron app
 

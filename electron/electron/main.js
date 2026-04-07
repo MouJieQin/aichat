@@ -17,9 +17,6 @@ const startPath = voichaiPath.concat("/shell/voichai-start");
 const stopPath = voichaiPath.concat("/shell/voichai-stop");
 var webSocket = {};
 
-// 👇 全局保存窗口，方便控制
-let fixedWindow = null;
-
 // electron setup
 const configPath = path.join(
     app.getPath("userData"),
@@ -55,16 +52,6 @@ function handleMessage(message) {
                 nativeTheme.themeSource = "system";
             } else {
                 nativeTheme.themeSource = message.data.theme;
-            }
-            break;
-        case "open_top_window":
-            createFixedWindow(message.data.url);
-            break;
-        case "toggle_top_window":
-            if (!fixedWindow || fixedWindow.isDestroyed()) {
-                createFixedWindow(message.data.url);
-            } else {
-                toggleFixedWindow();
             }
             break;
         default:
@@ -123,82 +110,29 @@ function saveLastUrl(url) {
     }
 }
 
+// 创建永远置顶的窗口
 function createFixedWindow(url = "http://localhost:3999/") {
-    fixedWindow = new BrowserWindow({
-        width: 700,
-        height: 1000,
-        alwaysOnTop: true,
-        movable: true,
-
-        // 👇 关键修复1：移除 type: 'panel'，避免压住输入法
-        // type: 'panel',
-
-        // 核心配置：开启自定义标题栏 + 透明窗口
-        // titleBarStyle: "hiddenInset", // 隐藏原生标题栏，保留红绿灯
-        // transparent: true, // 窗口透明，让自定义控件融入标题栏
-        // vibrancy: "titlebar", // macOS 毛玻璃效果（原生质感）
-
+    const { width, height } = screen.getPrimaryDisplay().workAreaSize;
+    const fixedWindow = new BrowserWindow({
+        width: width,
+        height: height,
+        alwaysOnTop: true, // 设置窗口永远置顶
         webPreferences: {
             preload: path.join(__dirname, "preload.js"),
-            contextIsolation: true,
-            nodeIntegration: false,
         },
     });
 
-    const mouse = screen.getCursorScreenPoint();
-    fixedWindow.setPosition(mouse.x + 20, mouse.y + 20);
-
-    if (process.platform === "darwin") {
-        // 👇 关键修复2：使用 modal-panel 层级（不压输入法、不压系统UI）
-        fixedWindow.setAlwaysOnTop(true, "modal-panel");
-
-        // 👇 关键修复3：只在当前空间显示，不穿透到其他桌面
-        fixedWindow.setVisibleOnAllWorkspaces(false, {
-            visibleOnFullScreen: true, // 只允许全屏可见
-        });
-
-        // fixedWindow.setFullScreenable(true); // 允许全屏（但不强制）
-
-        // app.on("browser-window-blur", () => {
-        //     fixedWindow.hide();
-        // });
+    fixedWindow.loadURL(url);
+    if (NODE_ENV === "development") {
+        fixedWindow.webContents.openDevTools();
     }
 
-    fixedWindow.loadURL(url);
-
+    // 窗口即将关闭时保存当前 URL
     fixedWindow.on("close", (e) => {
         const currentUrl = fixedWindow.webContents.getURL();
         saveLastUrl(currentUrl);
     });
-
     fixedWindow.webContents.send("theme-changed", true);
-}
-
-// 显示窗口
-function showFixedWindow() {
-    if (fixedWindow && !fixedWindow.isDestroyed()) {
-        fixedWindow.show();
-        fixedWindow.focus(); // 可选：让窗口获得焦点
-    }
-}
-
-// 隐藏窗口
-function hideFixedWindow() {
-    if (fixedWindow && !fixedWindow.isDestroyed()) {
-        fixedWindow.hide();
-    }
-}
-
-// 切换显示/隐藏（最常用）
-function toggleFixedWindow() {
-    if (fixedWindow && !fixedWindow.isDestroyed()) {
-        if (fixedWindow.isVisible()) {
-            fixedWindow.hide();
-        } else {
-            fixedWindow.show();
-            fixedWindow.focus();
-        }
-    }
 }
 
 // Additional setup for Electron app
@@ -326,7 +260,7 @@ function createWindow(url = "http://localhost:3999/") {
 
     mainWindow.loadURL(url);
     if (NODE_ENV === "development") {
-        // mainWindow.webContents.openDevTools();
+        mainWindow.webContents.openDevTools();
     }
 
     // 窗口即将关闭时保存当前 URL

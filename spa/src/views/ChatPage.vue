@@ -1,5 +1,6 @@
 <template>
     <div class="page-content">
+        <MacTitlebar v-if="isFromFloatChat" :webSocket="webSocket" :title="sessionTitle" :isPinned="isPinned" />
         <!-- 聊天消息区域 -->
         <div class="chat-container">
             <!-- 只有当 webSocket 不为 null 时才渲染 ChatMessages 组件 -->
@@ -34,10 +35,12 @@
 
 <script lang="ts" setup>
 import { ref, watch, onMounted, onBeforeUnmount } from 'vue'
+import { computed, getCurrentInstance } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import ChatMessages from '@/components/Chat/ChatMessages.vue'
 import MessageStream from '@/components/Chat/MessageStream.vue'
 import SuggestionsList from '@/components/Chat/SuggestionsList.vue'
+import MacTitlebar from '@/components/Chat/MacTitlebar.vue'
 import ChatInput from '@/components/Chat/ChatInput.vue'
 import AIConfigDrawer from '@/components/Chat/AIConfigDrawer.vue'
 import ThreeDotsLoader from '@/components/Svgs/ThreeDotsLoader.vue'
@@ -60,6 +63,7 @@ const chatMessages = ref<Message[]>([])
 const sessionSuggestions = ref<string[]>([])
 const sessionTitle = ref('')
 const streaming = ref(false)
+const isPinned = ref(false)
 const isScrolledWhenStreaming = ref(false)
 const isChatError = ref(false)
 const streamResponse = ref('')
@@ -133,6 +137,22 @@ const watchRouteChange = () => {
     }, { immediate: true })
 }
 
+const isFromFloatChat = computed(() => {
+    const instance = getCurrentInstance()
+    if (!instance) return false
+
+    let parent = instance.parent
+    while (parent) {
+        // 匹配 FloatChatLayout 组件
+        if (parent.type.__name === 'FloatChatLayout') {
+            return true
+        }
+        parent = parent.parent
+    }
+    return false
+})
+
+
 // 初始化WebSocket
 const setupWebSocket = () => {
     webSocket.value = useChatWebSocket(chatId.value)
@@ -146,6 +166,9 @@ const setupWebSocket = () => {
 // 处理WebSocket消息
 const handleWebSocketMessage = (message: any) => {
     switch (message.type) {
+        case 'toggle_float_pin':
+            handleToggleFloatPin(message)
+            break
         case 'session_title':
             sessionTitle.value = message.data.title
             document.title = sessionTitle.value || 'Voichai'
@@ -191,6 +214,11 @@ const handleWebSocketMessage = (message: any) => {
             router.push('/')
             break
     }
+}
+
+// 处理固定窗口状态切换
+const handleToggleFloatPin = (message: any) => {
+    isPinned.value = message.data.is_pinned
 }
 
 // 处理会话消息

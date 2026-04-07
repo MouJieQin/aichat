@@ -21,8 +21,12 @@ class MessageHandler:
         try:
             message = json.loads(message_text)
             message_type = message["type"]
-
-            logger.warning(f"未知的windows消息类型: {message_type}")
+            if message_type == "toggle_float_pin":
+                await SessionManager.broadcast_session(
+                    message["data"]["session_id"], message_text
+                )
+            else:
+                logger.warning(f"未知的windows消息类型: {message_type}")
         except Exception as e:
             logger.error(f"处理windows消息时出错: {e}", exc_info=True)
 
@@ -249,6 +253,7 @@ class MessageHandler:
                 logger.info(f"接收消息: {message}")
 
             handlers = {
+                "toggle_float_pin": MessageHandler._handle_toggle_float_pin,
                 "user_input": MessageHandler._handle_user_input,
                 "parsed_user_message": MessageHandler._handle_parsed_user_message,
                 "parsed_ai_response": MessageHandler._handle_parsed_ai_response,
@@ -275,6 +280,20 @@ class MessageHandler:
 
         except Exception as e:
             logger.error(f"处理会话消息时出错: {e}", exc_info=True)
+
+    @staticmethod
+    async def _handle_toggle_float_pin(
+        websocket: WebSocket, session_id: int, message: dict
+    ):
+        url = "http://localhost:3999" + message["data"]["full_path"]
+        msg = {
+            "type": "toggle_float_pin",
+            "data": {
+                "url": url,
+                "session_id": session_id,
+            },
+        }
+        await SessionManager.broadcast_windows(json.dumps(msg))
 
     @staticmethod
     async def _handle_user_input(websocket: WebSocket, session_id: int, message: dict):

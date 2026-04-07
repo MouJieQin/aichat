@@ -31,6 +31,12 @@ class ChatWebSocketService extends WebSocketService {
         )
     }
 
+    sendToggleFloatingWindowPin(fullPath: string) {
+        this._send('toggle_float_pin', {
+            full_path: fullPath,
+        })
+    }
+
     // 发送解析响应
     sendParsedUserMessage(messageId: number, html: string, sentences: any[]) {
         this._sendWithMessageId('parsed_user_message', messageId, {

@@ -33,6 +33,8 @@ class UtilsBase:
     electron_websockets: Dict[int, WebSocket] = {}
     spa_websockets: Dict[int, WebSocket] = {}
     session_websockets: Dict[int, Dict[int, WebSocket]] = {}
+    windows_websockets: Dict[int, WebSocket] = {}
+
 
     @staticmethod
     def createDirIfnotExists(path: str):

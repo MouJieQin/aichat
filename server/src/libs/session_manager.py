@@ -43,6 +43,20 @@ class SessionManager:
         initialize_sessions_imple()
 
     @staticmethod
+    async def broadcast_windows(message: str):
+        """向所有windows WebSocket连接广播消息"""
+        invalid_keys = []
+        for key, websocket in Utils.windows_websockets.items():
+            try:
+                await websocket.send_text(message)
+            except Exception as e:
+                logger.error(f"windows广播错误: {e}")
+                invalid_keys.append(key)
+
+        for key in invalid_keys:
+            del Utils.windows_websockets[key]
+
+    @staticmethod
     async def broadcast_electron(message: str):
         """向所有electron WebSocket连接广播消息"""
         invalid_keys = []

@@ -16,6 +16,17 @@ class MessageHandler:
     """消息处理器，处理不同类型的WebSocket消息"""
 
     @staticmethod
+    async def handle_windows_message(websocket: WebSocket, message_text: str):
+        """处理windows WebSocket消息"""
+        try:
+            message = json.loads(message_text)
+            message_type = message["type"]
+
+            logger.warning(f"未知的windows消息类型: {message_type}")
+        except Exception as e:
+            logger.error(f"处理windows消息时出错: {e}", exc_info=True)
+
+    @staticmethod
     async def handle_electron_message(websocket: WebSocket, message_text: str):
         """处理electron WebSocket消息"""
         try:

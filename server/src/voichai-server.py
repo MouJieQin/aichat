@@ -157,7 +157,7 @@ async def command_command(request: CommandRequest):
     logger.info(f"command data: {request.data}")
     host = "http://localhost:3999"
     if request.type == "open_top_window":
-        await SessionManager.broadcast_electron(
+        await SessionManager.broadcast_windows(
             json.dumps(
                 {
                     "type": "open_top_window",
@@ -168,7 +168,7 @@ async def command_command(request: CommandRequest):
     elif request.type == "create_new_session":
         session_id, message_id, system_prompt = MessageHandler.create_session()
         await SessionManager.send_all_sessions()
-        await SessionManager.broadcast_electron(
+        await SessionManager.broadcast_windows(
             json.dumps(
                 {
                     "type": "open_top_window",
@@ -177,7 +177,7 @@ async def command_command(request: CommandRequest):
             )
         )
     elif request.type == "toggle_top_window":
-        await SessionManager.broadcast_electron(
+        await SessionManager.broadcast_windows(
             json.dumps(
                 {
                     "type": "toggle_top_window",
@@ -190,6 +190,26 @@ async def command_command(request: CommandRequest):
 
 
 # WebSocket 端点
+@app.websocket("/ws/aichat/windows")
+async def windows_websocket_endpoint(websocket: WebSocket):
+    """windows WebSocket端点"""
+    await websocket.accept()
+    connection_id = int(time.time() * 1000)
+    Utils.windows_websockets[connection_id] = websocket
+    try:
+        # await SessionManager.broadcast_windows_theme()
+        while True:
+            data = await websocket.receive_text()
+            await MessageHandler.handle_windows_message(websocket, data)
+
+    except WebSocketDisconnect:
+        logger.info(f"windows WebSocket断开连接")
+    except Exception as e:
+        logger.error(f"windows WebSocket错误: {e}", exc_info=True)
+    finally:
+        if connection_id in Utils.windows_websockets:
+            del Utils.windows_websockets[connection_id]
+
 @app.websocket("/ws/aichat/electron")
 async def electron_websocket_endpoint(websocket: WebSocket):
     """electron WebSocket端点"""
@@ -201,7 +221,7 @@ async def electron_websocket_endpoint(websocket: WebSocket):
         await SessionManager.broadcast_electron_theme()
         while True:
             data = await websocket.receive_text()
-            await MessageHandler.handle_spa_message(websocket, data)
+            await MessageHandler.handle_electron_message(websocket, data)
 
     except WebSocketDisconnect:
         logger.info(f"electron WebSocket断开连接")

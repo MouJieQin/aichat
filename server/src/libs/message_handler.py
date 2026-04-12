@@ -16,6 +16,48 @@ class MessageHandler:
     """消息处理器，处理不同类型的WebSocket消息"""
 
     @staticmethod
+    async def handle_command_message(type: str, data: dict) -> bool:
+        """处理命令消息"""
+        try:
+            host = "http://localhost:3999"
+            if type == "open_top_window":
+                await SessionManager.broadcast_windows(
+                    json.dumps(
+                        {
+                            "type": "open_top_window",
+                            "data": {"url": host + "/float/chat/" + data["session_id"]},
+                        }
+                    )
+                )
+            elif type == "create_new_session":
+                session_id, message_id, system_prompt = MessageHandler.create_session()
+                await SessionManager.send_all_sessions()
+                await SessionManager.broadcast_windows(
+                    json.dumps(
+                        {
+                            "type": "open_top_window",
+                            "data": {"url": host + "/float/chat/" + str(session_id)},
+                        }
+                    )
+                )
+            elif type == "toggle_top_window":
+                await SessionManager.broadcast_windows(
+                    json.dumps(
+                        {
+                            "type": "toggle_top_window",
+                            "data": {"url": host + "/float/chat/" + data["session_id"]},
+                        }
+                    )
+                )
+            else:
+                logger.warning(f"未知的命令消息类型: {type}")
+                return False
+            return True
+        except Exception as e:
+            logger.error(f"处理命令消息时出错: {e}", exc_info=True)
+            return False
+
+    @staticmethod
     async def handle_windows_message(websocket: WebSocket, message_text: str):
         """处理windows WebSocket消息"""
         try:

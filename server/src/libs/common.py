@@ -6,7 +6,7 @@ from libs.openai_chat_api import OpenAIChatAPI
 from libs.speaker import Speaker
 from libs.recognizer import Recognizer
 from libs.config import UtilsBase
-
+from libs.websocket_client import WsClient
 
 class Utils(UtilsBase):
     # 初始化服务
@@ -14,6 +14,7 @@ class Utils(UtilsBase):
     api = OpenAIChatAPI(db)
     speaker = Speaker(UtilsBase.CONFIG, UtilsBase.VOICHAI_STORAGE_PATH)
     recognizer = Recognizer(UtilsBase.CONFIG)
+    iwin_ws_client: WsClient
 
     @staticmethod
     def create_api() -> OpenAIChatAPI:
@@ -45,7 +46,7 @@ class Utils(UtilsBase):
         @staticmethod
         def get_filename_from_user_avatar_url(user_avatar_url: str) -> str:
             return user_avatar_url.split("/")[-1]
-        
+
         @staticmethod
         def update_user_avatar_url(user_avatar_url: str):
             UtilsBase.CONFIG["appearance"]["user_avatar_url"] = user_avatar_url

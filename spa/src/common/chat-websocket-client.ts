@@ -32,7 +32,7 @@ class ChatWebSocketService extends WebSocketService {
     }
 
     sendToggleFloatingWindowPin(fullPath: string) {
-        this._send('toggle_float_pin', {
+        this._send('toggle_floating_pin', {
             full_path: fullPath,
         })
     }

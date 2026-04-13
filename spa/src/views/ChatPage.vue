@@ -166,8 +166,8 @@ const setupWebSocket = () => {
 // 处理WebSocket消息
 const handleWebSocketMessage = (message: any) => {
     switch (message.type) {
-        case 'toggle_float_pin':
-            handleToggleFloatPin(message)
+        case 'toggle_floating_pin':
+            handleToggleFloatingPin(message)
             break
         case 'session_title':
             sessionTitle.value = message.data.title
@@ -217,7 +217,7 @@ const handleWebSocketMessage = (message: any) => {
 }
 
 // 处理固定窗口状态切换
-const handleToggleFloatPin = (message: any) => {
+const handleToggleFloatingPin = (message: any) => {
     isPinned.value = message.data.is_pinned
 }
 

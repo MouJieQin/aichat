@@ -2,16 +2,23 @@
 <template>
     <!-- 自定义 macOS 标题栏（仅 macOS 显示，包含 Pin 置顶按钮） -->
     <div class="mac-titlebar">
-        <button @click="handlePinClick" class="pin-button" :title="isPinned ? '取消置顶' : '窗口置顶'">
+        <!-- <button @click="handlePinClick" class="pin-button" >
             {{ isPinned ? '📍' : '📌' }}
-        </button>
-        <span class="floating-window-title">{{ title }}</span>
+        </button> -->
+        <div class="floating-window-title">
+            <span>{{ title }}</span>
+        </div>
+        <div class="pin-button">
+            <el-button :icon="props.isPinned ? BsPinAngleFill : BsPin" text @click="handlePinClick"
+                :title="isPinned ? '取消置顶' : '窗口置顶'" size="small" />
+        </div>
     </div>
 </template>
 
 <script lang="ts" setup>
 import { ChatWebSocketService } from '@/common/chat-websocket-client'
 import { useRoute } from 'vue-router'
+import { BsPin, BsPinAngleFill } from 'vue-icons-plus/bs'
 
 const route = useRoute()
 const props = defineProps({

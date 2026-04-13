@@ -4,6 +4,7 @@ import threading
 import asyncio
 
 from fastapi import WebSocket
+from websockets.asyncio.client import ClientConnection
 from libs.log_config import logger
 from libs.openai_chat_api import OpenAIChatAPI
 from libs.common import Utils
@@ -14,6 +15,29 @@ thread_api: OpenAIChatAPI
 
 class MessageHandler:
     """消息处理器，处理不同类型的WebSocket消息"""
+
+    @staticmethod
+    async def handle_iwin_message(ws: ClientConnection, data: str):
+        """处理iWin消息"""
+        try:
+            message = json.loads(data)
+            command_type = message["type"]
+            if command_type == "client_id":
+                client_id = message["data"]["client_id"]
+                Utils.iwin_ws_client.set_client_id(client_id)
+                logger.info(f"设置 iWin 客户端 ID: {client_id}")
+            elif command_type == "toggle_floating_pin":
+                session_id = message["data"]["session_id"]
+                # connection_id = message["data"]["connection_id"]
+                msg = {
+                    "type": "toggle_floating_pin",
+                    "data": {"is_pinned": message["data"]["is_pinned"]},
+                }
+                await SessionManager.broadcast_session(session_id, json.dumps(msg))
+            else:
+                logger.warning(f"未知的iWin命令类型: {command_type}")
+        except Exception as e:
+            logger.error(f"处理iWin消息时出错: {e}", exc_info=True)
 
     @staticmethod
     async def handle_command_message(type: str, data: dict) -> bool:
@@ -295,7 +319,7 @@ class MessageHandler:
                 logger.info(f"接收消息: {message}")
 
             handlers = {
-                "toggle_float_pin": MessageHandler._handle_toggle_float_pin,
+                "toggle_floating_pin": MessageHandler._handle_toggle_floating_pin,
                 "user_input": MessageHandler._handle_user_input,
                 "parsed_user_message": MessageHandler._handle_parsed_user_message,
                 "parsed_ai_response": MessageHandler._handle_parsed_ai_response,
@@ -324,18 +348,16 @@ class MessageHandler:
             logger.error(f"处理会话消息时出错: {e}", exc_info=True)
 
     @staticmethod
-    async def _handle_toggle_float_pin(
+    async def _handle_toggle_floating_pin(
         websocket: WebSocket, session_id: int, message: dict
     ):
-        url = "http://localhost:3999" + message["data"]["full_path"]
         msg = {
-            "type": "toggle_float_pin",
+            "type": "toggle_floating_pin",
             "data": {
-                "url": url,
                 "session_id": session_id,
             },
         }
-        await SessionManager.broadcast_windows(json.dumps(msg))
+        await Utils.iwin_ws_client.send(msg)
 
     @staticmethod
     async def _handle_user_input(websocket: WebSocket, session_id: int, message: dict):

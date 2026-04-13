@@ -4,6 +4,7 @@
 import json
 import os
 import time
+import asyncio
 
 from fastapi import (
     FastAPI,
@@ -24,6 +25,7 @@ from pathlib import Path
 
 from libs.log_config import logger
 from libs.common import Utils
+from libs.websocket_client import WsClient
 from libs.session_manager import SessionManager
 from libs.message_handler import MessageHandler
 
@@ -36,6 +38,24 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# ==============================================
+# WebSocket Client 连接 iWin 服务器
+# ==============================================
+# 全局单例（整个程序共用一个连接）
+Utils.iwin_ws_client = WsClient(
+    "ws://localhost:9999/ws/voichai", MessageHandler.handle_iwin_message
+)
+
+
+@app.get("/api/connectiwin")
+async def connectiwin():
+    if Utils.iwin_ws_client.is_connected():
+        return {"status": "connected"}
+    # 🔥 关键：用 create_task 后台启动，不阻塞接口
+    asyncio.create_task(Utils.iwin_ws_client.connect())
+    return {"status": "connecting"}
+
 
 
 @app.get("/api/download")

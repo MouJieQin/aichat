@@ -15,6 +15,7 @@
             <MessageStream :streaming="streaming" :error="isChatError" :content="streamResponse" />
             <!-- 建议消息列表 -->
             <SuggestionsList :suggestions="sessionSuggestions" @send="sendMessage" />
+            <div v-if="sessionSuggestions.length === 0" class="avoid-streaming-message-being-cover-by-input-container" />
         </div>
 
         <!-- 输入区域 -->

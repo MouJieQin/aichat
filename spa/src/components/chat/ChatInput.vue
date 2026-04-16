@@ -156,11 +156,16 @@ const handleKeyDown = (e: KeyboardEvent) => {
         handleSend()
     }
 
-    // Alt + Command 触发语音识别
-    if (e.altKey && e.metaKey) {
+    // Command + , 触发语音识别
+    if (e.key === ',' && e.metaKey) {
         e.preventDefault()
         toggleSpeechRecognize()
     }
+    // Alt + Command 触发语音识别
+    // if (e.altKey && e.metaKey) {
+    //     e.preventDefault()
+    //     toggleSpeechRecognize()
+    // }
 }
 
 // 监听输入框高度变化

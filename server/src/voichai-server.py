@@ -57,7 +57,6 @@ async def connectiwin():
     return {"status": "connecting"}
 
 
-
 @app.get("/api/download")
 async def download(path: str):
     logger.info(f"download path: {path}")
@@ -268,7 +267,9 @@ async def session_websocket_endpoint(websocket: WebSocket, clientID: int):
 
     try:
         await SessionManager.send_session_messages(websocket, session_id)
-        await SessionManager.send_session_config(session_id, websocket)
+        await SessionManager.send_session_config(
+            session_id, websocket, is_right_after_connection=True
+        )
         await SessionManager.broadcast_session_title(session_id)
 
         while True:

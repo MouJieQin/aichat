@@ -31,9 +31,9 @@ class ChatWebSocketService extends WebSocketService {
         )
     }
 
-    sendToggleFloatingWindowPin(fullPath: string) {
+    sendToggleFloatingWindowPin(isPinned: boolean) {
         this._send('toggle_floating_pin', {
-            full_path: fullPath,
+            is_pinned: isPinned,
         })
     }
 

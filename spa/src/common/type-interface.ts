@@ -44,6 +44,7 @@ export interface AIConfig {
     suggestions?: string[];
     secondary_prompt?: string;
     secondary_prompt_switch?: boolean;
+    is_pinned?: boolean;
 }
 
 // system config

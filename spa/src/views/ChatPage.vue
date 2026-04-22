@@ -15,7 +15,8 @@
             <MessageStream :streaming="streaming" :error="isChatError" :content="streamResponse" />
             <!-- 建议消息列表 -->
             <SuggestionsList :suggestions="sessionSuggestions" @send="sendMessage" />
-            <div v-if="sessionSuggestions.length === 0" class="avoid-streaming-message-being-cover-by-input-container" />
+            <div v-if="sessionSuggestions.length === 0"
+                class="avoid-streaming-message-being-cover-by-input-container" />
         </div>
 
         <!-- 输入区域 -->
@@ -64,7 +65,6 @@ const chatMessages = ref<Message[]>([])
 const sessionSuggestions = ref<string[]>([])
 const sessionTitle = ref('')
 const streaming = ref(false)
-const isPinned = ref(false)
 const isScrolledWhenStreaming = ref(false)
 const isChatError = ref(false)
 const streamResponse = ref('')
@@ -114,6 +114,8 @@ onBeforeUnmount(() => {
     document.title = 'Voichai'
 
 })
+
+const isPinned = ref(sessionAiConfig.value?.is_pinned || false)
 
 router.beforeEach(async (to, from, next) => {
     // 关闭 WebSocket
@@ -193,8 +195,7 @@ const handleWebSocketMessage = (message: any) => {
             }
             break
         case 'session_ai_config':
-            sessionAiConfig.value = message.data.ai_config
-            sessionSuggestions.value = message.data.ai_config.suggestions
+            handleSessionAiConfig(message.data)
             break
         case 'the_sentence_playing':
             updatePlayingSentence(message.data)
@@ -210,6 +211,9 @@ const handleWebSocketMessage = (message: any) => {
             break
         case 'stop_speech_recognize':
             isSpeechRecognizing.value = false
+            break
+        case 'close_fixed_window':
+            handleCloseFixedWindow(message.data)
             break
         case 'error_session_not_exist':
             router.push('/')
@@ -367,7 +371,17 @@ const handleSecondaryResponse = (data: any) => {
     }
 }
 
-// 更新正在播放的句子
+
+// 处理会话AI配置
+const handleSessionAiConfig = (data: any) => {
+    sessionAiConfig.value = data.ai_config
+    sessionSuggestions.value = data.ai_config.suggestions
+    if (data.is_right_after_connection) {
+        webSocket?.value?.sendToggleFloatingWindowPin(sessionAiConfig.value?.is_pinned || false)
+    }
+}
+
+//// 更新正在播放的句子
 const updatePlayingSentence = (data: any) => {
     const message_id = data.message_id
     const sentence_id = data.sentence_id
@@ -420,6 +434,14 @@ const handleSpeechRecognizing = (data: any) => {
     isSpeechRecognizing.value = true
     sttText.value = data.stt_text
     sttCursorPosition.value = data.cursor_position
+}
+
+// 处理关闭固定窗口消息
+const handleCloseFixedWindow = (data: any) => {
+    if (sessionAiConfig.value) {
+        sessionAiConfig.value.is_pinned = data.is_pinned
+        webSocket?.value?.sendUpdateSessionConfig(sessionAiConfig.value)
+    }
 }
 
 // AI配置相关

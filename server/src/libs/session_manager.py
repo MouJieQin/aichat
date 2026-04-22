@@ -182,6 +182,7 @@ class SessionManager:
         session_id: int,
         websocket: Optional[WebSocket] = None,
         api: OpenAIChatAPI = Utils.api,
+        is_right_after_connection: bool = False,
     ):
         """发送会话配置到指定WebSocket或广播"""
         ai_config = api.get_session_ai_config(session_id)
@@ -189,6 +190,7 @@ class SessionManager:
             "type": "session_ai_config",
             "data": {
                 "ai_config": ai_config,
+                "is_right_after_connection": is_right_after_connection,
             },
         }
 

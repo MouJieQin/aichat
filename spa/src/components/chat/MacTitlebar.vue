@@ -2,9 +2,6 @@
 <template>
     <!-- 自定义 macOS 标题栏（仅 macOS 显示，包含 Pin 置顶按钮） -->
     <div class="mac-titlebar">
-        <!-- <button @click="handlePinClick" class="pin-button" >
-            {{ isPinned ? '📍' : '📌' }}
-        </button> -->
         <div class="floating-window-title">
             <span>{{ title }}</span>
         </div>
@@ -39,7 +36,7 @@ const props = defineProps({
 })
 
 const handlePinClick = () => {
-    props.webSocket.sendToggleFloatingWindowPin(route.fullPath)
+    props.webSocket.sendToggleFloatingWindowPin(!props.isPinned)
 }
 
 </script>

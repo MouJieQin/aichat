@@ -282,6 +282,7 @@ const handleTabsEdit = (
             auto_play: false,
             auto_gen_title: true,
             speech_rate: 1,
+            show_separated_sentences: false,
             modelsOptional: [],
         })
         editableTabsValue.value = id
